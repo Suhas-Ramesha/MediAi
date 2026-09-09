@@ -25,7 +25,7 @@ export default function SymptomDiaryPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3 }}
           onClick={() => setLocation('/dashboard')}
-          className="flex items-center gap-2 mb-6 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors group"
+          className="group mb-6 flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors duration-fast hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
           Back to Dashboard

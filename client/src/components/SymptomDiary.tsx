@@ -92,12 +92,12 @@ export function SymptomDiary() {
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="flex items-center gap-3">
-        <div className="p-2.5 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 border border-white/20">
-          <BookHeart className="h-6 w-6 text-indigo-500 dark:text-cyan-400" />
+        <div className="grid h-11 w-11 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+          <BookHeart className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Symptom Diary</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{logs.length} {logs.length === 1 ? 'entry' : 'entries'} recorded</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Symptom diary</h1>
+          <p className="text-sm text-muted-foreground">{logs.length} {logs.length === 1 ? 'entry' : 'entries'} recorded</p>
         </div>
       </motion.div>
 
@@ -106,11 +106,11 @@ export function SymptomDiary() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="glass-card rounded-2xl border border-white/30 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl shadow-lg overflow-hidden"
+        className="surface overflow-hidden"
       >
-        <div className="p-4 border-b border-slate-100 dark:border-white/5">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-            <PlusCircle className="h-4 w-4 text-indigo-500 dark:text-cyan-400" />
+        <div className="border-b border-border p-4">
+          <p className="flex items-center gap-2 text-sm font-medium">
+            <PlusCircle className="h-4 w-4 text-primary" />
             Log a new symptom
           </p>
         </div>
@@ -122,12 +122,12 @@ export function SymptomDiary() {
             onKeyDown={handleKeyDown}
             placeholder="Describe your symptom in detail… (e.g. 'Sharp headache behind my eyes, worse when moving')"
             rows={3}
-            className="w-full resize-none rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 px-4 py-3 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 dark:focus:ring-cyan-400/40 transition-all"
+            className="w-full resize-none rounded-lg border border-input bg-background px-4 py-3 text-sm text-foreground transition-colors duration-fast focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
           />
 
           {/* Severity selector */}
           <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 shrink-0">
+            <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Thermometer className="h-3.5 w-3.5" /> Severity
             </span>
             <div className="flex items-center gap-2">
@@ -138,8 +138,8 @@ export function SymptomDiary() {
                   onClick={() => setSeverity(lvl)}
                   className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
                     severity === lvl
-                      ? severityLabels[lvl].color + ' shadow-sm scale-105'
-                      : 'text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                      ? severityLabels[lvl].color + ' shadow-xs'
+                      : 'border-border text-muted-foreground hover:border-foreground/25 hover:text-foreground'
                   }`}
                 >
                   {severityLabels[lvl].label}
@@ -152,13 +152,13 @@ export function SymptomDiary() {
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               disabled={!input.trim() || isSubmitting}
-              className="ml-auto flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-400 text-white text-sm font-medium shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="ml-auto flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-opacity duration-fast hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {isSubmitting ? 'Saving…' : 'Log Symptom'}
+              {isSubmitting ? 'Saving…' : 'Log symptom'}
             </motion.button>
           </div>
-          <p className="text-xs text-slate-400 dark:text-slate-500">Press <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs font-mono border border-slate-200 dark:border-slate-700">Enter</kbd> to submit quickly.</p>
+          <p className="text-xs text-muted-foreground">Press <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs">Enter</kbd> to submit quickly.</p>
         </form>
       </motion.div>
 
@@ -167,11 +167,11 @@ export function SymptomDiary() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="glass-card rounded-2xl border border-white/30 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl shadow-lg overflow-hidden"
+        className="surface overflow-hidden"
       >
-        <div className="p-4 border-b border-slate-100 dark:border-white/5">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-indigo-500 dark:text-cyan-400" />
+        <div className="border-b border-border p-4">
+          <p className="flex items-center gap-2 text-sm font-medium">
+            <Clock className="h-4 w-4 text-primary" />
             Your logged symptoms
           </p>
         </div>
@@ -180,23 +180,23 @@ export function SymptomDiary() {
             {isLoading ? (
               <div className="flex justify-center items-center h-48">
                 <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="h-8 w-8 animate-spin text-indigo-500 dark:text-cyan-400" />
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Loading diary…</p>
+                  <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Loading diary…</p>
                 </div>
               </div>
             ) : error ? (
-              <div className="flex flex-col items-center justify-center h-48 text-red-500 gap-2">
-                <AlertCircle className="h-8 w-8" />
+              <div className="flex h-48 flex-col items-center justify-center gap-2 text-destructive">
+                <AlertCircle className="h-7 w-7" />
                 <p className="text-sm">{error}</p>
               </div>
             ) : !currentUser ? (
-              <div className="flex items-center justify-center h-48 text-slate-400">
-                Please log in to view your symptom diary.
+              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+                Please sign in to view your symptom diary.
               </div>
             ) : logs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 gap-3 text-center">
-                <BookHeart className="h-10 w-10 text-slate-300 dark:text-slate-600" />
-                <p className="text-slate-500 dark:text-slate-400 text-sm max-w-xs">No symptoms logged yet. Use the input above to record your first entry.</p>
+              <div className="flex h-48 flex-col items-center justify-center gap-3 text-center">
+                <BookHeart className="h-9 w-9 text-muted-foreground/40" />
+                <p className="max-w-xs text-sm text-muted-foreground">No symptoms logged yet. Use the input above to record your first entry.</p>
               </div>
             ) : (
               <AnimatePresence initial={false}>
@@ -209,12 +209,12 @@ export function SymptomDiary() {
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.04 }}
-                        className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-white/5 flex flex-col gap-2"
+                        className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-4"
                       >
-                        <p className="text-sm text-slate-800 dark:text-slate-200 leading-snug">{log.symptom}</p>
+                        <p className="text-sm leading-snug">{log.symptom}</p>
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${sev.color}`}>{sev.label}</span>
-                          <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                          <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${sev.color}`}>{sev.label}</span>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
                             {formatDate(log.timestamp)}
                           </span>

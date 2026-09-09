@@ -85,7 +85,7 @@ const CustomTooltip = ({
             </Button>
           )}
         </div>
-        <Button size="sm" className="bg-gradient-to-r from-indigo-500 to-cyan-400 hover:opacity-90 text-white rounded-full shadow-lg border-0 h-8 px-4 text-xs font-medium" {...primaryProps}>
+        <Button size="sm" className="h-8 rounded-full px-4 text-xs font-medium" {...primaryProps}>
           {isLastStep ? 'Finish Tour' : 'Next'}
         </Button>
       </div>
