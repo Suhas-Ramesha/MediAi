@@ -7,8 +7,6 @@ if (!apiKey) {
   throw new Error('Gemini API key is required');
 }
 
-console.log('API Key loaded:', apiKey);
-
 const genAI = new GoogleGenerativeAI(apiKey);
 
 const DEFAULT_TIMEOUT_MS = 40000;
