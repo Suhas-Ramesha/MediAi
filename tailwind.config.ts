@@ -6,10 +6,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // Inter is already preloaded in client/index.html but was never
-        // wired into the theme, so everything fell back to the system font.
+        // Geist is self-hosted via @fontsource-variable so there is no
+        // render-blocking request to fonts.googleapis.com.
         sans: [
-          "Inter",
+          "Geist Variable",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
@@ -19,6 +19,7 @@ export default {
           "sans-serif",
         ],
         mono: [
+          "Geist Mono Variable",
           "ui-monospace",
           "SFMono-Regular",
           "Menlo",
