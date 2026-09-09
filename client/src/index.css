@@ -242,3 +242,56 @@
     transform: translateY(0) scale(0.99);
   }
 }
+
+/* Unlayered so these beat the shadcn theme-json inject (also unlayered). */
+:root {
+  --background: 150 18% 95%;
+  --foreground: 162 22% 12%;
+  --card: 150 25% 98%;
+  --card-foreground: 162 22% 12%;
+  --popover: 150 25% 98%;
+  --popover-foreground: 162 22% 12%;
+  --primary: 166 60% 26%;
+  --primary-foreground: 150 30% 97%;
+  --secondary: 152 16% 90%;
+  --secondary-foreground: 162 22% 12%;
+  --muted: 150 14% 91%;
+  --muted-foreground: 160 10% 34%;
+  --accent: 152 18% 88%;
+  --accent-foreground: 162 22% 12%;
+  --destructive: 4 68% 42%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 152 48% 28%;
+  --success-foreground: 0 0% 100%;
+  --warning: 22 62% 38%;
+  --warning-foreground: 0 0% 100%;
+  --border: 152 14% 82%;
+  --input: 152 14% 82%;
+  --ring: 166 60% 26%;
+}
+
+.dark {
+  --background: 160 16% 8%;
+  --foreground: 150 18% 93%;
+  --card: 160 14% 11%;
+  --card-foreground: 150 18% 93%;
+  --popover: 160 14% 11%;
+  --popover-foreground: 150 18% 93%;
+  --primary: 162 32% 58%;
+  --primary-foreground: 160 20% 10%;
+  --secondary: 160 12% 16%;
+  --secondary-foreground: 150 18% 93%;
+  --muted: 160 12% 15%;
+  --muted-foreground: 150 10% 68%;
+  --accent: 160 12% 18%;
+  --accent-foreground: 150 18% 93%;
+  --destructive: 4 58% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 152 36% 48%;
+  --success-foreground: 152 40% 8%;
+  --warning: 28 58% 58%;
+  --warning-foreground: 28 40% 10%;
+  --border: 160 12% 18%;
+  --input: 160 12% 20%;
+  --ring: 162 32% 58%;
+}
