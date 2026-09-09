@@ -1439,31 +1439,34 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   };
 
   return (
-    <div className="w-full h-full min-h-[600px] flex flex-col relative rounded-3xl overflow-hidden glass-card border border-white/20 dark:border-white/5 shadow-2xl">
-      <div className="flex flex-row items-center justify-between px-6 py-4 border-b border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md z-10">
-        <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white drop-shadow-sm">Medical Assistant</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
+    <div className="surface relative flex h-full min-h-[600px] w-full flex-col overflow-hidden">
+      <div className="z-10 flex flex-row items-center justify-between border-b border-border bg-card px-5 py-3.5">
+        <h2 className="text-base font-semibold tracking-tight">
+          Medical assistant
+        </h2>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={handleNewChat}
-          className="flex items-center gap-2 glass-card hover:bg-white/50 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 shadow-sm"
+          className="flex items-center gap-2"
         >
           <PlusCircle className="h-4 w-4" />
-          New Session
+          New session
         </Button>
       </div>
-      <div className="flex-1 overflow-hidden relative bg-slate-50/30 dark:bg-black/20">
+      <div className="relative flex-1 overflow-hidden bg-muted/20">
         {/* Chat Messages */}
-        <ScrollArea className="h-[500px] px-4 pt-6 pb-32">
+        <ScrollArea className="h-full px-4 pt-6 pb-32">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[300px] gap-4 p-8 text-center">
-              <div className="relative h-20 w-20 flex items-center justify-center mb-2">
-                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 to-cyan-400 blur-xl opacity-20 animate-pulse rounded-full" />
-                <BrainCircuit className="h-10 w-10 text-indigo-500 dark:text-cyan-400 relative z-10" />
+              <div className="mb-2 grid h-14 w-14 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                <BrainCircuit className="h-7 w-7" />
               </div>
-              <p className="text-lg font-medium text-slate-800 dark:text-slate-200 drop-shadow-sm">What can I do for you today?</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
-                Start a <span className="font-medium text-indigo-500 dark:text-cyan-400">New Session</span> for risk prediction, or just say hello below.
+              <p className="text-base font-medium">What can I do for you today?</p>
+              <p className="max-w-sm text-sm text-muted-foreground">
+                Start a{" "}
+                <span className="font-medium text-primary">new session</span> for
+                a risk assessment, or just describe how you feel below.
               </p>
             </div>
           ) : (
@@ -1480,10 +1483,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-[2rem] px-5 py-3.5 relative shadow-md backdrop-blur-md transition-all ${
+                    className={`relative max-w-[85%] rounded-2xl px-4 py-3 ${
                       msg.role === 'user'
-                        ? 'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white rounded-br-sm'
-                        : 'glass-card border border-white/20 dark:border-white/5 text-slate-800 dark:text-slate-100 rounded-bl-sm'
+                        ? 'rounded-br-md bg-primary text-primary-foreground'
+                        : 'rounded-bl-md border border-border bg-card text-card-foreground shadow-xs'
                     }`}
                   >
                     {msg.image && (
@@ -1542,16 +1545,16 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.15 }}
-                        className="mt-3 border-t border-slate-100 pt-3"
+                        className="mt-3 border-t border-border pt-3"
                       >
                         <Button
                           size="sm"
-                          className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md"
+                          className="flex items-center gap-2"
                           onClick={handleStartBooking}
                           disabled={isLoading}
                         >
                           <CalendarPlus className="h-4 w-4" />
-                          Book Consultation
+                          Book consultation
                         </Button>
                       </motion.div>
                     )}
@@ -1567,7 +1570,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                              key={doc._id || doc.id} 
                              variant="outline" 
                              size="sm" 
-                             className="w-full justify-start bg-white hover:bg-slate-50" 
+                             className="w-full justify-start text-left" 
                              onClick={() => handleSelectDoctor(doc)} 
                              disabled={isLoading}
                            >
@@ -1584,7 +1587,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                       bookingStep === 2 &&
                       msg.id === bookingSlotMessageId &&
                       availableSlots.length > 0 && (
-                       <div className="mt-2 grid grid-cols-3 gap-1">
+                       <div className="mt-2 grid grid-cols-2 gap-1.5">
                          {availableSlots.map((slot, index) => {
                            // Handle different data formats that might come from API
                            const displayDate = slot.date || slot.appointmentDate || '';
@@ -1595,7 +1598,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                                key={index} 
                                variant="outline" 
                                size="sm" 
-                               className="bg-white hover:bg-slate-50" 
+                               className="whitespace-nowrap px-2 text-xs" 
                                onClick={() => handleSelectSlot(slot)} 
                                disabled={isLoading}
                              >
@@ -1696,8 +1699,8 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         )}
 
         {/* Sleek Floating Input Area */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl glass-card rounded-full p-2 pr-3 flex items-center gap-2 shadow-2xl border border-white/40 dark:border-white/10 z-20">
-          <label htmlFor="file-upload" className="flex items-center justify-center h-10 w-10 rounded-full bg-slate-100/50 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors text-slate-600 dark:text-slate-300">
+        <div className="absolute bottom-6 left-1/2 z-20 flex w-[92%] max-w-3xl -translate-x-1/2 items-center gap-2 rounded-full border border-border bg-card/95 p-2 pr-3 shadow-lg backdrop-blur-md">
+          <label htmlFor="file-upload" className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground">
             <Upload className="h-4 w-4" />
             <Input
               id="file-upload"
@@ -1724,7 +1727,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           
           <div className="relative flex-1">
             <input
-              className="w-full bg-transparent border-0 focus:ring-0 text-slate-800 dark:text-white placeholder:text-slate-400 text-sm px-2 h-10 outline-none"
+              className="h-10 w-full border-0 bg-transparent px-2 text-sm text-foreground outline-none focus:ring-0"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(input)}
@@ -1737,7 +1740,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
             <Button
               variant="ghost"
               size="icon"
-              className={`h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${isRecording ? "bg-red-100/50 dark:bg-red-900/30 text-red-500" : "text-slate-600 dark:text-slate-300"}`}
+              className={`h-10 w-10 rounded-full transition-colors duration-fast ${isRecording ? "bg-destructive/12 text-destructive hover:bg-destructive/20" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
               onClick={handleVoiceRecord}
               disabled={isLoading}
             >
@@ -1747,7 +1750,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+              className="h-10 w-10 rounded-full text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground"
               onClick={() => handleLogSymptom(input)}
               disabled={isLoading || !input.trim()}
               title="Log symptom to diary"
@@ -1756,7 +1759,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
             </Button>
 
             <Button
-              className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 text-white shadow-md hover:shadow-lg transition-all"
+              className="h-10 w-10 shrink-0 rounded-full"
               onClick={() => handleSendMessage(input)}
               disabled={isLoading || isRecording || !input.trim()}
             >
