@@ -1,218 +1,337 @@
-import React from "react";
-import { 
+import React, { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  BookHeart,
+  BookOpen,
+  CalendarCheck,
+  ChevronDown,
+  HelpCircle,
+  History,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquare,
+  Settings,
+  Shield,
+  User,
+  X,
+  Zap,
+} from "lucide-react";
+import { useLocation } from "wouter";
+
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Info, HelpCircle, BookOpen, Shield, MessageSquare, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { transition } from "@/lib/motion";
 import SparkWrapper from "./SparkWrapper";
+import { ThemeToggle } from "./ThemeToggle";
 
-interface User {
+interface UserType {
   name: string;
   email: string;
   profileImage?: string;
 }
 
 interface HeaderProps {
-  user: User;
+  user: UserType;
   onStartTour?: () => void;
 }
 
+const navLinks = [
+  { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+  { label: "Appointments", path: "/appointments", icon: CalendarCheck },
+  { label: "Symptom Diary", path: "/symptom-diary", icon: BookHeart },
+  { label: "History", path: "/medical-history", icon: History },
+];
+
+const accountLinks = [
+  { label: "Profile", path: "/profile", icon: User },
+  { label: "Appointments", path: "/appointments", icon: CalendarCheck },
+  { label: "Symptom Diary", path: "/symptom-diary", icon: BookHeart },
+  { label: "Settings", path: "/settings", icon: Settings },
+];
+
+const helpItems = [
+  {
+    icon: MessageSquare,
+    title: "Chat with MediAI",
+    desc: "Describe symptoms by text, voice, or image upload.",
+  },
+  {
+    icon: BookOpen,
+    title: "Medical history",
+    desc: "Browse past consultations and saved assessments.",
+  },
+  {
+    icon: Zap,
+    title: "Getting better answers",
+    desc: "Include how long it has lasted and how severe it feels.",
+  },
+  {
+    icon: Shield,
+    title: "Your data",
+    desc: "Consultations are scoped to your account and visible only to you.",
+  },
+];
+
 export default function Header({ user, onStartTour }: HeaderProps) {
   const { logout } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
-  
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location]);
+
   const handleLogout = async () => {
     try {
       await logout();
-      toast({
-        title: "Logged out successfully",
-        description: "You have been logged out of your account",
-      });
+      toast({ title: "Signed out", description: "See you soon." });
       setLocation("/");
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Logout failed",
-        description: error.message || "Something went wrong",
+        title: "Sign out failed",
+        description: error?.message,
       });
     }
   };
 
-  const handleNavigation = (path: string) => {
-    setLocation(path);
-  };
+  const navTo = (path: string) => setLocation(path);
 
   return (
-    <header className="sticky top-0 z-50">
-      <div className="mx-8 my-4">
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg shadow-purple-500/5 border border-white/20">
-          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-3 flex justify-between items-center">
-            <SparkWrapper
-              className="flex items-center space-x-3 cursor-pointer group logo-container"
-              onClick={() => handleNavigation('/dashboard')}
-            >
-              <div className="p-2 rounded-xl bg-blue-600/10 group-hover:bg-blue-600/20 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600 group-hover:text-blue-500 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                </svg>
-              </div>
-              <span className="text-xl font-semibold text-blue-600 group-hover:text-blue-500 transition-colors">MediAI</span>
-            </SparkWrapper>
-            
-            <div className="flex items-center space-x-6">
-              <SparkWrapper>
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="p-2 rounded-xl bg-slate-500/10 hover:bg-slate-500/20 text-slate-500 hover:text-slate-700 transition-all">
-                    <Info className="h-6 w-6" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-80 bg-white/60 backdrop-blur-xl rounded-xl shadow-lg shadow-purple-500/5 border border-white/20 p-4">
-                    <DropdownMenuLabel className="font-medium text-lg flex items-center gap-2">
-                      <HelpCircle className="h-5 w-5 text-primary" />
-                      Quick Help
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-slate-200/50 my-2" />
-                    
-                    <div className="space-y-4">
-                      <SparkWrapper>
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-blue-50">
-                            <MessageSquare className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-slate-800">Chat with MediAI</h3>
-                            <p className="text-sm text-slate-600">Describe your symptoms in text, voice, or upload images for AI analysis.</p>
-                          </div>
-                        </div>
-                      </SparkWrapper>
-                      
-                      <SparkWrapper>
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-purple-50">
-                            <BookOpen className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-slate-800">Medical History</h3>
-                            <p className="text-sm text-slate-600">Access your past consultations and medical records.</p>
-                          </div>
-                        </div>
-                      </SparkWrapper>
-                      
-                      <SparkWrapper>
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-green-50">
-                            <Zap className="h-5 w-5 text-green-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-slate-800">Quick Tips</h3>
-                            <p className="text-sm text-slate-600">Be specific with symptoms, include duration and severity for better analysis.</p>
-                          </div>
-                        </div>
-                      </SparkWrapper>
-                      
-                      <SparkWrapper>
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-red-50">
-                            <Shield className="h-5 w-5 text-red-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-slate-800">Privacy & Security</h3>
-                            <p className="text-sm text-slate-600">Your data is encrypted and protected with enterprise-grade security.</p>
-                          </div>
-                        </div>
-                      </SparkWrapper>
+    <>
+      <header
+        className={cn(
+          "sticky top-0 z-50 border-b transition-colors duration-base",
+          scrolled
+            ? "border-border bg-background/85 backdrop-blur-md"
+            : "border-transparent bg-background",
+        )}
+      >
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          {/* Logo */}
+          <SparkWrapper
+            className="logo-container flex shrink-0 cursor-pointer items-center gap-2.5"
+            onClick={() => navTo("/dashboard")}
+          >
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </span>
+            <span className="text-base font-semibold tracking-tight">
+              MediAI
+            </span>
+          </SparkWrapper>
+
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-1 lg:flex">
+            {navLinks.map((link) => {
+              const active =
+                location === link.path ||
+                location.startsWith(link.path + "/");
+              return (
+                <button
+                  key={link.path}
+                  onClick={() => navTo(link.path)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "relative rounded-md px-3 py-2 text-sm font-medium transition-colors duration-fast",
+                    active
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  {link.label}
+                  {active && (
+                    <motion.span
+                      layoutId="nav-indicator"
+                      className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Right side */}
+          <div className="flex shrink-0 items-center gap-1">
+            <ThemeToggle />
+
+            {/* Help */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  aria-label="Help"
+                  className="hidden h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground sm:flex"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80 p-2">
+                <DropdownMenuLabel className="px-2 text-sm font-semibold">
+                  Quick help
+                </DropdownMenuLabel>
+                <div className="space-y-1 py-1">
+                  {helpItems.map(({ icon: Icon, title, desc }) => (
+                    <div
+                      key={title}
+                      className="flex items-start gap-3 rounded-md px-2 py-2"
+                    >
+                      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                        <Icon className="h-3.5 w-3.5" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{title}</p>
+                        <p className="text-xs leading-snug text-muted-foreground">
+                          {desc}
+                        </p>
+                      </div>
                     </div>
-                    
-                    <DropdownMenuSeparator className="bg-slate-200/50 my-2" />
-                    <SparkWrapper>
-                      <DropdownMenuItem 
-                        onClick={onStartTour}
-                        className="text-sm text-slate-600 hover:text-primary focus:bg-slate-500/10"
-                      >
-                        Take the guided tour
-                      </DropdownMenuItem>
-                    </SparkWrapper>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </SparkWrapper>
-              
-              <SparkWrapper>
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center space-x-3 text-sm font-medium text-slate-700 hover:text-primary focus:outline-none transition-colors user-menu">
-                    <span className="hidden sm:inline">{user.name}</span>
-                    {user.profileImage ? (
-                      <img 
-                        src={user.profileImage} 
-                        alt={`${user.name}'s profile`}
-                        className={cn(
-                          "h-10 w-10 rounded-xl object-cover",
-                          "ring-2 ring-white/80 shadow-sm hover:ring-primary/20 transition-all"
-                        )}
-                      />
-                    ) : (
-                      <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center ring-2 ring-white/80 shadow-sm hover:bg-primary/20 transition-all">
-                        {user.name.charAt(0)}
-                      </div>
-                    )}
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 mt-2 bg-white/60 backdrop-blur-xl rounded-xl shadow-lg shadow-purple-500/5 border border-white/20">
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-xs text-slate-500 truncate">{user.email}</p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-slate-200/50" />
-                    <SparkWrapper>
-                      <DropdownMenuItem onClick={() => handleNavigation('/profile')} className="focus:bg-slate-500/10">
-                        Profile
-                      </DropdownMenuItem>
-                    </SparkWrapper>
-                    <SparkWrapper>
-                      <DropdownMenuItem onClick={() => handleNavigation('/medical-history')} className="focus:bg-slate-500/10">
-                        Medical History
-                      </DropdownMenuItem>
-                    </SparkWrapper>
-                    <SparkWrapper>
-                      <DropdownMenuItem onClick={() => handleNavigation('/appointments')} className="focus:bg-slate-500/10">
-                        <div className="flex items-center">
-                          My Appointments
-                          <span className="ml-2 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs">New</span>
-                        </div>
-                      </DropdownMenuItem>
-                    </SparkWrapper>
-                    <SparkWrapper>
-                      <DropdownMenuItem onClick={() => handleNavigation('/symptom-diary')} className="focus:bg-slate-500/10">
-                        Symptom Diary
-                        <span className="ml-2 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs">New</span>
-                      </DropdownMenuItem>
-                    </SparkWrapper>
-                    <SparkWrapper>
-                      <DropdownMenuItem onClick={() => handleNavigation('/settings')} className="focus:bg-slate-500/10">
-                        Settings
-                      </DropdownMenuItem>
-                    </SparkWrapper>
-                    <DropdownMenuSeparator className="bg-slate-200/50" />
-                    <SparkWrapper>
-                      <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50">
-                        Sign out
-                      </DropdownMenuItem>
-                    </SparkWrapper>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </SparkWrapper>
-            </div>
+                  ))}
+                </div>
+                {onStartTour && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={onStartTour}
+                      className="cursor-pointer text-sm font-medium text-primary"
+                    >
+                      Take the guided tour
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Account */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="user-menu flex items-center gap-2 rounded-md py-1 pl-1 pr-2 transition-colors duration-fast hover:bg-accent">
+                  {user.profileImage ? (
+                    <img
+                      src={user.profileImage}
+                      alt=""
+                      className="h-7 w-7 rounded-md object-cover"
+                    />
+                  ) : (
+                    <span className="grid h-7 w-7 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="hidden max-w-[90px] truncate text-sm font-medium sm:block">
+                    {user.name.split(" ")[0]}
+                  </span>
+                  <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-2 py-1.5">
+                  <p className="truncate text-sm font-semibold">{user.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {user.email}
+                  </p>
+                </div>
+                <DropdownMenuSeparator />
+                {accountLinks.map(({ label, path, icon: Icon }) => (
+                  <DropdownMenuItem
+                    key={label + path}
+                    onClick={() => navTo(path)}
+                    className="cursor-pointer gap-2.5 text-sm"
+                  >
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    {label}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="cursor-pointer gap-2.5 text-sm text-destructive focus:text-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Mobile toggle */}
+            <button
+              onClick={() => setMobileOpen((o) => !o)}
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
+              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground lg:hidden"
+            >
+              {mobileOpen ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <Menu className="h-4 w-4" />
+              )}
+            </button>
           </div>
         </div>
-      </div>
-    </header>
+
+        {/* Mobile menu */}
+        <AnimatePresence initial={false}>
+          {mobileOpen && (
+            <motion.div
+              key="mobile-menu"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={transition.base}
+              className="overflow-hidden border-t border-border bg-background lg:hidden"
+            >
+              <nav className="space-y-1 px-4 py-3 sm:px-6">
+                {navLinks.map((link) => {
+                  const active = location === link.path;
+                  return (
+                    <button
+                      key={link.path}
+                      onClick={() => navTo(link.path)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-fast",
+                        active
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                      )}
+                    >
+                      <link.icon className="h-4 w-4" />
+                      {link.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+    </>
   );
 }

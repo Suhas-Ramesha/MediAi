@@ -25,31 +25,74 @@ export const isAuthenticated = (): boolean => {
   return !!getAuthToken();
 };
 
-// Function to fetch REAL doctors from the API
-export const fetchDoctors = async (specialty?: string): Promise<any[]> => {
-  console.log(`Fetching REAL doctors... Specialty: ${specialty}`);
+/** Result of {@link fetchDoctors}; includes fallback metadata when the specialty filter matched nobody. */
+export interface FetchDoctorsResult {
+  doctors: any[];
+  /** True when a specialty was requested, the filtered list was empty, and the unfiltered list was used instead. */
+  specialtyFallback?: boolean;
+  attemptedSpecialty?: string;
+}
+
+function normalizeDoctorsPayload(data: unknown): any[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object") {
+    const d = data as Record<string, unknown>;
+    if (Array.isArray(d.data)) return d.data;
+    if (Array.isArray(d.doctors)) return d.doctors;
+    if (Array.isArray(d.results)) return d.results;
+    if (Array.isArray(d.items)) return d.items;
+  }
+  return [];
+}
+
+/** Single request to /doctors (optional specialty query). */
+async function fetchDoctorsOnce(specialty?: string): Promise<any[]> {
+  const url = specialty
+    ? `${API_BASE_URL}/doctors?specialty=${encodeURIComponent(specialty)}`
+    : `${API_BASE_URL}/doctors`;
+  console.log(`Calling API URL: ${url}`);
+
+  const response = await fetch(url, {
+    headers: createAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`API Error ${response.status}: ${response.statusText}`, errorBody);
+    throw new Error(`Failed to fetch doctors. Status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log("Received doctors:", data);
+  return normalizeDoctorsPayload(data);
+}
+
+/**
+ * Fetches doctors. If a specialty hint is set but the directory has no matching doctors
+ * (common after risk flow: e.g. "Hepatologist" while only "Cardiologist" exists), retries
+ * without the filter so the first booking attempt still shows a list.
+ */
+export const fetchDoctors = async (specialty?: string): Promise<FetchDoctorsResult> => {
+  const spec = specialty?.trim() || undefined;
+  console.log(`Fetching REAL doctors... Specialty: ${spec ?? "(none)"}`);
   try {
-    const url = specialty ? `${API_BASE_URL}/doctors?specialty=${encodeURIComponent(specialty)}` : `${API_BASE_URL}/doctors`;
-    console.log(`Calling API URL: ${url}`);
-    
-    const response = await fetch(url, {
-      headers: createAuthHeaders()
-    });
-
-    if (!response.ok) {
-      // Log more details on failure
-      const errorBody = await response.text();
-      console.error(`API Error ${response.status}: ${response.statusText}`, errorBody);
-      throw new Error(`Failed to fetch doctors. Status: ${response.status}`);
+    if (spec) {
+      const filtered = await fetchDoctorsOnce(spec);
+      if (filtered.length > 0) {
+        return { doctors: filtered };
+      }
+      const all = await fetchDoctorsOnce(undefined);
+      return {
+        doctors: all,
+        specialtyFallback: all.length > 0,
+        attemptedSpecialty: spec,
+      };
     }
-
-    const data = await response.json();
-    console.log("Received doctors:", data);
-    return data; // Return the actual data from the API
+    const all = await fetchDoctorsOnce(undefined);
+    return { doctors: all };
   } catch (error) {
     console.error("Error in fetchDoctors:", error);
-    // Re-throw the error or return an empty array/handle appropriately
-    throw error; // Re-throw to be caught by the calling component
+    throw error;
   }
 };
 
@@ -309,6 +352,155 @@ export const requestAppointment = async (details: any): Promise<any> => {
     throw error;
   }
 };
+
+const BOOKING_META_PREFIX = "mediai_appt_meta_";
+
+/** Remember slot + doctor shown to the user; status API often omits date/time fields. */
+export function persistBookingDisplayMeta(
+  appointmentId: string,
+  meta: { date?: string; time?: string; doctorName?: string },
+): void {
+  if (!appointmentId) return;
+  try {
+    sessionStorage.setItem(BOOKING_META_PREFIX + appointmentId, JSON.stringify(meta));
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+export function loadBookingDisplayMeta(appointmentId: string): {
+  date?: string;
+  time?: string;
+  doctorName?: string;
+} | null {
+  if (!appointmentId) return null;
+  try {
+    const raw = sessionStorage.getItem(BOOKING_META_PREFIX + appointmentId);
+    if (!raw) return null;
+    return JSON.parse(raw) as { date?: string; time?: string; doctorName?: string };
+  } catch {
+    return null;
+  }
+}
+
+function asRecord(v: unknown): Record<string, unknown> | null {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+}
+
+function pickStr(obj: Record<string, unknown> | null, keys: string[]): string | undefined {
+  if (!obj) return undefined;
+  for (const k of keys) {
+    const v = obj[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return undefined;
+}
+
+function doctorNameFromUnknown(doc: unknown): string | undefined {
+  const o = asRecord(doc);
+  if (!o) return undefined;
+  const single =
+    pickStr(o, ["name", "doctorName", "fullName"]) ||
+    pickStr(o, ["displayName"]);
+  if (single) return single;
+  const first = pickStr(o, ["firstName"]);
+  const last = pickStr(o, ["lastName"]);
+  const combined = [first, last].filter(Boolean).join(" ").trim();
+  return combined || undefined;
+}
+
+function parseDisplayFromDateTime(iso: string): { date: string; time: string } | undefined {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return undefined;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return { date: `${y}-${m}-${day}`, time: `${hh}:${mm}` };
+}
+
+/** Pull doctor / date / time from varied status API shapes. */
+export function extractAppointmentStatusDisplay(raw: unknown): {
+  doctorName?: string;
+  date?: string;
+  time?: string;
+} {
+  const root = asRecord(raw) ?? {};
+  const data = asRecord(root.data) ?? root;
+  const appointment =
+    asRecord(data.appointment) ?? asRecord(data.booking) ?? asRecord(root.appointment) ?? data;
+
+  let doctorName =
+    pickStr(appointment, ["doctorName", "doctor_name"]) ||
+    doctorNameFromUnknown(appointment.doctor) ||
+    doctorNameFromUnknown(data.doctor) ||
+    doctorNameFromUnknown(root.doctor);
+
+  let date = pickStr(appointment, ["date", "appointmentDate", "scheduledDate", "day"]);
+  let time = pickStr(appointment, ["time", "startTime", "appointmentTime", "slotTime"]);
+
+  const isoLike =
+    pickStr(appointment, ["dateTime", "scheduledAt", "appointmentDateTime", "startDateTime"]) ||
+    pickStr(data, ["scheduledAt", "dateTime"]) ||
+    pickStr(root, ["scheduledAt"]);
+
+  if (isoLike) {
+    const parsed = parseDisplayFromDateTime(isoLike);
+    if (parsed) {
+      date = date || parsed.date;
+      time = time || parsed.time;
+    }
+  }
+
+  const slot = asRecord(appointment.slot);
+  if (slot) {
+    date = date || pickStr(slot, ["date", "appointmentDate", "day"]);
+    time = time || pickStr(slot, ["time", "startTime"]);
+    const sdt = pickStr(slot, ["dateTime"]);
+    if (sdt) {
+      const p = parseDisplayFromDateTime(sdt);
+      if (p) {
+        date = date || p.date;
+        time = time || p.time;
+      }
+    }
+  }
+
+  return { doctorName, date, time };
+}
+
+/**
+ * Final strings for chat / toast when an appointment is approved.
+ * Prefer API fields when present; otherwise use values cached at booking time.
+ */
+export function resolveApprovedAppointmentDisplay(
+  appointmentId: string,
+  apiPayload: unknown,
+): { doctorName: string; date: string; time: string } {
+  const fromApi = extractAppointmentStatusDisplay(apiPayload);
+  const cached = loadBookingDisplayMeta(appointmentId);
+  const doctorName = (fromApi.doctorName || cached?.doctorName || "The doctor").trim();
+  const date = (fromApi.date || cached?.date || "").trim();
+  const time = (fromApi.time || cached?.time || "").trim();
+  return {
+    doctorName: doctorName || "The doctor",
+    date: date || "your chosen date",
+    time: time || "your chosen time",
+  };
+}
+
+/** Extract appointment id from POST /appointments response (varied backends). */
+export function extractAppointmentIdFromCreateResponse(res: unknown): string | undefined {
+  const r = asRecord(res) ?? {};
+  const data = asRecord(r.data) ?? r;
+  const id =
+    pickStr(r, ["appointmentId"]) ||
+    pickStr(data, ["appointmentId", "_id", "id"]) ||
+    (typeof data._id === "string" ? data._id : undefined) ||
+    (typeof r._id === "string" ? r._id : undefined);
+  return id?.trim() || undefined;
+}
 
 // Function to check appointment status from the API
 export const checkAppointmentStatus = async (appointmentId: string): Promise<any> => {

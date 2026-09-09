@@ -29,8 +29,15 @@ export async function setupVite(app: Express, server: Server) {
     allowedHosts: true,
   };
 
+  // vite.config.ts exports an async config function. Resolve it before
+  // creating the middleware server so its `root: client` setting is kept.
+  const resolvedViteConfig =
+    typeof viteConfig === "function"
+      ? await viteConfig({ command: "serve", mode: "development" })
+      : viteConfig;
+
   const vite = await createViteServer({
-    ...viteConfig,
+    ...resolvedViteConfig,
     configFile: false,
     customLogger: {
       ...viteLogger,

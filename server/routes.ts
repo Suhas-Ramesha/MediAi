@@ -160,9 +160,35 @@ function generateImageAnalysisResponse(imageType: string): any {
   }
 }
 
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:5050";
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // prefix all routes with /api
   const apiRouter = (route: string) => `/api${route}`;
+
+  app.post(apiRouter("/risk/predict"), async (req: Request, res: Response) => {
+    try {
+      const r = await fetch(`${ML_SERVICE_URL}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body),
+      });
+      const text = await r.text();
+      let data: unknown;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { message: text };
+      }
+      return res.status(r.status).json(data);
+    } catch (error) {
+      console.error("ML proxy error:", error);
+      return res.status(503).json({
+        message:
+          "Risk estimation service is unavailable. Start the Python ML service (ml_service) on port 5050 or set ML_SERVICE_URL.",
+      });
+    }
+  });
 
   // Text analysis endpoint
   app.post(apiRouter("/analyze/text"), async (req: Request, res: Response) => {

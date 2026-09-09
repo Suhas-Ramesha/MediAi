@@ -1,15 +1,17 @@
 import React, { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { motion } from "framer-motion";
 import { useLocation } from "wouter";
+
+import { useAuth } from "@/hooks/use-auth";
 import Header from "@/components/Header";
 import UserProfile from "@/components/UserProfile";
 import RecentConsultations from "@/components/RecentConsultations";
 import MedicalChat from "@/components/MedicalChat";
-import Footer from "@/components/Footer";
+import GuidedTour from "@/components/GuidedTour";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConsultations } from "@/hooks/useFirebase";
 import { Consultation } from "@/lib/types";
-import AuroraUI from "@/components/AuroraUI";
-import GuidedTour from "@/components/GuidedTour";
+import { slideIn, transition } from "@/lib/motion";
 
 function DashboardContent({
   userProfile,
@@ -18,7 +20,8 @@ function DashboardContent({
   userProfile: any;
   consultations: Consultation[];
 }) {
-  const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
+  const [selectedConsultation, setSelectedConsultation] =
+    useState<Consultation | null>(null);
   const [showTour, setShowTour] = useState(false);
 
   const handleSelectChat = (consultation: Consultation) => {
@@ -28,95 +31,153 @@ function DashboardContent({
   const headerUser = {
     name: userProfile?.name || "User",
     email: userProfile?.email || "",
-    profileImage: userProfile?.photoURL || undefined
+    profileImage: userProfile?.photoURL || undefined,
   };
 
+  const firstName = headerUser.name.split(" ")[0];
+
   return (
-    <AuroraUI>
+    <div className="min-h-screen bg-background">
       <GuidedTour forceStart={showTour} />
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10">
-        <Header 
-          user={headerUser} 
-          onStartTour={() => setShowTour(true)}
-        />
-        
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column */}
-            <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 shadow-lg shadow-purple-500/5 border border-white/20 user-profile-section">
-                <UserProfile user={userProfile || {}} />
-              </div>
-              
-              <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 shadow-lg shadow-purple-500/5 border border-white/20 recent-consultations">
-                <RecentConsultations 
-                  consultations={consultations} 
-                  onSelectChat={handleSelectChat}
-                />
-              </div>
-            </div>
-            
-            {/* Right Column - Chat Area */}
-            <div className="lg:col-span-2">
-              <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 shadow-lg shadow-purple-500/5 border border-white/20 min-h-[calc(100vh-12rem)] chat-interface">
-                <MedicalChat selectedConsultation={selectedConsultation} />
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    </AuroraUI>
+
+      <Header user={headerUser} onStartTour={() => setShowTour(true)} />
+
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={transition.slow}
+          className="mb-6"
+        >
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Good to see you, {firstName}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Describe how you feel, run a risk assessment, or pick up a previous
+            consultation.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Left column */}
+          <motion.div
+            variants={slideIn("left")}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6 lg:col-span-1"
+          >
+            <section className="user-profile-section surface p-6">
+              <UserProfile user={userProfile || {}} />
+            </section>
+
+            <section className="recent-consultations surface p-6">
+              <RecentConsultations
+                consultations={consultations}
+                onSelectChat={handleSelectChat}
+              />
+            </section>
+          </motion.div>
+
+          {/* Chat column */}
+          <motion.div
+            variants={slideIn("right")}
+            initial="hidden"
+            animate="visible"
+            className="relative h-[calc(100vh-13rem)] min-h-[600px] lg:col-span-2"
+          >
+            <MedicalChat selectedConsultation={selectedConsultation} />
+          </motion.div>
+        </div>
+      </main>
+    </div>
   );
 }
 
-// Add this helper function at the top of the file
+/** Designed loading state, rather than the word "Loading". */
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="h-14 border-b border-border" />
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <Skeleton className="h-7 w-64" />
+        <Skeleton className="mt-2 h-4 w-96 max-w-full" />
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-1">
+            <div className="surface space-y-4 p-6">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-44" />
+                </div>
+              </div>
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+            <div className="surface space-y-3 p-6">
+              <Skeleton className="h-4 w-40" />
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </div>
+          <div className="lg:col-span-2">
+            <div className="surface h-[calc(100vh-13rem)] min-h-[600px] p-6">
+              <Skeleton className="h-5 w-48" />
+              <div className="mt-6 space-y-4">
+                <Skeleton className="ml-auto h-12 w-2/3 rounded-2xl" />
+                <Skeleton className="h-24 w-4/5 rounded-2xl" />
+                <Skeleton className="ml-auto h-10 w-1/2 rounded-2xl" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 const formatArrayField = (field: any): string => {
-  if (!field) return '';
-  if (Array.isArray(field)) return field.join(', ');
-  if (typeof field === 'string') return field;
-  return '';
+  if (!field) return "";
+  if (Array.isArray(field)) return field.join(", ");
+  if (typeof field === "string") return field;
+  return "";
 };
 
 export default function Dashboard() {
   const { currentUser, userProfile, isLoading } = useAuth();
   const [, setLocation] = useLocation();
-  
-  const { data: consultations = [], isLoading: isLoadingConsultations } = useConsultations(
-    currentUser?.uid
-  );
-  
-  // Format consultations for display
-  const formattedConsultations: Consultation[] = consultations.map(c => ({
+
+  const { data: consultations = [], isLoading: isLoadingConsultations } =
+    useConsultations(currentUser?.uid);
+
+  const formattedConsultations: Consultation[] = consultations.map((c) => ({
     id: c.id,
-    chatId: c.id, // Use the same ID for chatId
+    chatId: c.id,
     title: c.title,
     date: c.date instanceof Date ? c.date : new Date(c.date),
-    status: c.status === 'ongoing' ? 'active' : 'completed',
-    userId: currentUser?.uid || '',
-    messages: [], // Initialize with empty messages array
+    status: c.status === "ongoing" ? "active" : "completed",
+    userId: currentUser?.uid || "",
+    messages: [],
     symptoms: formatArrayField(c.symptoms),
-    diagnosis: c.diagnosis || '',
-    recommendations: formatArrayField(c.recommendations)
+    diagnosis: c.diagnosis || "",
+    recommendations: formatArrayField(c.recommendations),
   }));
-  
+
   React.useEffect(() => {
     if (!isLoading && !currentUser) {
       setLocation("/");
     }
   }, [isLoading, currentUser, setLocation]);
-  
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+
+  if (isLoading || (currentUser && isLoadingConsultations)) {
+    return <DashboardSkeleton />;
   }
-  
+
   if (!currentUser) {
-    return <div className="flex items-center justify-center min-h-screen">Redirecting...</div>;
+    return <DashboardSkeleton />;
   }
-  
-  if (isLoadingConsultations) {
-    return <div className="flex items-center justify-center min-h-screen">Loading data...</div>;
-  }
-  
+
   return (
     <DashboardContent
       userProfile={userProfile}

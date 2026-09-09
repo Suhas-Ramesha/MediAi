@@ -4,4 +4,39 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
-src/.env
+
+# ---- Secrets: never commit real credentials ----
+.env
+.env.*
+!.env.example
+client/.env
+client/.env.*
+!client/.env.example
+*.pem
+*.key
+serviceAccountKey*.json
+firebase-adminsdk*.json
+
+# ---- Python virtual environments ----
+venv/
+.venv/
+ml_service/.venv/
+ml_service/venv/
+__pycache__/
+*.py[cod]
+
+# ---- ML artifacts ----
+ml_service/models/*.joblib
+ml_service/models/*.pkl
+.ipynb_checkpoints/
+
+# ---- Editor / local ----
+.vscode/settings.json
+.breakpoints
+
+# ---- Agent design skills ----
+# The skill content is committed so the whole team gets it, but the detector
+# binary is platform-specific and ~16MB. Re-fetch it per machine with
+# `npx impeccable install --providers=cursor --scope=project`.
+.cursor/skills/*/scripts/bin/
+.impeccable/

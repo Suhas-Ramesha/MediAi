@@ -360,7 +360,7 @@ export default function Appointments() {
   };
   
   return (
-    <div className="bg-slate-100 min-h-screen flex flex-col text-slate-800">
+    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col text-slate-800 dark:text-slate-200">
       <Header user={headerUser} />
       
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">

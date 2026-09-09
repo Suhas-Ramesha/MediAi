@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MediAI — Project Strategy, Market Analysis and Feature Roadmap</title>
+<style>
+  :root {
+    --ink: #14171a;
+    --ink-2: #3d4448;
+    --ink-3: #6b7478;
+    --line: #e2e6e9;
+    --line-2: #cfd5d9;
+    --accent: #1f5fd0;
+    --bg: #ffffff;
+    --bg-soft: #f6f8fa;
+    --danger: #b3261e;
+    --warn: #8a6100;
+    --ok: #1a6f3c;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .page { max-width: 900px; margin: 0 auto; padding: 56px 40px 96px; }
+
+  /* ---------- Typography ---------- */
+  h1 {
+    font-size: 32px; line-height: 1.2; letter-spacing: -0.02em;
+    margin: 0 0 12px; font-weight: 700;
+  }
+  h2 {
+    font-size: 22px; line-height: 1.3; letter-spacing: -0.01em;
+    margin: 52px 0 12px; font-weight: 650;
+    padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  }
+  h3 { font-size: 17px; margin: 32px 0 8px; font-weight: 650; }
+  h4 { font-size: 15px; margin: 20px 0 6px; font-weight: 650; }
+  p { margin: 0 0 14px; }
+  .lede { font-size: 17px; color: var(--ink-2); margin-bottom: 24px; }
+  .muted { color: var(--ink-3); }
+  .small { font-size: 13px; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.88em; background: var(--bg-soft);
+    border: 1px solid var(--line); border-radius: 3px; padding: 1px 5px;
+  }
+  strong { font-weight: 650; }
+
+  /* ---------- Cover ---------- */
+  .cover { border-bottom: 2px solid var(--ink); padding-bottom: 28px; margin-bottom: 8px; }
+  .cover .kicker {
+    text-transform: uppercase; letter-spacing: 0.09em; font-size: 11px;
+    font-weight: 650; color: var(--accent); margin-bottom: 14px;
+  }
+  .cover .meta { font-size: 13px; color: var(--ink-3); margin-top: 18px; }
+
+  /* ---------- TOC ---------- */
+  .toc { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 6px; padding: 20px 24px; margin: 32px 0; }
+  .toc h4 { margin: 0 0 10px; }
+  .toc ol { margin: 0; padding-left: 20px; }
+  .toc li { margin-bottom: 5px; }
+  .toc a { color: var(--ink-2); text-decoration: none; }
+  .toc a:hover { color: var(--accent); text-decoration: underline; }
+
+  /* ---------- Callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--line-2); background: var(--bg-soft);
+    padding: 14px 18px; margin: 20px 0; border-radius: 0 4px 4px 0;
+  }
+  .callout .title { font-weight: 650; margin-bottom: 4px; }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout.info { border-left-color: var(--accent); }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout.danger { border-left-color: var(--danger); }
+  .callout.ok { border-left-color: var(--ok); }
+
+  .quote {
+    background: var(--bg-soft); border: 1px solid var(--line);
+    border-radius: 6px; padding: 22px 24px; margin: 20px 0;
+    font-size: 15.5px;
+  }
+  .quote p:last-child { margin-bottom: 0; }
+
+  /* ---------- Stats ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 24px 0; }
+  .stat { border: 1px solid var(--line); border-radius: 6px; padding: 14px; text-align: center; }
+  .stat .v { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+  .stat .l { font-size: 11.5px; color: var(--ink-3); margin-top: 3px; line-height: 1.35; }
+  .stat.danger .v { color: var(--danger); }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--ok); }
+
+  /* ---------- Tables ---------- */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 22px; font-size: 13.5px; }
+  th {
+    text-align: left; font-weight: 650; font-size: 11.5px;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3);
+    border-bottom: 1px solid var(--line-2); padding: 8px 10px; vertical-align: bottom;
+  }
+  td { border-bottom: 1px solid var(--line); padding: 9px 10px; vertical-align: top; }
+  tbody tr:nth-child(even) { background: #fafbfc; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  td.ctr, th.ctr { text-align: center; white-space: nowrap; }
+  .tag { font-size: 11px; font-weight: 650; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line-2); white-space: nowrap; }
+  .tag.open { color: var(--ok); border-color: #b7dcc4; background: #f1f9f4; }
+  .tag.closed { color: var(--ink-3); }
+  .tag.gap { color: var(--danger); border-color: #edc4c1; background: #fdf4f3; }
+
+  /* ---------- Charts ---------- */
+  .chart { margin: 18px 0 8px; }
+  .bar-row { display: grid; grid-template-columns: 190px 1fr 56px; gap: 10px; align-items: center; margin-bottom: 6px; }
+  .bar-row .bar-label { font-size: 12.5px; color: var(--ink-2); text-align: right; line-height: 1.25; }
+  .bar-track { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 3px; height: 17px; position: relative; overflow: hidden; }
+  .bar { height: 100%; background: var(--accent); }
+  .bar.b2 { background: #8aa9de; }
+  .bar.ok { background: var(--ok); }
+  .bar.danger { background: var(--danger); }
+  .bar.warn { background: #c99a2e; }
+  .bar-row .bar-value { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 10px 0 4px 200px; font-size: 12px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+  .caption { font-size: 11.5px; color: var(--ink-3); margin: 6px 0 0 200px; line-height: 1.45; }
+
+  /* ---------- Feature blocks ---------- */
+  .feature { border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; margin: 16px 0; }
+  .feature .fhead { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; margin-bottom: 8px; }
+  .feature .fname { font-weight: 650; font-size: 16px; }
+  .feature .fmeta { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; border: 1px solid var(--line); border-radius: 10px; padding: 1px 8px; }
+  .feature .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 12px; }
+  .flabel { font-size: 11.5px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); margin-bottom: 3px; }
+  .fwhy { border-left: 2px solid var(--accent); padding-left: 12px; margin: 12px 0; }
+
+  /* ---------- Print ---------- */
+  .toolbar {
+    position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,0.94);
+    backdrop-filter: blur(6px); border-bottom: 1px solid var(--line);
+    padding: 10px 40px; display: flex; align-items: center; gap: 14px;
+  }
+  .toolbar .t { font-size: 12.5px; color: var(--ink-3); }
+  .btn {
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 5px; padding: 6px 14px;
+  }
+  .btn:hover { background: #1a51b3; }
+
+  @media print {
+    .toolbar { display: none; }
+    .page { padding: 0; max-width: none; }
+    body { font-size: 10.5pt; }
+    h1 { font-size: 21pt; }
+    h2 { font-size: 14pt; margin-top: 26pt; page-break-after: avoid; }
+    h3, h4 { page-break-after: avoid; }
+    .feature, .callout, .quote, .chart { page-break-inside: avoid; }
+    tr { page-break-inside: avoid; }
+    thead { display: table-header-group; }
+    .stats { page-break-inside: avoid; }
+    .part-break { page-break-before: always; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  @media (max-width: 720px) {
+    .page { padding: 28px 18px 60px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .feature .grid2 { grid-template-columns: 1fr; }
+    .bar-row { grid-template-columns: 120px 1fr 46px; }
+    .legend, .caption { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button class="btn" onclick="window.print()">Save as PDF</button>
+  <span class="t">Opens your browser print dialog — choose "Save as PDF" as the destination.</span>
+</div>
+
+<div class="page">
+
+<!-- ============================= COVER ============================= -->
+<div class="cover">
+  <div class="kicker">Final Year Major Project — Strategy Document</div>
+  <h1>MediAI: Codebase Audit, Market Analysis and Feature Roadmap</h1>
+  <p class="lede">An evidence-based assessment of what the project currently does, how it sits against
+  shipping products in the Indian and global markets, and a prioritised set of
+  features designed to make it a defensible AI systems project.</p>
+  <div class="meta">
+    Prepared from a full source-code audit of the MediAI repository, a review of
+    six consumer symptom-checking products, the Indian EMR market, and five 2026
+    medical-AI benchmark papers.
+  </div>
+</div>
+
+<div class="toc">
+  <h4>Contents</h4>
+  <ol>
+    <li><a href="#audit">What the project claims versus what the code does</a></li>
+    <li><a href="#market">The market: consumer symptom checkers</a></li>
+    <li><a href="#gap">The research gap that is actually open</a></li>
+    <li><a href="#healthplix">HealthPlix and the Indian EMR landscape</a></li>
+    <li><a href="#journey">The three uncovered windows of the care journey</a></li>
+    <li><a href="#before">Features: before the visit</a></li>
+    <li><a href="#between">Features: between visits</a></li>
+    <li><a href="#after">Features: after the visit</a></li>
+    <li><a href="#plan">Recommended build plan and minimum viable set</a></li>
+    <li><a href="#metrics">Datasets and evaluation metrics</a></li>
+    <li><a href="#pitch">Positioning and sources</a></li>
+  </ol>
+</div>
+
+<!-- ============================= 1. AUDIT ============================= -->
+<h2 id="audit">1. What the project claims versus what the code does</h2>
+
+<div class="callout warn">
+  <div class="title">Summary of findings</div>
+  <p>The project is not small, but every AI behaviour in it is a network call to a
+  third-party hosted model. There is no model in the repository that was trained,
+  tuned or evaluated by the team. That is the substantive weakness, and it is
+  fixable.</p>
+</div>
+
+<div class="stats">
+  <div class="stat danger"><div class="v">0</div><div class="l">Models trained by the team</div></div>
+  <div class="stat warn"><div class="v">3 of 5</div><div class="l">Risk models actually working</div></div>
+  <div class="stat danger"><div class="v">1</div><div class="l">Messages of context sent to the LLM</div></div>
+  <div class="stat danger"><div class="v">0</div><div class="l">Evaluation metrics measured</div></div>
+</div>
+
+<table>
+  <thead>
+    <tr><th style="width:20%">Claimed</th><th style="width:52%">What actually happens</th><th style="width:28%">Evidence</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>CNN for medical image scanning</strong></td>
+      <td>No CNN exists. Images are base64-encoded and sent to the Gemini vision API.
+      No TensorFlow, PyTorch, Keras or ONNX model or weights anywhere in the repository.</td>
+      <td><code>client/src/lib/aiService.ts:259-324</code></td>
+    </tr>
+    <tr>
+      <td><strong>5 ML models for disease prediction</strong></td>
+      <td>Three work (diabetes, heart, liver). Kidney returns HTTP 501. All three are
+      remote Hugging Face Gradio Spaces called over the network, not models the team
+      trained or serves.</td>
+      <td><code>ml_service/main.py:45-79, 629-633</code></td>
+    </tr>
+    <tr>
+      <td><strong>Explainable risk factors with weights</strong></td>
+      <td>The weights are hardcoded literals inside if/else branches — glucose above 125
+      yields a fixed 0.35. No SHAP, no LIME, no feature importances from any model.</td>
+      <td><code>ml_service/main.py:211-562</code></td>
+    </tr>
+    <tr>
+      <td><strong>Risk percentage from the model</strong></td>
+      <td>The percentage is extracted with a regular expression from the Gradio Space's
+      rendered markdown text. If that Space changes its wording, the numbers silently break.</td>
+      <td><code>ml_service/main.py:88-182</code></td>
+    </tr>
+    <tr>
+      <td><strong>Conversational AI assistant</strong></td>
+      <td>Each turn sends only the latest user message to Gemini. No prior turns are
+      included, so the model is effectively stateless. This is the root cause of the
+      assistant failing to ask coherent follow-up questions.</td>
+      <td><code>client/src/lib/aiService.ts:138-148</code></td>
+    </tr>
+    <tr>
+      <td><strong>AI-powered analysis</strong></td>
+      <td>Single-shot prompt and print. No retrieval, no vector store, no function
+      calling, no tool use, no agent loop, no evaluation harness.</td>
+      <td><code>client/src/lib/aiService.ts</code></td>
+    </tr>
+    <tr>
+      <td><strong>Encrypted, enterprise-grade security</strong></td>
+      <td>Marketing copy only. No encryption implementation exists. The Gemini API key
+      is compiled into the client bundle and is readable by any visitor.</td>
+      <td><code>client/src/lib/aiService.ts:10</code></td>
+    </tr>
+    <tr>
+      <td><strong>Voice analysis</strong></td>
+      <td>Browser Web Speech API transcription with a hardcoded <code>en-US</code> locale.
+      A real speech SDK is present in dependencies but never imported.</td>
+      <td><code>client/src/lib/speechService.ts:14-16</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout danger">
+  <div class="title">Immediate security action, independent of any roadmap decision</div>
+  <p>The Gemini API key ships inside the client-side JavaScript bundle and is
+  readable by anyone who loads the site. All model calls should be moved behind the
+  Express server and the key rotated. The same applies to any other credentials
+  committed to configuration files.</p>
+</div>
+
+<!-- ============================= 2. MARKET ============================= -->
+<h2 id="market" class="part-break">2. The market: consumer symptom checkers</h2>
+
+<p>Consumer symptom checking is a mature, crowded and regulated category. Accuracy
+across the leading products has plateaued in the seventies, and the products are
+backed by companies with clinical teams and regulatory budgets.</p>
+
+<div class="chart">
+  <div class="legend">
+    <span><i class="swatch" style="background:#1f5fd0"></i> Top-3 diagnostic accuracy (%)</span>
+    <span><i class="swatch" style="background:#1a6f3c"></i> Emergency recognition (% of 20 red-flag cases)</span>
+  </div>
+
+  <div class="bar-row"><div class="bar-label">Isabel DDx</div><div class="bar-track"><div class="bar" style="width:79%"></div></div><div class="bar-value">79%</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar ok" style="width:90%"></div></div><div class="bar-value">90%</div></div>
+
+  <div class="bar-row"><div class="bar-label">Ada Health</div><div class="bar-track"><div class="bar" style="width:76%"></div></div><div class="bar-value">76%</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar ok" style="width:90%"></div></div><div class="bar-value">90%</div></div>
+
+  <div class="bar-row"><div class="bar-label">K Health</div><div class="bar-track"><div class="bar" style="width:74%"></div></div><div class="bar-value">74%</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar ok" style="width:80%"></div></div><div class="bar-value">80%</div></div>
+
+  <div class="bar-row"><div class="bar-label">Babylon Health</div><div class="bar-track"><div class="bar" style="width:68%"></div></div><div class="bar-value">68%</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar ok" style="width:75%"></div></div><div class="bar-value">75%</div></div>
+
+  <div class="bar-row"><div class="bar-label">Buoy Health</div><div class="bar-track"><div class="bar" style="width:63%"></div></div><div class="bar-value">63%</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar ok" style="width:70%"></div></div><div class="bar-value">70%</div></div>
+
+  <div class="bar-row"><div class="bar-label">WebMD</div><div class="bar-track"><div class="bar" style="width:54%"></div></div><div class="bar-value">54%</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar ok" style="width:55%"></div></div><div class="bar-value">55%</div></div>
+
+  <div class="caption">X axis: percentage of test cases (%). Y axis: product. Source: independent
+  eight-app accuracy review, 2026. Emergency recognition normalised from a
+  20-vignette red-flag battery.</div>
+</div>
+
+<div class="callout info">
+  <div class="title">The regulatory constraint</div>
+  <p>Under EU MDR Rule 11, software that outputs a differential diagnosis or a triage
+  decision is classified as a Class IIa medical device, and a disclaimer does not
+  change the intended purpose. Competing on diagnostic accuracy therefore walks the
+  project into a regulated category it cannot ship in. Competing on
+  <strong>verifiability</strong> does not.</p>
+</div>
+
+<!-- ============================= 3. GAP ============================= -->
+<h2 id="gap">3. The research gap that is actually open</h2>
+
+<p>A decade-scale benchmark of clinical practice guideline adherence evaluated eight
+leading large language models against 32,155 clinical recommendations extracted from
+3,418 guideline documents across nine countries. The result identifies a specific,
+unsolved failure mode.</p>
+
+<div class="chart">
+  <div class="legend">
+    <span><i class="swatch" style="background:#b3261e"></i> Weakest model evaluated (%)</span>
+    <span><i class="swatch" style="background:#1f5fd0"></i> Strongest model evaluated (%)</span>
+  </div>
+
+  <div class="bar-row"><div class="bar-label">Guideline detected</div><div class="bar-track"><div class="bar danger" style="width:71.1%"></div></div><div class="bar-value">71.1%</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar" style="width:89.6%"></div></div><div class="bar-value">89.6%</div></div>
+
+  <div class="bar-row"><div class="bar-label">Source correctly cited</div><div class="bar-track"><div class="bar danger" style="width:3.6%"></div></div><div class="bar-value">3.6%</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar" style="width:29.7%"></div></div><div class="bar-value">29.7%</div></div>
+
+  <div class="bar-row"><div class="bar-label">Guideline adhered to</div><div class="bar-track"><div class="bar danger" style="width:21.8%"></div></div><div class="bar-value">21.8%</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar" style="width:63.2%"></div></div><div class="bar-value">63.2%</div></div>
+
+  <div class="caption">X axis: percentage of 32,155 clinical recommendations (%). Y axis: capability
+  stage. Source: decade-scale clinical practice guideline benchmark, 8 leading LLMs,
+  3,418 guideline documents, 9 countries and 2 international organisations.</div>
+</div>
+
+<div class="callout ok">
+  <div class="title">Reposition the project in one sentence</div>
+  <p>Not "an AI health assistant" — those exist. Instead: <strong>a health AI that can
+  prove every statement it makes, ask the questions that actually reduce uncertainty,
+  and report its own failure rate.</strong> Anyone can call a language model. Almost
+  nobody builds the verification layer around it, and that layer is measurable,
+  defensible and squarely an AI systems contribution.</p>
+</div>
+
+<!-- ============================= 4. HEALTHPLIX ============================= -->
+<h2 id="healthplix" class="part-break">4. HealthPlix and the Indian EMR landscape</h2>
+
+<p>HealthPlix is frequently cited as a comparison point for this project. It is
+important to be precise about what it actually is, because the comparison is often
+made incorrectly.</p>
+
+<table>
+  <tbody>
+    <tr><td style="width:26%"><strong>Product category</strong></td><td>Doctor-side electronic medical record system, not a patient-facing application</td></tr>
+    <tr><td><strong>Scale</strong></td><td>14,000+ doctors, 60M+ patients, 370+ cities</td></tr>
+    <tr><td><strong>Flagship AI (H.A.L.O)</strong></td><td>Ambient scribe: listens to the consultation and emits a structured prescription</td></tr>
+    <tr><td><strong>Training data</strong></td><td>100M+ consultations recorded inside their own EMR</td></tr>
+    <tr><td><strong>Other AI</strong></td><td>Drug-drug interaction alerts, clinical decision support, practice analytics</td></tr>
+    <tr><td><strong>Languages</strong></td><td>Prescription output in 14 regional languages</td></tr>
+    <tr><td><strong>Compliance</strong></td><td>Aligned with the Ayushman Bharat Digital Mission</td></tr>
+  </tbody>
+</table>
+
+<div class="callout info">
+  <div class="title">What this means strategically</div>
+  <p>HealthPlix is not a competitor to a patient assistant; it is a different product
+  class serving the doctor. The comparison is best read as an observation about where
+  clinical value sits, not as a claim that the project already exists. Competing on
+  ambient scribing against 100 million consultations of proprietary training data is
+  not viable. Competing where they have no presence is.</p>
+</div>
+
+<h3>Where the incumbents sit</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:26%">Care-journey stage</th>
+      <th style="width:20%">HealthPlix</th>
+      <th style="width:20%">Practo</th>
+      <th style="width:20%">Eka Care</th>
+      <th class="ctr" style="width:14%">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Before the visit</strong></td><td class="muted">Not covered</td><td class="muted">Discovery and booking only</td><td class="muted">Not covered</td><td class="ctr"><span class="tag open">Open</span></td></tr>
+    <tr><td><strong>During the visit</strong></td><td class="muted">Ambient scribe, Rx, CDS</td><td class="muted">EMR and teleconsult</td><td class="muted">AI voice documentation</td><td class="ctr"><span class="tag closed">Crowded</span></td></tr>
+    <tr><td><strong>Prescription written</strong></td><td class="muted">DDI within own data</td><td class="muted">Basic</td><td class="muted">Basic</td><td class="ctr"><span class="tag closed">Crowded</span></td></tr>
+    <tr><td><strong>Between visits</strong></td><td class="muted">Reminders only</td><td class="muted">Reminders only</td><td class="muted">Reminders only</td><td class="ctr"><span class="tag open">Open</span></td></tr>
+    <tr><td><strong>Did the treatment work</strong></td><td class="muted">Not measured</td><td class="muted">Not measured</td><td class="muted">Not measured</td><td class="ctr"><span class="tag open">Open</span></td></tr>
+    <tr><td><strong>Across different doctors</strong></td><td class="muted">Blind outside own network</td><td class="muted">Blind outside own network</td><td class="muted">Partial via ABDM</td><td class="ctr"><span class="tag open">Open</span></td></tr>
+  </tbody>
+</table>
+
+<div class="callout ok">
+  <div class="title">The structural advantage available to a patient-side product</div>
+  <p>An EMR vendor only ever observes what happens inside its own software. An Indian
+  patient typically consults three or four doctors across unconnected systems, takes
+  medicines that nobody reconciles, and spends 364 days a year outside a clinic. Only
+  the patient holds the complete record. A patient-side application can therefore
+  build things that are structurally impossible for an EMR vendor, regardless of how
+  much capital or data that vendor has.</p>
+</div>
+
+<!-- ============================= 5. JOURNEY ============================= -->
+<h2 id="journey" class="part-break">5. The three uncovered windows</h2>
+
+<div class="chart">
+  <div class="legend">
+    <span><i class="swatch" style="background:#b3261e"></i> Days of meaningful patient contact today</span>
+    <span><i class="swatch" style="background:#1a6f3c"></i> Days of contact with the proposed features</span>
+  </div>
+
+  <div class="bar-row"><div class="bar-label">Before visit</div><div class="bar-track"><div class="bar danger" style="width:0%"></div></div><div class="bar-value">0 d</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar ok" style="width:3.3%"></div></div><div class="bar-value">3 d</div></div>
+
+  <div class="bar-row"><div class="bar-label">During visit</div><div class="bar-track"><div class="bar danger" style="width:1.1%"></div></div><div class="bar-value">1 d</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar ok" style="width:1.1%"></div></div><div class="bar-value">1 d</div></div>
+
+  <div class="bar-row"><div class="bar-label">Between visits</div><div class="bar-track"><div class="bar danger" style="width:0%"></div></div><div class="bar-value">0 d</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar ok" style="width:66.7%"></div></div><div class="bar-value">60 d</div></div>
+
+  <div class="bar-row"><div class="bar-label">After visit</div><div class="bar-track"><div class="bar danger" style="width:0%"></div></div><div class="bar-value">0 d</div></div>
+  <div class="bar-row"><div class="bar-label"></div><div class="bar-track"><div class="bar ok" style="width:100%"></div></div><div class="bar-value">90 d</div></div>
+
+  <div class="caption">X axis: days of meaningful patient contact (days, linear scale, maximum 90).
+  Y axis: care-journey stage. Present-day figures reflect reminder-only contact,
+  which carries no data capture. Source: feature coverage comparison across
+  HealthPlix, Practo and Eka Care.</div>
+</div>
+
+<p>The entire industry competes over the single covered day. The roughly 150
+uncovered days on either side of it are where the data lives, and data is the only
+asset that compounds.</p>
+
+<!-- ============================= 6. BEFORE ============================= -->
+<h2 id="before">6. Features: before the visit</h2>
+<p class="muted small">Window: booking confirmed to walking in, typically hours to days.
+Currently the entire state of the art is a reminder notification. The patient is at
+home, unhurried and willing to answer questions; the doctor, who will have seven
+minutes, is not.</p>
+
+<div class="feature">
+  <div class="fhead"><span class="fname">Vitals from the phone camera (remote photoplethysmography)</span><span class="fmeta">looks 10/10 · 3 weeks</span></div>
+  <p>The patient looks into the front camera for 30 seconds and the application
+  estimates heart rate and respiratory rate from micro-variations in facial skin
+  colour caused by blood flow.</p>
+  <div class="fwhy">
+    <div class="flabel">Why nobody has it</div>
+    <p class="small">It sounds as though it cannot work, so no product in the Indian consumer
+    market ships it. The underlying signal-processing approach is well established and
+    published, and it requires no hardware the patient does not already own.</p>
+  </div>
+  <div class="grid2">
+    <div><div class="flabel">How you build it</div><p class="small">Detect the face, average the green channel over a
+    forehead region across frames, detrend and bandpass the resulting one-dimensional
+    signal to 0.7–4 Hz, then take the dominant FFT peak. The published CHROM and POS
+    methods are a few hundred lines. Validate against an inexpensive pulse oximeter.</p></div>
+    <div><div class="flabel">Stack</div><p class="small">OpenCV or MediaPipe face mesh, SciPy signal processing, FFT</p></div>
+  </div>
+</div>
+
+<div class="feature">
+  <div class="fhead"><span class="fname">Come-prepared engine: predict the tests the doctor will order</span><span class="fmeta">looks 7/10 · 2 weeks</span></div>
+  <p>From the intake conversation, predict the laboratory tests most likely to be
+  ordered and advise the patient to complete them beforehand, or to arrive fasting.</p>
+  <div class="fwhy">
+    <div class="flabel">Why nobody has it</div>
+    <p class="small">Possibly the highest practical-value item on this list for Indian patients,
+    and entirely absent from the market. At present a patient travels to a clinic, is
+    told to return fasting, and loses a second day and a second consultation fee.</p>
+  </div>
+  <div class="grid2">
+    <div><div class="flabel">How you build it</div><p class="small">Retrieve the workup section of the relevant guideline
+    for the presenting complaint and extract the recommended investigations. A retrieval
+    and extraction task over a corpus already being built, not a prediction model.</p></div>
+    <div><div class="flabel">Stack</div><p class="small">Guideline retrieval, structured extraction, fasting-rule table</p></div>
+  </div>
+</div>
+
+<table>
+  <thead><tr><th style="width:22%">Also strong in this window</th><th style="width:38%">What it does</th><th style="width:26%">Stack</th><th class="ctr">Looks</th><th class="num">Weeks</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Wrong-specialty guard</strong></td><td>Verifies the chosen specialty matches the complaint before booking is confirmed. Self-referral to the wrong specialist is routine in India and costs a wasted fee plus weeks of delay.</td><td class="muted">Text classifier, existing booking flow</td><td class="ctr">6/10</td><td class="num">1</td></tr>
+    <tr><td><strong>Symptom timeline reconstruction</strong></td><td>Converts a rambling narrative into a chronological chart of onset, progression, aggravating factors and self-medication. Doctors think in timelines; patients speak in fragments.</td><td class="muted">Schema extraction, temporal normalisation, SVG</td><td class="ctr">7/10</td><td class="num">2</td></tr>
+    <tr><td><strong>Autonomous intake agent</strong></td><td>Interviews the patient before the appointment and produces a one-page doctor brief with a ranked differential and flagged red flags.</td><td class="muted">Agent loop, structured output, FHIR-shaped brief</td><td class="ctr">7/10</td><td class="num">2</td></tr>
+    <tr><td><strong>Waiting-window escalation</strong></td><td>Re-evaluates urgency during the wait. If a red flag appears, escalates rather than letting the patient sit on a three-day-old appointment.</td><td class="muted">Rule engine, scheduled re-evaluation</td><td class="ctr">8/10</td><td class="num">2</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================= 7. BETWEEN ============================= -->
+<h2 id="between" class="part-break">7. Features: between visits</h2>
+<p class="muted small">Window: day two to day sixty, by far the longest. Currently only
+fixed-schedule medication reminders, sent identically to everyone, with no observation
+of whether anything worked. This is where deterioration, side effects and silent
+non-adherence all occur unobserved, and it is the only window long enough to produce
+time-series data.</p>
+
+<div class="feature">
+  <div class="fhead"><span class="fname">Passive digital phenotyping from app interaction</span><span class="fmeta">looks 10/10 · 2 weeks</span></div>
+  <p>Infer trends in wellbeing from how the patient uses the application rather than
+  what they report: typing speed, response latency, session times, message length and
+  sentiment drift.</p>
+  <div class="fwhy">
+    <div class="flabel">Why nobody has it</div>
+    <p class="small">An active research area under the name digital phenotyping, and no Indian
+    consumer health product implements it. The notable point is that the raw material is
+    already being logged.</p>
+  </div>
+  <div class="grid2">
+    <div><div class="flabel">How you build it</div><p class="small">Firestore messages already carry timestamps. Derive
+    per-session features, establish a personal baseline, then apply trend and
+    change-point detection. No new data collection is required.</p></div>
+    <div><div class="flabel">Stack</div><p class="small">Feature engineering over existing logs, Ruptures or CUSUM, sentiment model</p></div>
+  </div>
+</div>
+
+<div class="feature">
+  <div class="fhead"><span class="fname">Drug side-effect early warning</span><span class="fmeta">looks 9/10 · 2 weeks</span></div>
+  <p>When a new symptom is reported, check it against the known adverse-effect profile
+  of every drug the patient recently started and flag the probable culprit.</p>
+  <div class="fwhy">
+    <div class="flabel">Why nobody has it</div>
+    <p class="small">Interaction checkers run at the moment of prescribing. Nobody watches for
+    the effect appearing two weeks later, which is precisely when patients discontinue
+    medication silently and no clinician finds out.</p>
+  </div>
+  <div class="grid2">
+    <div><div class="flabel">How you build it</div><p class="small">SIDER is an open drug side-effect dataset. Match
+    reported symptoms against the profiles of active drugs, weighted by time since
+    initiation. Predominantly a data-joining problem.</p></div>
+    <div><div class="flabel">Stack</div><p class="small">SIDER dataset, RxNorm normalisation, temporal scoring</p></div>
+  </div>
+</div>
+
+<table>
+  <thead><tr><th style="width:22%">Also strong in this window</th><th style="width:38%">What it does</th><th style="width:26%">Stack</th><th class="ctr">Looks</th><th class="num">Weeks</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Environmental trigger inference</strong></td><td>Correlates the symptom log against local air quality, temperature and humidity to surface personal triggers. Air quality is a major driver of respiratory presentation in India and is free to query, yet no application personalises against it.</td><td class="muted">OpenAQ or CPCB feed, weather API, lagged cross-correlation</td><td class="ctr">9/10</td><td class="num">2</td></tr>
+    <tr><td><strong>Personal baseline drift detection</strong></td><td>Alerts on deviation from the individual's own baseline rather than a population reference range. A resting heart rate moving from 52 to 71 is alarming for that person and unremarkable on a population chart.</td><td class="muted">Bayesian online changepoint detection</td><td class="ctr">8/10</td><td class="num">2</td></tr>
+    <tr><td><strong>Serial photo progression measurement</strong></td><td>Tracks a wound, rash or swelling across repeat photographs and quantifies change in area and colour, without naming a diagnosis. Measuring change is more useful and considerably safer than classification, and avoids the regulatory problem.</td><td class="muted">OpenCV segmentation or SAM, colour-space analysis</td><td class="ctr">9/10</td><td class="num">3</td></tr>
+    <tr><td><strong>Recovery trajectory versus expected curve</strong></td><td>Plots reported severity against the typical recovery curve for the condition and flags materially slower progress. Nobody currently tells a patient whether their recovery is normal.</td><td class="muted">Curve fitting, guideline-derived duration priors</td><td class="ctr">8/10</td><td class="num">3</td></tr>
+    <tr><td><strong>Proactive check-in agent</strong></td><td>Initiates contact rather than waiting to be opened, referencing prior state. Requires genuine conversational memory, which the application currently lacks entirely.</td><td class="muted">Scheduled jobs, rolling clinical summary, push notification</td><td class="ctr">7/10</td><td class="num">2</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================= 8. AFTER ============================= -->
+<h2 id="after" class="part-break">8. Features: after the visit</h2>
+<p class="muted small">Window: outcome and continuity, day seven onward. Currently nothing —
+no platform in this market systematically asks whether the treatment worked. Outcome
+data is the one asset that compounds, and no incumbent is collecting it because they
+lose the patient at the clinic door.</p>
+
+<div class="feature">
+  <div class="fhead"><span class="fname">Causal treatment effectiveness across your own users</span><span class="fmeta">looks 10/10 · 3 weeks</span></div>
+  <p>For patients with similar presentations, how long did symptoms actually take to
+  resolve under each treatment approach, adjusted so that sicker patients do not make
+  effective treatments appear worse.</p>
+  <div class="fwhy">
+    <div class="flabel">Why nobody has it</div>
+    <p class="small">This is the data flywheel absent from the market, because nobody collects
+    patient-reported outcomes after the visit. Naive averages would be misleading, and
+    correcting for that confounding is the substantive contribution.</p>
+  </div>
+  <div class="grid2">
+    <div><div class="flabel">How you build it</div><p class="small">Propensity score matching or inverse probability
+    weighting over the outcome table. DoWhy and EconML implement the estimators; the work
+    is defining treatment, outcome and confounders honestly and stating the limitations
+    explicitly.</p></div>
+    <div><div class="flabel">Stack</div><p class="small">DoWhy or EconML, propensity matching, outcome schema</p></div>
+  </div>
+</div>
+
+<div class="feature">
+  <div class="fhead"><span class="fname">Patient-reported outcome dashboard for the doctor</span><span class="fmeta">looks 8/10 · 2 weeks</span></div>
+  <p>Shows the doctor what happened after their patients left: of the last fifty with a
+  given presentation, what proportion reported resolution by day seven.</p>
+  <div class="fwhy">
+    <div class="flabel">Why nobody has it</div>
+    <p class="small">Doctors almost never receive outcome feedback. EMR analytics report volume
+    and revenue, not recovery, because the EMR loses the patient at the door. This is also
+    the feature that drives doctor-side adoption of the application.</p>
+  </div>
+  <div class="grid2">
+    <div><div class="flabel">How you build it</div><p class="small">Aggregate follow-up responses per presentation. The
+    difficult part is raising follow-up response rates, which the proactive check-in agent
+    addresses.</p></div>
+    <div><div class="flabel">Stack</div><p class="small">Aggregation over outcome table, doctor-side view, consent model</p></div>
+  </div>
+</div>
+
+<table>
+  <thead><tr><th style="width:22%">Also strong in this window</th><th style="width:38%">What it does</th><th style="width:26%">Stack</th><th class="ctr">Looks</th><th class="num">Weeks</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Second-opinion divergence detector</strong></td><td>When a patient consults two doctors for the same problem, detects where the plans disagree on drug, dose, duration or investigation and presents the difference neutrally. Structurally impossible for an EMR vendor, since each sees only its own consultations.</td><td class="muted">Plan normalisation, structured diff, RxNorm equivalence</td><td class="ctr">9/10</td><td class="num">2</td></tr>
+    <tr><td><strong>Prescription comprehension verifier</strong></td><td>Checks immediately after the visit whether the patient understood dose, timing and duration, and corrects misunderstandings. Misunderstanding of instructions is well documented and almost never measured.</td><td class="muted">Prescription parsing, question generation, scoring</td><td class="ctr">7/10</td><td class="num">2</td></tr>
+    <tr><td><strong>Follow-up necessity predictor</strong></td><td>Predicts whether a return visit is actually required, avoiding unnecessary trips without missing necessary ones. Valuable where patients travel several hours to a clinic.</td><td class="muted">Gradient boosting over outcome table, calibration curve</td><td class="ctr">7/10</td><td class="num">2</td></tr>
+    <tr><td><strong>Literacy-adapted multilingual instructions</strong></td><td>Rewrites the treatment plan into the patient's language at an actionable reading level, with readability measured before and after. Prescriptions get translated but not simplified.</td><td class="muted">IndicTrans2, readability scoring, text-to-speech</td><td class="ctr">6/10</td><td class="num">2</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================= 9. PLAN ============================= -->
+<h2 id="plan" class="part-break">9. Recommended build plan</h2>
+
+<h3>Foundation repairs, required regardless of direction</h3>
+<table>
+  <thead><tr><th style="width:30%">Repair</th><th>Why it cannot be skipped</th><th class="num">Weeks</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Conversation memory</strong></td><td>The model currently sees one message at a time. This is a defect, not a missing feature, and it invalidates every claim about conversational ability.</td><td class="num">1</td></tr>
+    <tr><td><strong>Own tabular models with SHAP</strong></td><td>Train gradient-boosted models on Pima, Cleveland and ILPD, then compute per-prediction SHAP values. Replaces hardcoded weights that will not survive examination.</td><td class="num">2</td></tr>
+    <tr><td><strong>API key moved server-side</strong></td><td>The key is currently readable by any visitor to the site.</td><td class="num">&lt;1</td></tr>
+    <tr><td><strong>Adversarial red-team suite</strong></td><td>A battery of prompts attempting to extract a diagnosis, drug name or dose, reporting refusal rate and emergency recall. Inexpensive and taken seriously by examiners.</td><td class="num">1</td></tr>
+  </tbody>
+</table>
+
+<h3>Minimum set that tells the whole story</h3>
+<p>Five features, approximately eleven weeks, one coherent narrative spanning all
+three windows.</p>
+<table>
+  <thead><tr><th style="width:14%">Window</th><th style="width:34%">Feature</th><th class="num" style="width:10%">Weeks</th><th>What it demonstrates</th></tr></thead>
+  <tbody>
+    <tr><td>Before</td><td><strong>Camera vitals and come-prepared engine</strong></td><td class="num">5</td><td>Signal processing plus retrieval, with an immediately obvious practical benefit</td></tr>
+    <tr><td>Between</td><td><strong>Passive phenotyping and side-effect early warning</strong></td><td class="num">4</td><td>Time-series modelling on data already held, plus a real biomedical knowledge base</td></tr>
+    <tr><td>After</td><td><strong>Causal effectiveness with doctor dashboard</strong></td><td class="num">3</td><td>Causal inference and the data flywheel argument, which is the part examiners remember</td></tr>
+  </tbody>
+</table>
+
+<div class="callout ok">
+  <div class="title">Start with the feature that needs no new data</div>
+  <p>Passive digital phenotyping runs entirely on message timestamps already being
+  written to Firestore. Two weeks, no new integration, and the most research-flavoured
+  item on the list. That makes it the cheapest possible proof that the direction works.</p>
+</div>
+
+<h3>How the stages chain into a system</h3>
+<table>
+  <thead><tr><th style="width:26%">Step</th><th style="width:37%">Produces</th><th>Which enables</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Pre-visit intake</strong></td><td>A structured baseline: complaint, onset, current medicines, camera vitals</td><td>Everything downstream, because a day-zero reference point now exists</td></tr>
+    <tr><td><strong>Doctor brief and visit</strong></td><td>The treatment plan in machine-readable form</td><td>Side-effect watch, comprehension check, plan comparison</td></tr>
+    <tr><td><strong>Between-visit monitoring</strong></td><td>A symptom and behaviour time series against a personal baseline</td><td>Deterioration alerts, trigger inference, recovery trajectory</td></tr>
+    <tr><td><strong>Outcome capture</strong></td><td>Whether treatment worked, measured per patient and per treatment</td><td>Causal effectiveness, follow-up prediction, doctor feedback loop</td></tr>
+    <tr><td><strong>The loop closes</strong></td><td>Outcomes retrain the models that generated the advice</td><td>A system that improves with use, which no incumbent can replicate</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================= 10. METRICS ============================= -->
+<h2 id="metrics" class="part-break">10. Datasets and evaluation metrics</h2>
+
+<h3>Datasets</h3>
+<table>
+  <thead><tr><th style="width:28%">Dataset</th><th style="width:44%">Used for</th><th>Access</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Pima, Cleveland, ILPD</strong></td><td>Tabular models the team trains and owns</td><td class="muted">Open, UCI repository</td></tr>
+    <tr><td><strong>SIDER</strong></td><td>Drug side-effect profiles for the early-warning feature</td><td class="muted">Open</td></tr>
+    <tr><td><strong>RxNorm and open DrugBank subset</strong></td><td>Drug normalisation and interaction graph</td><td class="muted">Free tier or registration</td></tr>
+    <tr><td><strong>WHO, ICMR and NICE guidelines</strong></td><td>Retrieval corpus, the grounding backbone</td><td class="muted">Public documents</td></tr>
+    <tr><td><strong>Coswara (IISc)</strong></td><td>Indian respiratory audio, if voice biomarkers are pursued</td><td class="muted">Open</td></tr>
+    <tr><td><strong>OpenAQ or CPCB feeds</strong></td><td>Air quality history for trigger inference</td><td class="muted">Open API</td></tr>
+    <tr><td><strong>MedQuAD</strong></td><td>Question-answer pairs for evaluation</td><td class="muted">Open</td></tr>
+    <tr><td><strong>MIMIC-IV</strong></td><td>Realistic patient context, optional</td><td class="muted">Credentialed; begin the process early</td></tr>
+  </tbody>
+</table>
+
+<h3>Metrics</h3>
+<p>The objective is not to outperform Ada Health. It is to be the only project that
+measured itself at all.</p>
+<table>
+  <thead><tr><th style="width:30%">Metric</th><th style="width:30%">Published baseline</th><th>Target</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Top-3 triage accuracy</strong></td><td class="muted">Ada 76%, K Health 74%</td><td>Report honestly; exceeding it is not required</td></tr>
+    <tr><td><strong>Emergency recall</strong></td><td class="muted">Ada 18 of 20</td><td>Report per vignette; this is the safety-critical figure</td></tr>
+    <tr><td><strong>Citation precision</strong></td><td class="muted">Published models: 3.6–29.7%</td><td>Above 90% by construction, via retrieved-span linking</td></tr>
+    <tr><td><strong>Unsupported claim rate</strong></td><td class="muted">Not reported by any consumer application</td><td>Measure it; being first to report is itself the contribution</td></tr>
+    <tr><td><strong>Must-ask question coverage</strong></td><td class="muted">Not reported</td><td>Track before and after the active questioning loop</td></tr>
+    <tr><td><strong>Adversarial refusal rate</strong></td><td class="muted">Not reported</td><td>Above 95% on the red-team battery</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================= 11. PITCH ============================= -->
+<h2 id="pitch" class="part-break">11. Positioning and sources</h2>
+
+<h3>The positioning statement</h3>
+<div class="quote">
+  <p>"The industry has optimised the seven minutes a patient spends with a doctor. We
+  instrument the hundred and fifty days around it. We collect a structured baseline
+  before the visit, including vitals measured through the phone camera. We watch for
+  side effects and deterioration against that patient's own baseline rather than a
+  population range. We reconcile prescriptions across every doctor they see, which an
+  EMR vendor structurally cannot do because it only sees its own network. And we are
+  the only ones who ask afterwards whether the treatment actually worked. Every
+  statement the system makes is audited against retrieved clinical guidelines, and we
+  report our own unsupported-claim rate — a number no consumer health product
+  publishes. It is not a competing EMR. It is the patient-side intelligence layer that
+  no EMR can build."</p>
+</div>
+
+<div class="callout warn">
+  <div class="title">Terminology to avoid</div>
+  <p>Do not describe the project as a symptom checker or a chatbot. Both terms map it
+  onto a commoditised category in the listener's mind before the sentence finishes.
+  Lead with simulation, reconciliation and verification instead.</p>
+</div>
+
+<h3>Sources for the literature review</h3>
+<table>
+  <thead><tr><th style="width:34%">Work</th><th>Relevance</th></tr></thead>
+  <tbody>
+    <tr><td><strong>CPGBench</strong> — clinical practice guideline detection and adherence in multi-turn conversations</td><td>The core justification. Establishes the detection-versus-citation gap across eight leading models and 32,155 recommendations.</td></tr>
+    <tr><td><strong>MedRAGChecker</strong> — claim-level verification for biomedical retrieval-augmented generation</td><td>Blueprint for the claim verifier: decompose an answer into claims, verify each against retrieved evidence, aggregate to answer level.</td></tr>
+    <tr><td><strong>MedDialogRubrics</strong> — benchmark for multi-turn medical consultations</td><td>Blueprint for the evaluation harness: a simulated patient agent anchored to atomic facts, with must-ask rubric scoring.</td></tr>
+    <tr><td><strong>ClinHallu</strong> — stage-wise hallucination diagnosis in medical multimodal reasoning</td><td>Argues for decomposing the pipeline into visual recognition, knowledge recall and reasoning integration so failures can be localised rather than merely counted.</td></tr>
+    <tr><td><strong>MediEval</strong> — patient-contextual and knowledge-grounded reasoning benchmark</td><td>Safety framing: documents hallucinated support and truth inversion, and shows targeted fine-tuning can eliminate them.</td></tr>
+    <tr><td><strong>AI symptom checker accuracy review, 2026</strong></td><td>Source of the comparative accuracy and emergency-recognition figures for Ada, K Health, Babylon, Buoy, Isabel and WebMD.</td></tr>
+    <tr><td><strong>India EHR market report, 2026–2032</strong></td><td>Source of HealthPlix, Practo and Eka Care scale and positioning data.</td></tr>
+  </tbody>
+</table>
+
+<p class="muted small" style="margin-top:40px; padding-top:16px; border-top:1px solid var(--line);">
+Generated from a full audit of the MediAI repository. All code references correspond
+to file paths and line numbers in the repository at the time of review.
+</p>
+
+</div>
+</body>
+</html>
