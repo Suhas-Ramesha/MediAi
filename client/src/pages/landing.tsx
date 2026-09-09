@@ -1,366 +1,674 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  HeartPulse,
-  Mic,
-  Image as ImageIcon,
-  Shield,
   Activity,
   ArrowRight,
   CalendarCheck,
+  ClipboardList,
+  FileImage,
+  Info,
+  LineChart,
+  Lock,
+  MessageSquareText,
+  Mic,
+  ShieldCheck,
   Stethoscope,
-  Sparkles,
-  CheckCircle2,
-  BrainCircuit,
-  Fingerprint
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { LoginForm, SignUpForm } from "@/components/AuthForms";
-import { useAuth } from "@/hooks/use-auth";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import AuroraUI from "@/components/AuroraUI";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
-const capabilities = ["Risk Prediction", "Symptom Diary", "AI Voice Analysis", "Medical Imaging", "24/7 Availability", "Encrypted Data", "Instant Triage"];
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Reveal, RevealGroup, RevealItem, ScrollProgress } from "@/components/ui/reveal";
+import { LoginForm, SignUpForm } from "@/components/AuthForms";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/hooks/use-auth";
+import { fadeUp, scaleIn, slideIn, transition } from "@/lib/motion";
+
+/* ------------------------------------------------------------------ */
+/* Content                                                             */
+/* ------------------------------------------------------------------ */
+
+const capabilities = [
+  "Symptom triage",
+  "Risk assessment",
+  "Voice input",
+  "Report analysis",
+  "Symptom diary",
+  "Appointment booking",
+  "Guideline-linked answers",
+];
 
 const features = [
   {
-    icon: Stethoscope,
-    title: "Instant Triage",
-    desc: "Describe your symptoms and get structured, actionable guidance instantly without the wait.",
-    color: "from-blue-500 to-indigo-500",
-    align: "left",
-    mockup: (
-      <div className="w-full h-full flex flex-col gap-4 p-6 justify-center">
-        <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }} className="h-12 w-3/4 bg-white/10 dark:bg-slate-800/50 rounded-2xl border border-white/20" />
-        <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, delay: 0.5, repeat: Infinity }} className="h-20 w-full bg-indigo-500/20 rounded-2xl border border-indigo-500/30" />
-        <div className="h-12 w-1/2 bg-white/10 dark:bg-slate-800/50 rounded-2xl border border-white/20 self-end" />
-      </div>
-    )
+    icon: MessageSquareText,
+    title: "Structured triage",
+    body: "Describe how you feel in your own words. You get back what it could mean, what to do now, and the signs that mean you should not wait.",
   },
   {
-    icon: Activity,
-    title: "Risk Analysis",
-    desc: "State-of-the-art machine learning models estimate your vital health metrics in real-time.",
-    color: "from-cyan-500 to-emerald-500",
-    align: "right",
-    mockup: (
-      <div className="w-full h-full flex items-end gap-2 p-6 justify-center">
-        {[40, 70, 45, 90, 60, 80].map((h, i) => (
-          <motion.div 
-            key={i}
-            initial={{ height: 0 }}
-            whileInView={{ height: `${h}%` }}
-            transition={{ duration: 0.8, delay: i * 0.1 }}
-            className="w-1/6 bg-gradient-to-t from-emerald-500 to-cyan-400 rounded-t-lg opacity-80"
-          />
-        ))}
-      </div>
-    )
+    icon: LineChart,
+    title: "Explained risk scores",
+    body: "Diabetes, heart, liver and kidney assessments return a percentage alongside the specific inputs that moved it, so the number is never a black box.",
+  },
+  {
+    icon: FileImage,
+    title: "Reports and images",
+    body: "Upload a lab report or a photo of an affected area and get a plain-language reading of what the values and visible features suggest.",
   },
   {
     icon: Mic,
-    title: "Voice First",
-    desc: "Feeling unwell? Just speak directly to the AI. No typing required when you need help most.",
-    color: "from-fuchsia-500 to-purple-500",
-    align: "left",
-    mockup: (
-      <div className="w-full h-full flex items-center justify-center relative">
-        <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.8, 0, 0.8] }} transition={{ duration: 2, repeat: Infinity }} className="absolute inset-0 m-auto h-32 w-32 bg-fuchsia-500/30 rounded-full blur-xl" />
-        <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1, repeat: Infinity }} className="h-24 w-24 bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded-full flex items-center justify-center shadow-2xl z-10">
-          <Mic className="h-10 w-10 text-white" />
-        </motion.div>
-      </div>
-    )
+    title: "Voice when typing is hard",
+    body: "Speak your symptoms instead of typing them. Useful when you are unwell, and useful when English is not the language you think in.",
+  },
+  {
+    icon: ClipboardList,
+    title: "A diary that spots trends",
+    body: "Log symptoms over days and weeks. Patterns across time are what a single consultation cannot see.",
+  },
+  {
+    icon: CalendarCheck,
+    title: "Straight through to a doctor",
+    body: "When the conversation suggests you should be seen, book a real appointment without starting again somewhere else.",
   },
 ];
+
+const steps = [
+  {
+    n: "01",
+    title: "Tell it what is wrong",
+    body: "Type or speak. Follow-up questions narrow things down the way an intake conversation would.",
+  },
+  {
+    n: "02",
+    title: "See the reasoning",
+    body: "Guidance arrives structured and sourced — what it could mean, what to do, and when to seek urgent care.",
+  },
+  {
+    n: "03",
+    title: "Act on it",
+    body: "Track it in the diary, run a risk assessment, or book a consultation. Your history stays in one place.",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* Hero product preview                                                */
+/* ------------------------------------------------------------------ */
+
+function ChatPreview() {
+  return (
+    <div className="surface-raised overflow-hidden rounded-2xl">
+      {/* Window chrome */}
+      <div className="flex items-center gap-2 border-b border-border bg-muted/50 px-4 py-3">
+        <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+        <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+        <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+        <span className="ml-2 text-xs font-medium text-muted-foreground">
+          MediAI — consultation
+        </span>
+      </div>
+
+      <div className="space-y-4 p-5 sm:p-6">
+        {/* Patient message */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...transition.slow, delay: 0.25 }}
+          className="flex justify-end"
+        >
+          <p className="max-w-[78%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground">
+            I&apos;ve had a fever and a sore throat since yesterday
+          </p>
+        </motion.div>
+
+        {/* Assistant reply */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...transition.slow, delay: 0.45 }}
+          className="flex justify-start"
+        >
+          <div className="max-w-[88%] space-y-3 rounded-2xl rounded-bl-md border border-border bg-muted/40 px-4 py-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                What this could mean
+              </p>
+              <p className="mt-1 text-sm text-foreground/90">
+                Most likely a <span className="font-semibold">viral upper respiratory infection</span>.
+                Two questions to narrow it down:
+              </p>
+            </div>
+            <ul className="space-y-1.5 text-sm text-foreground/80">
+              <li className="flex gap-2">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />
+                Is the pain worse on one side when you swallow?
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />
+                Any rash, or trouble breathing?
+              </li>
+            </ul>
+            <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+              <p className="text-xs text-foreground/80">
+                Seek care today if your temperature stays above 39&nbsp;°C or you
+                cannot keep fluids down.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Suggested action */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...transition.slow, delay: 0.65 }}
+          className="flex justify-start pl-1"
+        >
+          <span className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">
+            <CalendarCheck className="h-3.5 w-3.5" />
+            Book consultation
+          </span>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Risk card, used in the deep-dive row                                */
+/* ------------------------------------------------------------------ */
+
+const riskFactors = [
+  { label: "Fasting glucose", value: "142 mg/dL", weight: 82 },
+  { label: "BMI", value: "31.4", weight: 54 },
+  { label: "Family history", value: "Present", weight: 38 },
+  { label: "Age", value: "46", weight: 21 },
+];
+
+function RiskPreview() {
+  return (
+    <div className="surface-raised rounded-2xl p-5 sm:p-6">
+      <div className="flex items-baseline justify-between">
+        <p className="text-sm font-semibold">Diabetes risk</p>
+        <p className="text-xs text-muted-foreground">Moderate</p>
+      </div>
+
+      <div className="mt-3 flex items-end gap-3">
+        <span className="text-4xl font-semibold tracking-tight" data-numeric>
+          38<span className="text-2xl text-muted-foreground">%</span>
+        </span>
+      </div>
+
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+        <motion.div
+          initial={{ width: 0 }}
+          whileInView={{ width: "38%" }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+          className="h-full rounded-full bg-primary"
+        />
+      </div>
+
+      <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        What moved the number
+      </p>
+
+      <ul className="mt-2.5 space-y-2.5">
+        {riskFactors.map((f, i) => (
+          <li key={f.label} className="space-y-1">
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="text-foreground/85">{f.label}</span>
+              <span className="text-xs text-muted-foreground" data-numeric>
+                {f.value}
+              </span>
+            </div>
+            <div className="h-1 overflow-hidden rounded-full bg-muted">
+              <motion.div
+                initial={{ width: 0 }}
+                whileInView={{ width: `${f.weight}%` }}
+                viewport={{ once: true }}
+                transition={{
+                  duration: 0.6,
+                  ease: [0.22, 1, 0.36, 1],
+                  delay: 0.25 + i * 0.08,
+                }}
+                className="h-full rounded-full bg-primary/45"
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
 
 export default function Landing() {
   const { currentUser, isLoading } = useAuth();
   const [, setLocation] = useLocation();
-  const [authMode, setAuthMode] = useState<string>("login");
-  const [isAppLoading, setIsAppLoading] = useState(true);
+  const [authMode, setAuthMode] = useState("login");
+  const [navSolid, setNavSolid] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsAppLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
+    const onScroll = () => setNavSolid(window.scrollY > 16);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const handleLoginSuccess = () => setLocation("/dashboard");
 
+  const goToAuth = () =>
+    document
+      .getElementById("get-started")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
   return (
-    <>
-      <AnimatePresence>
-        {isAppLoading && (
-          <motion.div 
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -50 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950"
-          >
-            <motion.div
-              animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="relative flex items-center justify-center h-32 w-32 mb-8"
-            >
-              <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 blur-sm" />
-              <div className="absolute inset-2 rounded-full border-r-2 border-cyan-400 blur-md" />
-              <Sparkles className="h-10 w-10 text-indigo-500 dark:text-cyan-400 animate-pulse" />
-            </motion.div>
-            <motion.h1 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-2xl font-bold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-cyan-400"
-            >
-              Initializing Core
-            </motion.h1>
-            <motion.div className="w-48 h-1 mt-6 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 1.5, ease: "easeInOut" }}
-                className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400"
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="min-h-screen bg-background">
+      <ScrollProgress />
 
-      <AuroraUI>
-        <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
-          {!currentUser && (
-            <Button
-              variant="outline"
-              className="glass-card bg-transparent hover:bg-slate-100/50 dark:hover:bg-slate-800/50 dark:text-white border-slate-200 dark:border-white/20 rounded-full px-6"
-              onClick={() => document.getElementById('auth-section')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              Login
-            </Button>
-          )}
-          <ThemeToggle />
-        </div>
+      {/* ---------------- Nav ---------------- */}
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-base ${
+          navSolid
+            ? "border-b border-border bg-background/85 backdrop-blur-md"
+            : "border-b border-transparent"
+        }`}
+      >
+        <nav className="container-page flex h-16 items-center justify-between">
+          <a href="#top" className="flex items-center gap-2.5">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+              <Stethoscope className="h-4 w-4" />
+            </span>
+            <span className="text-base font-semibold tracking-tight">MediAI</span>
+          </a>
 
-        {/* Global passive floating background elements */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-          <motion.div animate={{ y: [0, -40, 0], x: [0, 20, 0], scale: [1, 1.1, 1] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="absolute left-[10%] top-[20%] w-[40vw] h-[40vw] max-w-[600px] max-h-[600px] rounded-full blur-[120px] bg-indigo-500/20 mix-blend-screen" />
-          <motion.div animate={{ y: [0, 50, 0], x: [0, -30, 0], scale: [1, 1.2, 1] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute right-[5%] bottom-[10%] w-[50vw] h-[50vw] max-w-[700px] max-h-[700px] rounded-full blur-[120px] bg-cyan-400/20 mix-blend-screen" />
-        </div>
-
-        <div className="relative z-10 flex flex-col items-center">
-          
-          {/* HERO SECTION */}
-          <section className="min-h-screen w-full flex flex-col items-center justify-center pt-32 pb-0 px-6 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
-            
-            <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 2.2, ease: [0.22, 1, 0.36, 1] }} className="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center">
-              
-              <h1 className="text-6xl md:text-8xl lg:text-9xl font-extrabold tracking-tight leading-none mb-6 mt-10">
-                <span className="text-slate-900 dark:text-white drop-shadow-sm">Medi</span>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-cyan-400 drop-shadow-xl">AI</span>
-              </h1>
-              
-              <p className="text-xl md:text-2xl lg:text-3xl max-w-3xl mx-auto font-light text-slate-600 dark:text-slate-300 tracking-tight leading-relaxed mb-12">
-                <span className="font-medium text-slate-800 dark:text-slate-200">Your Intelligent Healthcare Companion.</span>
-                <br />
-                An immersive health platform that adapts to you.
-              </p>
-
-              {/* Floating Hero Mockup to fill blank space */}
-              <motion.div 
-                animate={{ y: [-10, 10, -10] }} 
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                className="w-full max-w-4xl mx-auto relative mt-4"
+          <div className="hidden items-center gap-1 md:flex">
+            {[
+              ["Features", "#features"],
+              ["How it works", "#how"],
+              ["Risk scores", "#risk"],
+            ].map(([label, href]) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-400 blur-3xl opacity-20 dark:opacity-30 rounded-full" />
-                <div className="glass-card rounded-t-3xl border-b-0 border border-white/20 dark:border-white/10 p-6 md:p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden h-[300px] md:h-[400px] [mask-image:linear-gradient(to_bottom,white,transparent)]">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                    <div className="w-3 h-3 rounded-full bg-amber-400" />
-                    <div className="w-3 h-3 rounded-full bg-green-400" />
-                  </div>
-                  {/* Fake Chat Interface Mockup */}
-                  <div className="flex w-full justify-end">
-                    <div className="bg-gradient-to-br from-indigo-500 to-cyan-400 rounded-2xl rounded-tr-sm h-12 w-2/3 shadow-md" />
-                  </div>
-                  <div className="flex w-full justify-start">
-                    <div className="glass-card border border-white/10 rounded-2xl rounded-tl-sm h-24 w-3/4 shadow-sm backdrop-blur-md" />
-                  </div>
-                  <div className="flex w-full justify-end">
-                     <div className="bg-gradient-to-br from-indigo-500 to-cyan-400 rounded-2xl rounded-tr-sm h-16 w-1/2 shadow-md opacity-50" />
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          </section>
-
-          {/* INFINITE MARQUEE CAROUSEL */}
-          <div className="w-full py-10 bg-slate-900/5 dark:bg-white/5 backdrop-blur-sm border-y border-white/10 overflow-hidden flex whitespace-nowrap">
-            <motion.div 
-              animate={{ x: [0, -1035] }} 
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="flex items-center gap-16 px-8"
-            >
-              {[...capabilities, ...capabilities, ...capabilities].map((cap, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                  <span className="text-xl font-medium text-slate-800 dark:text-slate-200">{cap}</span>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-
-          {/* DYNAMIC SCROLLING FEATURES */}
-          <div className="w-full max-w-7xl mx-auto px-6 py-24">
-            {features.map((feature, idx) => (
-              <motion.section 
-                key={feature.title}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ amount: 0.3, margin: "-50px" }}
-                className={`min-h-[70vh] flex flex-col md:flex-row items-center gap-12 lg:gap-24 my-20 ${feature.align === 'right' ? 'md:flex-row-reverse' : ''}`}
-              >
-                {/* Text Content */}
-                <div className={`flex-1 flex flex-col ${feature.align === 'right' ? 'md:items-end md:text-right' : 'md:items-start md:text-left'} text-center`}>
-                  <motion.div
-                    variants={{ hidden: { opacity: 0, scale: 0.5, rotate: -20 }, visible: { opacity: 1, scale: 1, rotate: 0 } }}
-                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                    className="mb-8 relative self-center md:self-auto"
-                  >
-                    <div className={`absolute inset-0 blur-2xl opacity-40 bg-gradient-to-br ${feature.color}`} />
-                    <feature.icon className={`h-20 w-20 md:h-24 md:w-24 text-transparent bg-clip-text bg-gradient-to-br ${feature.color} relative z-10 drop-shadow-2xl`} style={{ color: "transparent", fill: "url(#grad-icon)" }} />
-                    <svg width="0" height="0">
-                      <linearGradient id="grad-icon" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#6366f1" />
-                        <stop offset="100%" stopColor="#22d3ee" />
-                      </linearGradient>
-                    </svg>
-                  </motion.div>
-
-                  <motion.h2
-                    variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } }}
-                    transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-                    className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter text-slate-900 dark:text-white leading-none mb-6 drop-shadow-md"
-                  >
-                    {feature.title}
-                  </motion.h2>
-
-                  <motion.p
-                    variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } }}
-                    transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                    className="text-xl md:text-2xl font-light text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl"
-                  >
-                    {feature.desc}
-                  </motion.p>
-                </div>
-
-                {/* Animated Mockup Card */}
-                <motion.div 
-                  variants={{ hidden: { opacity: 0, scale: 0.9, x: feature.align === 'right' ? -50 : 50 }, visible: { opacity: 1, scale: 1, x: 0 } }}
-                  transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex-1 w-full max-w-md aspect-square glass-card rounded-[2.5rem] border border-white/30 dark:border-white/10 shadow-2xl relative overflow-hidden group"
-                >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-5 group-hover:opacity-10 transition-opacity duration-700`} />
-                  {feature.mockup}
-                </motion.div>
-              </motion.section>
+                {label}
+              </a>
             ))}
           </div>
 
-          {/* STATS / TRUST SECTION */}
-          <section className="w-full py-24 relative">
-             <div className="absolute inset-0 bg-slate-900/5 dark:bg-white/5 backdrop-blur-md border-y border-white/10" />
-             <div className="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-               {[
-                 { label: "Analyses Performed", value: "100k+", icon: Activity },
-                 { label: "Data Security", value: "AEC-256", icon: Fingerprint },
-                 { label: "Uptime", value: "99.9%", icon: Shield }
-               ].map((stat, i) => (
-                 <motion.div 
-                   key={i}
-                   initial={{ opacity: 0, y: 30 }}
-                   whileInView={{ opacity: 1, y: 0 }}
-                   viewport={{ once: true }}
-                   transition={{ delay: i * 0.2, duration: 0.6 }}
-                   className="flex flex-col items-center text-center p-8 glass-card rounded-3xl"
-                 >
-                   <stat.icon className="h-10 w-10 text-indigo-500 dark:text-cyan-400 mb-4" />
-                   <h3 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-2">{stat.value}</h3>
-                   <p className="text-slate-600 dark:text-slate-400 font-medium">{stat.label}</p>
-                 </motion.div>
-               ))}
-             </div>
-          </section>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            {currentUser ? (
+              <Button size="sm" onClick={() => setLocation("/dashboard")}>
+                Dashboard
+              </Button>
+            ) : (
+              <Button size="sm" onClick={goToAuth}>
+                Get started
+              </Button>
+            )}
+          </div>
+        </nav>
+      </header>
 
-          {/* AUTHENTICATION / TERMINAL SECTION */}
-          <section id="auth-section" className="min-h-screen w-full flex items-center justify-center p-6 relative pb-32 pt-20">
-            <motion.div 
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
-              className="w-full max-w-2xl relative z-20"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-cyan-500 to-purple-500 opacity-20 blur-[80px] rounded-full pointer-events-none" />
-              
-              <motion.div 
-                variants={{ hidden: { opacity: 0, y: 50, scale: 0.95 }, visible: { opacity: 1, y: 0, scale: 1 } }}
-                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                className="glass-card rounded-[2.5rem] p-8 md:p-12 shadow-2xl border border-white/40 dark:border-white/10 relative overflow-hidden backdrop-blur-3xl"
-              >
-                <div className="text-center mb-10">
-                  <h2 className="text-4xl md:text-5xl font-bold tracking-tighter text-slate-900 dark:text-white mb-4">
-                    {currentUser ? "Welcome back, Operator." : "Initiate Sequence."}
-                  </h2>
-                  <p className="text-lg text-slate-600 dark:text-slate-400 font-light">
-                    {currentUser
-                      ? "Your secure session is active. Enter the dashboard."
-                      : "Create your secure identity to access the intelligence platform."}
-                  </p>
-                </div>
-
-                {!isLoading && currentUser ? (
-                  <div className="flex flex-col gap-4">
-                    <Button
-                      size="lg"
-                      className="w-full text-lg h-14 bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all border-0 rounded-2xl"
-                      onClick={() => setLocation("/dashboard")}
-                    >
-                      Enter Dashboard
-                    </Button>
-                    <Link href="/appointments">
-                      <Button size="lg" variant="outline" className="w-full text-lg h-14 glass-card rounded-2xl hover:bg-white/50 dark:hover:bg-white/10 dark:text-white border border-slate-300 dark:border-white/20 shadow-sm transition-all hover:scale-[1.02]">
-                        <CalendarCheck className="mr-2 h-5 w-5" />
-                        Book Consultation
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <Tabs value={authMode} onValueChange={setAuthMode} className="w-full">
-                    <TabsList className="mb-8 grid w-full grid-cols-2 p-1 bg-slate-200/50 dark:bg-slate-800/50 backdrop-blur-md rounded-2xl h-14">
-                      <TabsTrigger value="login" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm text-base transition-all">Login</TabsTrigger>
-                      <TabsTrigger value="signup" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm text-base transition-all">Create Identity</TabsTrigger>
-                    </TabsList>
-                    <AnimatePresence mode="wait">
-                      <motion.div key={authMode} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-                        <TabsContent value="login" className="mt-0 outline-none">
-                          <LoginForm onSuccess={handleLoginSuccess} />
-                        </TabsContent>
-                        <TabsContent value="signup" className="mt-0 outline-none">
-                          <SignUpForm onSuccess={handleLoginSuccess} />
-                        </TabsContent>
-                      </motion.div>
-                    </AnimatePresence>
-                  </Tabs>
-                )}
-              </motion.div>
-            </motion.div>
-          </section>
-
+      {/* ---------------- Hero ---------------- */}
+      <section id="top" className="relative overflow-hidden pt-16">
+        {/* Background: one faint grid, one soft wash. Nothing more. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-grid mask-fade-b" />
+          <div className="absolute -top-40 left-1/2 h-[460px] w-[760px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px] animate-drift" />
         </div>
-      </AuroraUI>
-    </>
+
+        <div className="container-page relative grid gap-14 pb-20 pt-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-16 lg:pb-28 lg:pt-24">
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={transition.slow}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs"
+            >
+              <span className="relative grid h-1.5 w-1.5 place-items-center">
+                <span className="absolute h-1.5 w-1.5 rounded-full bg-primary animate-pulse-ring" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              </span>
+              Guidance in minutes, not appointments
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...transition.slow, delay: 0.05 }}
+              className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
+            >
+              Understand your symptoms{" "}
+              <span className="text-gradient-brand">before</span> you sit in a
+              waiting room.
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...transition.slow, delay: 0.1 }}
+              className="mt-5 max-w-xl text-lg text-muted-foreground"
+            >
+              MediAI turns a description of how you feel into structured
+              guidance: what it could mean, what to do now, and the specific
+              signs that mean you should be seen today. Then it books the
+              appointment.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...transition.slow, delay: 0.15 }}
+              className="mt-8 flex flex-wrap items-center gap-3"
+            >
+              {currentUser ? (
+                <>
+                  <Button size="lg" onClick={() => setLocation("/dashboard")}>
+                    Open dashboard
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <Link href="/appointments">
+                    <Button size="lg" variant="outline">
+                      <CalendarCheck className="mr-2 h-4 w-4" />
+                      Book consultation
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Button size="lg" onClick={goToAuth}>
+                    Start a consultation
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <Button size="lg" variant="outline" asChild>
+                    <a href="#how">See how it works</a>
+                  </Button>
+                </>
+              )}
+            </motion.div>
+
+            <motion.ul
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ ...transition.slow, delay: 0.22 }}
+              className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground"
+            >
+              <li className="flex items-center gap-2">
+                <Lock className="h-3.5 w-3.5 text-primary" />
+                Your records stay yours
+              </li>
+              <li className="flex items-center gap-2">
+                <Activity className="h-3.5 w-3.5 text-primary" />
+                Four risk models
+              </li>
+              <li className="flex items-center gap-2">
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                Escalates, never diagnoses
+              </li>
+            </motion.ul>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...transition.slow, delay: 0.12 }}
+            className="lg:pl-4"
+          >
+            <ChatPreview />
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ---------------- Capability marquee ---------------- */}
+      <section className="border-y border-border bg-muted/30 py-5">
+        <div className="marquee-viewport mask-fade-x overflow-hidden">
+          <div className="marquee-track flex w-max items-center">
+            {[0, 1].map((copy) => (
+              <ul
+                key={copy}
+                className="flex shrink-0 items-center"
+                aria-hidden={copy === 1}
+              >
+                {capabilities.map((c) => (
+                  <li
+                    key={`${copy}-${c}`}
+                    className="flex items-center whitespace-nowrap px-6 text-sm font-medium text-muted-foreground"
+                  >
+                    <span className="mr-6 h-1 w-1 rounded-full bg-primary/50" />
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------- Features ---------------- */}
+      <section id="features" className="container-page py-20 lg:py-28">
+        <Reveal className="max-w-2xl">
+          <p className="eyebrow">What it does</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+            Six things, each of which finishes the job.
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Every feature ends somewhere useful — a decision, a logged data
+            point, or a booked appointment. None of them stop at a wall of text.
+          </p>
+        </Reveal>
+
+        <RevealGroup className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((f) => (
+            <RevealItem key={f.title}>
+              <article className="surface lift group h-full p-6">
+                <span className="grid h-10 w-10 place-items-center rounded-lg border border-primary/20 bg-primary/8 text-primary transition-colors duration-base group-hover:bg-primary/15">
+                  <f.icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {f.body}
+                </p>
+              </article>
+            </RevealItem>
+          ))}
+        </RevealGroup>
+      </section>
+
+      {/* ---------------- How it works ---------------- */}
+      <section id="how" className="border-y border-border bg-muted/25">
+        <div className="container-page py-20 lg:py-28">
+          <Reveal className="max-w-2xl">
+            <p className="eyebrow">How it works</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+              Three steps, about two minutes.
+            </h2>
+          </Reveal>
+
+          <div className="relative mt-12">
+            {/* Connector, desktop only */}
+            <div
+              aria-hidden
+              className="absolute left-0 right-0 top-5 hidden h-px bg-border lg:block"
+            />
+            <RevealGroup
+              className="grid gap-8 lg:grid-cols-3 lg:gap-10"
+              stagger={0.09}
+            >
+              {steps.map((s) => (
+                <RevealItem key={s.n}>
+                  <div className="relative">
+                    <span className="relative z-10 inline-grid h-10 w-10 place-items-center rounded-full border border-border bg-background text-sm font-semibold text-primary">
+                      {s.n}
+                    </span>
+                    <h3 className="mt-4 text-lg font-semibold">{s.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {s.body}
+                    </p>
+                  </div>
+                </RevealItem>
+              ))}
+            </RevealGroup>
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------- Risk deep dive ---------------- */}
+      <section id="risk" className="container-page py-20 lg:py-28">
+        <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
+          <Reveal variants={slideIn("left")}>
+            <p className="eyebrow">Risk assessment</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+              A percentage is useless without the reason behind it.
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Every risk assessment returns the inputs that actually moved the
+              score, ranked by how much they contributed, with a plain-language
+              note on each one.
+            </p>
+            <ul className="mt-6 space-y-3">
+              {[
+                "Diabetes, heart, liver and kidney assessments",
+                "Contributing factors ranked by weight",
+                "Plain-language explanation for every factor",
+                "Results saved to your history for comparison",
+              ].map((item) => (
+                <li key={item} className="flex gap-3 text-sm">
+                  <span className="mt-1.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-primary/12">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  </span>
+                  <span className="text-foreground/85">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+
+          <Reveal variants={scaleIn} className="lg:pl-6">
+            <RiskPreview />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ---------------- Auth ---------------- */}
+      <section
+        id="get-started"
+        className="relative overflow-hidden border-t border-border bg-muted/25"
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-primary/5 to-transparent"
+        />
+        <div className="container-page relative py-20 lg:py-28">
+          <Reveal className="mx-auto max-w-md">
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl font-semibold tracking-tight">
+                {currentUser ? "Welcome back" : "Create your account"}
+              </h2>
+              <p className="mt-3 text-muted-foreground">
+                {currentUser
+                  ? "Your session is active. Pick up where you left off."
+                  : "Free to start. Your consultation history stays private to you."}
+              </p>
+            </div>
+
+            <div className="surface-raised p-6 sm:p-8">
+              {!isLoading && currentUser ? (
+                <div className="space-y-3">
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    onClick={() => setLocation("/dashboard")}
+                  >
+                    Open dashboard
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <Link href="/appointments">
+                    <Button size="lg" variant="outline" className="w-full">
+                      <CalendarCheck className="mr-2 h-4 w-4" />
+                      Book consultation
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <Tabs value={authMode} onValueChange={setAuthMode}>
+                  <TabsList className="mb-6 grid w-full grid-cols-2">
+                    <TabsTrigger value="login">Sign in</TabsTrigger>
+                    <TabsTrigger value="signup">Create account</TabsTrigger>
+                  </TabsList>
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={authMode}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={transition.fast}
+                    >
+                      <TabsContent value="login" className="mt-0">
+                        <LoginForm onSuccess={handleLoginSuccess} />
+                      </TabsContent>
+                      <TabsContent value="signup" className="mt-0">
+                        <SignUpForm onSuccess={handleLoginSuccess} />
+                      </TabsContent>
+                    </motion.div>
+                  </AnimatePresence>
+                </Tabs>
+              )}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ---------------- Footer ---------------- */}
+      <footer className="border-t border-border">
+        <div className="container-page py-12">
+          <Reveal
+            variants={fadeUp}
+            className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4"
+          >
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">
+                MediAI is not a diagnostic device.
+              </span>{" "}
+              It provides health information and triage guidance to help you
+              decide whether and how urgently to seek care. It does not replace
+              examination by a qualified clinician. In an emergency, contact your
+              local emergency number immediately.
+            </p>
+          </Reveal>
+
+          <div className="mt-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
+                <Stethoscope className="h-3.5 w-3.5" />
+              </span>
+              <span className="text-sm font-semibold">MediAI</span>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} MediAI. Built as a final-year project.
+            </p>
+
+            <div className="flex gap-5 text-sm text-muted-foreground">
+              <a href="#features" className="transition-colors duration-fast hover:text-foreground">
+                Features
+              </a>
+              <a href="#how" className="transition-colors duration-fast hover:text-foreground">
+                How it works
+              </a>
+              <a href="#get-started" className="transition-colors duration-fast hover:text-foreground">
+                Get started
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }

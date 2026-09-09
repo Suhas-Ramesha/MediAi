@@ -1,5 +1,24 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  BookHeart,
+  BookOpen,
+  CalendarCheck,
+  ChevronDown,
+  HelpCircle,
+  History,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquare,
+  Settings,
+  Shield,
+  User,
+  X,
+  Zap,
+} from "lucide-react";
+import { useLocation } from "wouter";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,15 +27,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  BookOpen, Shield, MessageSquare, Zap, HelpCircle,
-  LayoutDashboard, CalendarCheck, BookHeart, History,
-  Settings, LogOut, User, ChevronDown, Menu, X
-} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { transition } from "@/lib/motion";
 import SparkWrapper from "./SparkWrapper";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -38,6 +52,36 @@ const navLinks = [
   { label: "History", path: "/medical-history", icon: History },
 ];
 
+const accountLinks = [
+  { label: "Profile", path: "/profile", icon: User },
+  { label: "Appointments", path: "/appointments", icon: CalendarCheck },
+  { label: "Symptom Diary", path: "/symptom-diary", icon: BookHeart },
+  { label: "Settings", path: "/settings", icon: Settings },
+];
+
+const helpItems = [
+  {
+    icon: MessageSquare,
+    title: "Chat with MediAI",
+    desc: "Describe symptoms by text, voice, or image upload.",
+  },
+  {
+    icon: BookOpen,
+    title: "Medical history",
+    desc: "Browse past consultations and saved assessments.",
+  },
+  {
+    icon: Zap,
+    title: "Getting better answers",
+    desc: "Include how long it has lasted and how severe it feels.",
+  },
+  {
+    icon: Shield,
+    title: "Your data",
+    desc: "Consultations are scoped to your account and visible only to you.",
+  },
+];
+
 export default function Header({ user, onStartTour }: HeaderProps) {
   const { logout } = useAuth();
   const [location, setLocation] = useLocation();
@@ -46,12 +90,12 @@ export default function Header({ user, onStartTour }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [location]);
@@ -59,10 +103,14 @@ export default function Header({ user, onStartTour }: HeaderProps) {
   const handleLogout = async () => {
     try {
       await logout();
-      toast({ title: "Logged out successfully", description: "See you soon!" });
+      toast({ title: "Signed out", description: "See you soon." });
       setLocation("/");
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Logout failed", description: error.message });
+      toast({
+        variant: "destructive",
+        title: "Sign out failed",
+        description: error?.message,
+      });
     }
   };
 
@@ -70,228 +118,220 @@ export default function Header({ user, onStartTour }: HeaderProps) {
 
   return (
     <>
-      <motion.header
-        initial={{ y: -80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="sticky top-0 z-50"
+      <header
+        className={cn(
+          "sticky top-0 z-50 border-b transition-colors duration-base",
+          scrolled
+            ? "border-border bg-background/85 backdrop-blur-md"
+            : "border-transparent bg-background",
+        )}
       >
-        <div className="transition-all duration-500">
-          <motion.div
-            animate={{ boxShadow: scrolled ? "0 4px 24px rgba(0,0,0,0.15)" : "0 1px 8px rgba(0,0,0,0.06)" }}
-            transition={{ duration: 0.3 }}
-            className="glass-card border-b border-white/20 dark:border-white/5 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl"
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          {/* Logo */}
+          <SparkWrapper
+            className="logo-container flex shrink-0 cursor-pointer items-center gap-2.5"
+            onClick={() => navTo("/dashboard")}
           >
-            <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 flex items-center justify-between h-14">
-
-              {/* ── Logo ── */}
-              <SparkWrapper
-                className="flex items-center gap-2.5 cursor-pointer group logo-container shrink-0"
-                onClick={() => navTo("/dashboard")}
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <motion.div
-                  whileHover={{ scale: 1.08, rotate: -6 }}
-                  transition={{ type: "spring", stiffness: 400 }}
-                  className="p-1.5 rounded-xl bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 border border-white/20 dark:border-white/10"
-                >
-                  <svg className="h-6 w-6 text-indigo-500 dark:text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                  </svg>
-                </motion.div>
-                <span className="text-lg font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500 dark:from-indigo-400 dark:to-cyan-400">
-                  MediAI
-                </span>
-              </SparkWrapper>
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </span>
+            <span className="text-base font-semibold tracking-tight">
+              MediAI
+            </span>
+          </SparkWrapper>
 
-              {/* ── Desktop Nav ── */}
-              <nav className="hidden lg:flex items-center justify-center gap-0.5">
-                {navLinks.map((link, i) => {
-                  const active = location === link.path || location.startsWith(link.path + "/");
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-1 lg:flex">
+            {navLinks.map((link) => {
+              const active =
+                location === link.path ||
+                location.startsWith(link.path + "/");
+              return (
+                <button
+                  key={link.path}
+                  onClick={() => navTo(link.path)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "relative rounded-md px-3 py-2 text-sm font-medium transition-colors duration-fast",
+                    active
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  {link.label}
+                  {active && (
+                    <motion.span
+                      layoutId="nav-indicator"
+                      className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Right side */}
+          <div className="flex shrink-0 items-center gap-1">
+            <ThemeToggle />
+
+            {/* Help */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  aria-label="Help"
+                  className="hidden h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground sm:flex"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80 p-2">
+                <DropdownMenuLabel className="px-2 text-sm font-semibold">
+                  Quick help
+                </DropdownMenuLabel>
+                <div className="space-y-1 py-1">
+                  {helpItems.map(({ icon: Icon, title, desc }) => (
+                    <div
+                      key={title}
+                      className="flex items-start gap-3 rounded-md px-2 py-2"
+                    >
+                      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                        <Icon className="h-3.5 w-3.5" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{title}</p>
+                        <p className="text-xs leading-snug text-muted-foreground">
+                          {desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {onStartTour && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={onStartTour}
+                      className="cursor-pointer text-sm font-medium text-primary"
+                    >
+                      Take the guided tour
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Account */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="user-menu flex items-center gap-2 rounded-md py-1 pl-1 pr-2 transition-colors duration-fast hover:bg-accent">
+                  {user.profileImage ? (
+                    <img
+                      src={user.profileImage}
+                      alt=""
+                      className="h-7 w-7 rounded-md object-cover"
+                    />
+                  ) : (
+                    <span className="grid h-7 w-7 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="hidden max-w-[90px] truncate text-sm font-medium sm:block">
+                    {user.name.split(" ")[0]}
+                  </span>
+                  <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-2 py-1.5">
+                  <p className="truncate text-sm font-semibold">{user.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {user.email}
+                  </p>
+                </div>
+                <DropdownMenuSeparator />
+                {accountLinks.map(({ label, path, icon: Icon }) => (
+                  <DropdownMenuItem
+                    key={label + path}
+                    onClick={() => navTo(path)}
+                    className="cursor-pointer gap-2.5 text-sm"
+                  >
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    {label}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="cursor-pointer gap-2.5 text-sm text-destructive focus:text-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Mobile toggle */}
+            <button
+              onClick={() => setMobileOpen((o) => !o)}
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
+              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground lg:hidden"
+            >
+              {mobileOpen ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <Menu className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        <AnimatePresence initial={false}>
+          {mobileOpen && (
+            <motion.div
+              key="mobile-menu"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={transition.base}
+              className="overflow-hidden border-t border-border bg-background lg:hidden"
+            >
+              <nav className="space-y-1 px-4 py-3 sm:px-6">
+                {navLinks.map((link) => {
+                  const active = location === link.path;
                   return (
-                    <motion.button
+                    <button
                       key={link.path}
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.05 * i, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                       onClick={() => navTo(link.path)}
                       className={cn(
-                        "relative px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors duration-200",
+                        "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-fast",
                         active
-                          ? "text-indigo-600 dark:text-cyan-400"
-                          : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-cyan-400"
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
                       )}
                     >
+                      <link.icon className="h-4 w-4" />
                       {link.label}
-                      {active && (
-                        <motion.span
-                          layoutId="nav-indicator"
-                          className="absolute inset-0 rounded-xl bg-indigo-50 dark:bg-cyan-500/10 border border-indigo-200/60 dark:border-cyan-500/20 -z-10"
-                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                        />
-                      )}
-                    </motion.button>
+                    </button>
                   );
                 })}
               </nav>
-
-              {/* ── Right side actions ── */}
-              <div className="flex items-center gap-2 shrink-0">
-                <ThemeToggle />
-
-                {/* Help dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="hidden sm:flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-700 dark:hover:text-white transition-colors"
-                    >
-                      <HelpCircle className="h-5 w-5" />
-                    </motion.button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-80 glass-card rounded-2xl p-4 border border-white/30 dark:border-white/10 shadow-2xl mt-2">
-                    <DropdownMenuLabel className="text-base font-semibold dark:text-white mb-3 flex items-center gap-2">
-                      <HelpCircle className="h-4 w-4 text-indigo-500 dark:text-cyan-400" />
-                      Quick Help
-                    </DropdownMenuLabel>
-                    <div className="space-y-3">
-                      {[
-                        { icon: MessageSquare, color: "blue", title: "Chat with MediAI", desc: "Describe symptoms via text, voice, or image upload." },
-                        { icon: BookOpen, color: "purple", title: "Medical History", desc: "Browse past consultations and health records." },
-                        { icon: Zap, color: "green", title: "Quick Tip", desc: "Include symptom duration and severity for better analysis." },
-                        { icon: Shield, color: "red", title: "Privacy & Security", desc: "All data is end-to-end encrypted at rest and in transit." },
-                      ].map(({ icon: Icon, color, title, desc }) => (
-                        <div key={title} className="flex items-start gap-3">
-                          <div className={`p-1.5 rounded-lg bg-${color}-50 dark:bg-${color}-900/30 shrink-0`}>
-                            <Icon className={`h-4 w-4 text-${color}-600 dark:text-${color}-400`} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{title}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">{desc}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <DropdownMenuSeparator className="my-3 bg-slate-200/50 dark:bg-slate-700/50" />
-                    <DropdownMenuItem onClick={onStartTour} className="text-sm rounded-xl text-indigo-600 dark:text-cyan-400 focus:bg-indigo-50 dark:focus:bg-cyan-500/10 cursor-pointer">
-                      Take the guided tour →
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* User profile dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors user-menu focus:outline-none"
-                    >
-                      {user.profileImage ? (
-                        <img
-                          src={user.profileImage}
-                          alt={user.name}
-                          className="h-8 w-8 rounded-lg object-cover ring-2 ring-indigo-500/30 dark:ring-cyan-400/30"
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                          {user.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-200 max-w-[80px] truncate">
-                        {user.name.split(" ")[0]}
-                      </span>
-                      <ChevronDown className="hidden sm:block h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                    </motion.button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 glass-card rounded-2xl shadow-2xl border border-white/30 dark:border-white/10 mt-2 overflow-hidden">
-                    <div className="px-3 pt-3 pb-2">
-                      <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{user.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
-                    </div>
-                    <DropdownMenuSeparator className="bg-slate-200/50 dark:bg-slate-700/50" />
-                    {[
-                      { label: "Profile", path: "/profile", icon: User },
-                      { label: "Appointments", path: "/appointments", icon: CalendarCheck },
-                      { label: "Symptom Diary", path: "/symptom-diary", icon: BookHeart },
-                      { label: "Settings", path: "/settings", icon: Settings },
-                    ].map(({ label, path, icon: Icon }) => (
-                      <DropdownMenuItem
-                        key={path}
-                        onClick={() => navTo(path)}
-                        className="flex items-center gap-2.5 mx-1 my-0.5 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:bg-slate-100 dark:focus:bg-slate-800/60 cursor-pointer"
-                      >
-                        <Icon className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                        {label}
-                      </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuSeparator className="bg-slate-200/50 dark:bg-slate-700/50 my-1" />
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      className="flex items-center gap-2.5 mx-1 mb-1 rounded-xl text-sm text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sign out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Mobile hamburger */}
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setMobileOpen(o => !o)}
-                  className="lg:hidden h-9 w-9 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
-                >
-                  <AnimatePresence mode="wait" initial={false}>
-                    {mobileOpen
-                      ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}><X className="h-5 w-5" /></motion.span>
-                      : <motion.span key="m" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}><Menu className="h-5 w-5" /></motion.span>
-                    }
-                  </AnimatePresence>
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </motion.header>
-
-      {/* ── Mobile menu ── */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            key="mobile-menu"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:hidden sticky top-14 z-40 overflow-hidden border-b border-white/10 dark:border-white/5"
-          >
-            <div className="glass-card rounded-2xl border border-white/30 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-3 space-y-1 shadow-xl">
-              {navLinks.map((link, i) => {
-                const active = location === link.path;
-                return (
-                  <motion.button
-                    key={link.path}
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.04 * i }}
-                    onClick={() => navTo(link.path)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                      active
-                        ? "bg-indigo-50 dark:bg-cyan-500/10 text-indigo-600 dark:text-cyan-400"
-                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50"
-                    )}
-                  >
-                    <link.icon className="h-4 w-4" />
-                    {link.label}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
     </>
   );
 }
