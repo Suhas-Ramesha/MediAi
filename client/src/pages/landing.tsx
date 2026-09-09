@@ -439,7 +439,7 @@ export default function Landing() {
                 {capabilities.map((c) => (
                   <li
                     key={`${copy}-${c}`}
-                    className="flex items-center whitespace-nowrap px-6 text-sm font-medium text-foreground/70"
+                    className="flex items-center whitespace-nowrap px-6 text-sm font-medium text-foreground/80"
                   >
                     <span className="mr-6 h-1 w-1 rounded-full bg-primary/60" />
                     {c}
