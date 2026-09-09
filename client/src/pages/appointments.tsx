@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, User, FileText, ExternalLink } from "lucide-react";
-import { db } from "@/lib/firebase";
+import { Calendar, Clock } from "lucide-react";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+
+import { useRequireAuth } from "@/hooks/use-auth";
+import { AppShell, PageSkeleton } from "@/components/AppShell";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { db } from "@/lib/firebase";
 
 interface Appointment {
   id: string;
@@ -22,18 +21,10 @@ interface Appointment {
 }
 
 export default function Appointments() {
-  const { currentUser, userProfile, isLoading } = useAuth();
+  const { currentUser, userProfile, isLoading } = useRequireAuth();
   const [, setLocation] = useLocation();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
-  const [showDebugView, setShowDebugView] = useState(false);
-
-  // Redirect to landing page if not logged in
-  useEffect(() => {
-    if (!isLoading && !currentUser) {
-      setLocation("/");
-    }
-  }, [isLoading, currentUser, setLocation]);
 
   // Load appointments from both localStorage and Firestore
   useEffect(() => {
@@ -46,9 +37,6 @@ export default function Appointments() {
         // Get appointments from localStorage - check both possible keys
         let localAppointments = JSON.parse(localStorage.getItem('mediaiAppointments') || '[]');
         
-        // Log what we found in localStorage for debugging
-        console.log('LocalStorage appointments:', localAppointments);
-        
         // If no appointments found, check localStorage for pending appointments that might be saved differently
         if (localAppointments.length === 0) {
           // Try to look for other storage keys that might contain appointments
@@ -59,21 +47,16 @@ export default function Appointments() {
             key.includes('booking')
           );
           
-          console.log('Potential appointment keys found:', appointmentKeys);
-          
           // Try to parse each potential appointment key
           for (const key of appointmentKeys) {
             try {
               const data = JSON.parse(localStorage.getItem(key) || '[]');
               if (Array.isArray(data) && data.length > 0) {
-                console.log(`Found appointments in key ${key}:`, data);
                 localAppointments = localAppointments.concat(data);
               } else if (data && typeof data === 'object') {
-                console.log(`Found appointment object in key ${key}:`, data);
                 localAppointments.push(data);
               }
             } catch (e) {
-              console.log(`Could not parse key ${key}`);
             }
           }
         }
@@ -98,7 +81,6 @@ export default function Appointments() {
         //   };
         // });
         //
-        // console.log('Firestore appointments:', firestoreAppointments);
         const firestoreAppointments: Appointment[] = []; // Initialize as empty array since we removed the query
         
         // Also check consultations for appointment records
@@ -114,7 +96,6 @@ export default function Appointments() {
         
         consultationsSnapshot.forEach(doc => {
           const data = doc.data();
-          console.log('Checking consultation for appointments:', doc.id);
 
           // Use structured fields if available
           const structuredDoctorName = data.doctorName || (data.selectedDoctor && (data.selectedDoctor.name || (data.selectedDoctor.firstName ? data.selectedDoctor.firstName + ' ' + data.selectedDoctor.lastName : 'Doctor')));
@@ -142,7 +123,7 @@ export default function Appointments() {
             });
 
             for (const msg of appointmentMessages) {
-              console.log('Found potential appointment message:', msg); // Log candidates
+
 
               // Attempt extraction primarily if appointmentId exists, 
               // or if it's a confirmation message (though ID is preferred)
@@ -190,7 +171,6 @@ export default function Appointments() {
           }
         });
         
-        console.log('Appointments extracted from consultations:', appointmentsFromConsultations);
         
         // Combine all sources, removing duplicates by ID
         const allAppointments = [...localAppointments];
@@ -210,7 +190,6 @@ export default function Appointments() {
           }
         });
         
-        console.log('Combined appointments:', allAppointments);
         
         // Check for approved appointments in sessionStorage
         // (created by notifications from MedicalChat component)
@@ -222,14 +201,12 @@ export default function Appointments() {
             if (appointmentIndex >= 0) {
               // Mark this appointment as approved
               allAppointments[appointmentIndex].status = 'approved';
-              console.log(`Marked appointment ${appointmentId} as approved`);
             }
           }
         });
         
         // Add demo appointments if no appointments found (for testing)
         if (allAppointments.length === 0) {
-          console.log('No appointments found. This seems strange if you booked appointments. The data may be stored in an unexpected format.');
         }
         
         // Sort by date (newest first)
@@ -250,14 +227,8 @@ export default function Appointments() {
     loadAppointments();
   }, [currentUser]);
 
-  // Show loading state if authentication is still loading
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
-
-  // Redirect if no user is logged in
-  if (!currentUser) {
-    return <div className="flex items-center justify-center min-h-screen">Redirecting...</div>;
+  if (isLoading || !currentUser) {
+    return <PageSkeleton />;
   }
 
   const headerUser = {
@@ -291,7 +262,6 @@ export default function Appointments() {
         day: 'numeric' 
       });
     } catch (e) {
-      console.warn('Error formatting date:', dateStr, e);
       return dateStr;
     }
   };
@@ -307,7 +277,6 @@ export default function Appointments() {
       }
       return timeStr;
     } catch (e) {
-      console.warn('Error formatting time:', timeStr, e);
       return timeStr;
     }
   };
@@ -315,13 +284,13 @@ export default function Appointments() {
   const getStatusBadge = (status: string) => {
     switch(status?.toLowerCase()) {
       case 'approved':
-        return <Badge className="bg-green-500">Approved</Badge>;
+        return <Badge className="border-transparent bg-success/15 text-success">Approved</Badge>;
       case 'pending':
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-600">Pending</Badge>;
+        return <Badge variant="outline" className="border-border text-muted-foreground">Pending</Badge>;
       case 'cancelled':
         return <Badge variant="destructive">Cancelled</Badge>;
       case 'completed':
-        return <Badge className="bg-blue-500">Completed</Badge>;
+        return <Badge className="border-transparent bg-primary/15 text-primary">Completed</Badge>;
       default:
         return <Badge variant="outline">{status || 'Unknown'}</Badge>;
     }
@@ -340,162 +309,76 @@ export default function Appointments() {
       createdAt: appointment.createdAt || new Date().toISOString()
     };
     
-    // Log if we're using default values
-    if (formattedAppointment.doctorName === 'Doctor') {
-      console.warn('Using default doctor name for appointment:', appointment);
-    }
-    if (formattedAppointment.date === 'Unknown Date') {
-      console.warn('Using default date for appointment:', appointment);
-    }
-    if (formattedAppointment.time === 'Unknown Time') {
-      console.warn('Using default time for appointment:', appointment);
-    }
-    
     return formattedAppointment;
   };
 
-  // Toggle debug view
-  const toggleDebugView = () => {
-    setShowDebugView(!showDebugView);
-  };
-  
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col text-slate-800 dark:text-slate-200">
-      <Header user={headerUser} />
-      
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">My Appointments</h1>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setLocation('/dashboard')}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <ExternalLink className="h-4 w-4" />
-              Chat with MediAI
-            </Button>
-            <Button
-              onClick={toggleDebugView}
-              variant={showDebugView ? "default" : "secondary"}
-              size="sm"
-            >
-              {showDebugView ? "Hide Debug Info" : "Debug View"}
-            </Button>
-          </div>
+    <AppShell
+      user={headerUser}
+      wide
+      title="Appointments"
+      description="Bookings made from a consultation stay on this list."
+    >
+      <div className="mb-6 flex justify-end">
+        <Button variant="outline" onClick={() => setLocation("/dashboard")}>
+          Open a consultation
+        </Button>
+      </div>
+
+      {isLoadingAppointments ? (
+        <div className="space-y-3">
+          <div className="surface h-28 animate-pulse bg-muted/40" />
+          <div className="surface h-28 animate-pulse bg-muted/40" />
         </div>
-        
-        {isLoadingAppointments ? (
-          <Card>
-            <CardContent className="p-8 flex justify-center">
-              <div className="flex flex-col items-center">
-                <div className="h-8 w-8 border-4 border-t-primary rounded-full animate-spin mb-2"></div>
-                <p>Loading your appointments...</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : appointments.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <div className="flex flex-col items-center">
-                <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No appointments found</h3>
-                <p className="text-muted-foreground mb-4">
-                  You don't have any appointments booked through MediAI yet.
-                </p>
-                <Button onClick={() => setLocation('/dashboard')}>
-                  Book an Appointment
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {showDebugView && (
-              <Card className="mb-4 overflow-hidden">
-                <CardHeader>
-                  <CardTitle>Debug Information</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="bg-slate-900 text-slate-100 p-4 rounded-md overflow-auto max-h-96">
-                    <pre className="text-xs">{JSON.stringify(appointments, null, 2)}</pre>
-                    <div className="mt-4 pt-4 border-t border-slate-700">
-                      <h4 className="text-sm font-bold mb-2">LocalStorage Keys:</h4>
-                      <pre className="text-xs">{JSON.stringify(Object.keys(localStorage), null, 2)}</pre>
-                    </div>
+      ) : appointments.length === 0 ? (
+        <div className="surface flex flex-col items-center px-6 py-16 text-center">
+          <Calendar className="mb-4 h-10 w-10 text-muted-foreground" />
+          <h2 className="text-lg font-semibold">No appointments yet</h2>
+          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+            When a chat suggests you should be seen, you can book from there.
+            Those bookings appear here.
+          </p>
+          <Button className="mt-5" onClick={() => setLocation("/dashboard")}>
+            Start a consultation
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {appointments.map((appointment, index) => {
+            const completeAppointment = ensureAppointmentFields(appointment);
+            return (
+              <article
+                key={completeAppointment.id || index}
+                className="surface p-5 sm:p-6"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold">
+                      Dr. {completeAppointment.doctorName}
+                    </h2>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {formatDate(completeAppointment.date)}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5" />
+                        {formatTime(completeAppointment.time)}
+                      </span>
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            <div className="space-y-4">
-              {appointments.map((appointment, index) => {
-                // Ensure all appointment fields exist
-                const completeAppointment = ensureAppointmentFields(appointment);
-                
-                return (
-                  <Card key={completeAppointment.id || index} className="overflow-hidden">
-                    <div className="flex flex-col sm:flex-row">
-                      <div className="p-4 sm:p-6 flex-1">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h3 className="font-medium text-lg mb-1">
-                              Appointment with Dr. {completeAppointment.doctorName}
-                            </h3>
-                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                              <Calendar className="h-4 w-4" />
-                              <span>{formatDate(completeAppointment.date)}</span>
-                              <Clock className="h-4 w-4 ml-2" />
-                              <span>{formatTime(completeAppointment.time)}</span>
-                            </div>
-                          </div>
-                          <div>
-                            {getStatusBadge(completeAppointment.status)}
-                          </div>
-                        </div>
-                        
-                        {completeAppointment.reason && (
-                          <div className="mb-4">
-                            <h4 className="text-sm font-medium mb-1">Reason</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {completeAppointment.reason}
-                            </p>
-                          </div>
-                        )}
-                        
-                        <div className="flex flex-wrap gap-2 mt-4">
-                          {/* REMOVED: Join Video Call button */}
-                          {/* {completeAppointment.status === 'approved' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-xs"
-                              onClick={() => window.open('https://meet.google.com', '_blank')}
-                            >
-                              Join Video Call
-                            </Button>
-                          )} */}
-                          
-                          {/* REMOVED: View Details button */}
-                          {/* <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs"
-                          >
-                            View Details
-                          </Button> */}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </main>
-      
-      <Footer />
-    </div>
+                  {getStatusBadge(completeAppointment.status)}
+                </div>
+                {completeAppointment.reason ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    {completeAppointment.reason}
+                  </p>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </AppShell>
   );
 } 

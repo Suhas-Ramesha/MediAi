@@ -58,8 +58,8 @@ export function LoginForm({ onSuccess }: AuthFormsProps) {
   };
 
   return (
-    <div className="space-y-4 p-4">
-      <h2 className="text-xl font-semibold dark:text-white">Login</h2>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold tracking-tight">Sign in</h2>
       <form onSubmit={handleLogin} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -83,7 +83,7 @@ export function LoginForm({ onSuccess }: AuthFormsProps) {
           />
         </div>
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Logging in..." : "Login"}
+        {isLoading ? "Signing in…" : "Sign in"}
         </Button>
       </form>
       
@@ -92,7 +92,7 @@ export function LoginForm({ onSuccess }: AuthFormsProps) {
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="px-2 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full">Or continue with</span>
+          <span className="rounded-full bg-background px-2 text-muted-foreground">Or continue with</span>
         </div>
       </div>
       
@@ -182,7 +182,7 @@ export function SignUpForm({ onSuccess }: AuthFormsProps) {
   };
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4">
       {verificationSent ? (
         <div className="text-center">
           <h2 className="text-xl font-semibold">Verify Your Email</h2>
@@ -192,7 +192,7 @@ export function SignUpForm({ onSuccess }: AuthFormsProps) {
         </div>
       ) : (
         <>
-          <h2 className="text-xl font-semibold dark:text-white">Create an Account</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Create an account</h2>
           <form onSubmit={handleSignUp} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -237,7 +237,7 @@ export function SignUpForm({ onSuccess }: AuthFormsProps) {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="px-2 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full">Or continue with</span>
+              <span className="rounded-full bg-background px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
           

@@ -1,15 +1,9 @@
-import { initializeApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { 
   getAuth, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  User as FirebaseAuthUser,
   Auth
 } from 'firebase/auth';
 
@@ -22,17 +16,14 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-console.log("Firebase Config:", {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ? "Set" : "Missing",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ? "Set" : "Missing",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ? "Set" : "Missing",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ? "Set" : "Missing",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ? "Set" : "Missing",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID ? "Set" : "Missing"
-});
+function isConfiguredValue(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const lower = trimmed.toLowerCase();
+  return !lower.startsWith("your_") && !lower.includes("your-project") && !lower.includes("your_firebase");
+}
 
-// Initialize Firebase
-// Check if Firebase is properly configured
 export function isFirebaseConfigured() {
   const requiredConfigs = [
     'apiKey', 
@@ -41,10 +32,10 @@ export function isFirebaseConfigured() {
     'storageBucket', 
     'messagingSenderId', 
     'appId'
-  ];
+  ] as const;
   
   const missingConfigs = requiredConfigs.filter(key => 
-    !firebaseConfig[key as keyof typeof firebaseConfig]
+    !isConfiguredValue(firebaseConfig[key])
   );
   
   if (missingConfigs.length > 0) {
@@ -57,52 +48,27 @@ export function isFirebaseConfigured() {
 
 const validConfig = isFirebaseConfigured();
 
-// Initialize Firebase variables
 let app: FirebaseApp;
 let db: Firestore;
 let storage: FirebaseStorage;
 let auth: Auth;
 let googleProvider: GoogleAuthProvider;
 
-// Initialize Firebase
 try {
   if (!validConfig) {
-    console.error("Firebase config validation failed:", firebaseConfig);
     throw new Error("Firebase configuration is invalid");
   }
-  
-  console.log("Initializing Firebase with config:", {
-    ...firebaseConfig,
-    apiKey: firebaseConfig.apiKey ? "Present" : "Missing"
-  });
-  
-  app = initializeApp(firebaseConfig);
-  console.log("Firebase app initialized");
-  
+
+  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   auth = getAuth(app);
-  console.log("Firebase auth initialized");
-  
   db = getFirestore(app);
-  console.log("Firebase Firestore initialized");
-  
-  storage = getStorage(app);
-  // Configure storage to use the correct bucket
+
   const storageBucket = firebaseConfig.storageBucket;
-  if (storageBucket) {
-    storage = getStorage(app, `gs://${storageBucket}`);
-  }
-  console.log("Firebase storage initialized");
-  
+  storage = storageBucket ? getStorage(app, `gs://${storageBucket}`) : getStorage(app);
+
   googleProvider = new GoogleAuthProvider();
-  console.log("Google provider initialized");
-  
-  console.log("Firebase successfully initialized");
 } catch (error) {
   console.error("Firebase initialization error details:", error);
-  if (error instanceof Error) {
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
-  }
   throw new Error("Failed to initialize Firebase. Please check your configuration.");
 }
 

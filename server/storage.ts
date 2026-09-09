@@ -88,7 +88,10 @@ export class MemStorage implements IStorage {
     const id = this.userIdCounter++;
     const now = new Date();
     const user: User = { 
-      ...insertUser, 
+      ...insertUser,
+      age: insertUser.age ?? null,
+      bloodType: insertUser.bloodType ?? null,
+      allergies: insertUser.allergies ?? null,
       id, 
       createdAt: now
     };
@@ -112,6 +115,7 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const consultation: Consultation = {
       ...insertConsultation,
+      status: insertConsultation.status ?? "active",
       id,
       date: now
     };
@@ -167,6 +171,7 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const diagnosis: Diagnosis = {
       ...insertDiagnosis,
+      warnings: insertDiagnosis.warnings ?? null,
       id,
       createdAt: now
     };
@@ -190,6 +195,7 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const upload: Upload = {
       ...insertUpload,
+      analysisResult: insertUpload.analysisResult ?? null,
       id,
       uploadedAt: now
     };

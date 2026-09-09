@@ -1439,7 +1439,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   };
 
   return (
-    <div className="surface relative flex h-full min-h-[600px] w-full flex-col overflow-hidden">
+    <div className="surface relative flex h-full min-h-[600px] w-full flex-col overflow-hidden chat-interface">
       <div className="z-10 flex flex-row items-center justify-between border-b border-border bg-card px-5 py-3.5">
         <h2 className="text-base font-semibold tracking-tight">
           Medical assistant
@@ -1476,10 +1476,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                 <motion.div
                   key={msg.id}
                   layout
-                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div

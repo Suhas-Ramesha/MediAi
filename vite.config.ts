@@ -44,6 +44,9 @@ export default defineConfig(async ({ mode }) => {
       },
     },
     root: path.resolve(__dirname, "client"),
+    // Load `.env` from the repo root so VITE_* keys work for both
+    // `npm run dev` (root is `client`) and `npm run dev:server`.
+    envDir: path.resolve(__dirname),
     build: {
       outDir: path.resolve(__dirname, "dist/public"),
       emptyOutDir: true,

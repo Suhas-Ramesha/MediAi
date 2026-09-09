@@ -302,11 +302,11 @@ export default function Header({ user, onStartTour }: HeaderProps) {
           {mobileOpen && (
             <motion.div
               key="mobile-menu"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={transition.base}
-              className="overflow-hidden border-t border-border bg-background lg:hidden"
+              className="border-t border-border bg-background lg:hidden"
             >
               <nav className="space-y-1 px-4 py-3 sm:px-6">
                 {navLinks.map((link) => {

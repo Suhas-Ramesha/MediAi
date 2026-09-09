@@ -1,3 +1,4 @@
+import { useReducedMotion } from "framer-motion";
 import type { Transition, Variants } from "framer-motion";
 
 /**
@@ -15,7 +16,7 @@ import type { Transition, Variants } from "framer-motion";
  *    slideshow and causes layout shift on mobile.
  * 5. Entrances play once. Re-animating on every scroll pass is the single
  *    most common reason a landing page feels cheap.
- * 6. Reduced motion is honoured. See `useMotionSafe` below.
+ * 6. Reduced motion is honoured. See `useMotionSafe`.
  */
 
 /** Fast out, slow in. Default for anything entering the screen. */
@@ -82,3 +83,15 @@ export const interactive = {
   whileHover: { y: -2, transition: transition.fast },
   whileTap: { scale: 0.99, transition: transition.fast },
 } as const;
+
+/** Skip enter/hover motion when the user asked for reduced motion. */
+export function useMotionSafe() {
+  const reduce = useReducedMotion();
+  return {
+    reduce: !!reduce,
+    fadeUp: reduce ? undefined : fadeUp,
+    fadeIn: reduce ? undefined : fadeIn,
+    initial: reduce ? false : ("hidden" as const),
+    animate: "visible" as const,
+  };
+}
