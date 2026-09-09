@@ -3,105 +3,97 @@
 @tailwind utilities;
 
 /* ============================================================
-   Design tokens
+   MediAI visual system — "consulting room"
 
-   One accent colour only. In healthcare the job of the interface
-   is to read as calm and trustworthy, so the palette is a neutral
-   slate base with a single clinical teal used for actions and
-   emphasis. `accent` follows the shadcn semantic: it is a hover
-   surface, not a second brand colour.
+   Why this palette: clinics are daylight rooms, not crypto decks.
+   Cool mist walls (not cream), ink with a green cast (not slate),
+   one scrub-green action colour (not cyan neon). Urgency uses a
+   dried-iodine brown so warnings read medical, not marketing.
    ============================================================ */
 
 @layer base {
   :root {
-    /* Surfaces */
-    --background: 210 20% 99%;
-    --foreground: 222 47% 11%;
+    --background: 150 18% 95%;
+    --foreground: 162 22% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 150 25% 98%;
+    --card-foreground: 162 22% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 150 25% 98%;
+    --popover-foreground: 162 22% 12%;
 
-    /* Single brand accent: clinical teal */
-    --primary: 192 91% 33%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 166 60% 26%;
+    --primary-foreground: 150 30% 97%;
 
-    /* Neutral surfaces, not brand colours */
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 152 16% 90%;
+    --secondary-foreground: 162 22% 12%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 42%;
+    --muted: 150 14% 91%;
+    --muted-foreground: 160 10% 34%;
 
-    --accent: 210 20% 94%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 152 18% 88%;
+    --accent-foreground: 162 22% 12%;
 
-    /* Status */
-    --destructive: 0 72% 45%;
+    --destructive: 4 68% 42%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 60% 32%;
+    --success: 152 48% 28%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 35 88% 38%;
+    --warning: 22 62% 38%;
     --warning-foreground: 0 0% 100%;
 
-    /* Lines and rings */
-    --border: 214 20% 89%;
-    --input: 214 20% 89%;
-    --ring: 192 91% 33%;
+    --border: 152 14% 82%;
+    --input: 152 14% 82%;
+    --ring: 166 60% 26%;
 
-    --radius: 0.75rem;
+    --radius: 0.7rem;
 
-    /* Elevation. Tuned tight and low-contrast; large soft shadows
-       are what make an interface look like a template. */
-    --shadow-xs: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
-    --shadow-sm: 0 1px 3px 0 hsl(222 47% 11% / 0.07), 0 1px 2px -1px hsl(222 47% 11% / 0.07);
-    --shadow-md: 0 4px 12px -2px hsl(222 47% 11% / 0.08), 0 2px 4px -2px hsl(222 47% 11% / 0.06);
-    --shadow-lg: 0 12px 28px -8px hsl(222 47% 11% / 0.12), 0 4px 10px -4px hsl(222 47% 11% / 0.08);
+    --shadow-xs: 0 1px 2px 0 hsl(162 22% 12% / 0.05);
+    --shadow-sm: 0 1px 2px hsl(162 22% 12% / 0.05), 0 6px 16px -10px hsl(166 40% 20% / 0.18);
+    --shadow-md: 0 1px 2px hsl(162 22% 12% / 0.04), 0 14px 28px -16px hsl(166 40% 18% / 0.28);
+    --shadow-lg: 0 18px 40px -20px hsl(166 40% 16% / 0.35);
   }
 
   .dark {
-    --background: 222 34% 7%;
-    --foreground: 210 20% 96%;
+    --background: 160 16% 8%;
+    --foreground: 150 18% 93%;
 
-    --card: 222 30% 10%;
-    --card-foreground: 210 20% 96%;
+    --card: 160 14% 11%;
+    --card-foreground: 150 18% 93%;
 
-    --popover: 222 30% 10%;
-    --popover-foreground: 210 20% 96%;
+    --popover: 160 14% 11%;
+    --popover-foreground: 150 18% 93%;
 
-    --primary: 190 90% 50%;
-    --primary-foreground: 195 100% 9%;
+    --primary: 162 32% 58%;
+    --primary-foreground: 160 20% 10%;
 
-    --secondary: 217 25% 16%;
-    --secondary-foreground: 210 20% 96%;
+    --secondary: 160 12% 16%;
+    --secondary-foreground: 150 18% 93%;
 
-    --muted: 217 25% 15%;
-    --muted-foreground: 215 18% 65%;
+    --muted: 160 12% 15%;
+    --muted-foreground: 150 10% 68%;
 
-    --accent: 217 25% 18%;
-    --accent-foreground: 210 20% 96%;
+    --accent: 160 12% 18%;
+    --accent-foreground: 150 18% 93%;
 
-    --destructive: 0 62% 48%;
+    --destructive: 4 58% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 52% 44%;
-    --success-foreground: 152 100% 8%;
+    --success: 152 36% 48%;
+    --success-foreground: 152 40% 8%;
 
-    --warning: 38 92% 55%;
-    --warning-foreground: 35 100% 10%;
+    --warning: 28 58% 58%;
+    --warning-foreground: 28 40% 10%;
 
-    --border: 217 25% 18%;
-    --input: 217 25% 20%;
-    --ring: 190 90% 50%;
+    --border: 160 12% 18%;
+    --input: 160 12% 20%;
+    --ring: 162 32% 58%;
 
-    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
-    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.4);
-    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.45);
-    --shadow-lg: 0 12px 28px -8px hsl(0 0% 0% / 0.55);
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.35);
+    --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 8px 24px hsl(0 0% 0% / 0.45);
+    --shadow-lg: 0 16px 40px hsl(0 0% 0% / 0.55);
   }
 }
 
@@ -112,26 +104,28 @@
 
   html {
     scroll-behavior: smooth;
-    /* Stops content jumping sideways when a scrollbar appears */
     scrollbar-gutter: stable;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-feature-settings: "cv11", "ss01";
-    font-variation-settings: "opsz" 32;
+    @apply bg-background font-sans text-foreground antialiased;
+    background-image:
+      radial-gradient(1200px 600px at 12% -10%, hsl(166 40% 70% / 0.18), transparent 55%),
+      radial-gradient(900px 500px at 110% 8%, hsl(150 20% 80% / 0.35), transparent 50%);
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
-  /* Numbers in tables and metrics should not shift width as they change */
+  .dark body {
+    background-image:
+      radial-gradient(1000px 520px at 8% -20%, hsl(166 30% 22% / 0.35), transparent 50%),
+      radial-gradient(800px 400px at 100% 0%, hsl(160 20% 16% / 0.5), transparent 50%);
+  }
+
   th, td, [data-numeric] {
     font-variant-numeric: tabular-nums;
   }
 
-  /* A visible, consistent focus ring is the cheapest accessibility win
-     available and most templates skip it. */
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
@@ -140,7 +134,6 @@
     background: hsl(var(--primary) / 0.18);
   }
 
-  /* Default placeholder grey fails contrast checks in both themes. */
   ::placeholder {
     color: hsl(var(--muted-foreground) / 0.85);
     opacity: 1;
@@ -154,7 +147,6 @@
     text-wrap: pretty;
   }
 
-  /* Scrollbars: quiet, and only visible against the content they scroll */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -168,19 +160,7 @@
     border: 3px solid transparent;
     background-clip: padding-box;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--foreground) / 0.28);
-    background-clip: padding-box;
-  }
 }
-
-/* ============================================================
-   Motion
-
-   Anything decorative is disabled for users who ask for reduced
-   motion. This is a hard requirement, not a nicety: vestibular
-   disorders make looping parallax genuinely unpleasant.
-   ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -196,13 +176,10 @@
 }
 
 @layer components {
-  /* Standard content column. Used everywhere so page gutters agree. */
   .container-page {
-    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+    @apply mx-auto w-full max-w-[1120px] px-5 sm:px-8;
   }
 
-  /* The default panel. A single hairline border plus a very small
-     shadow reads as "designed"; heavy blur and glow reads as "template". */
   .surface {
     @apply rounded-xl border border-border bg-card;
     box-shadow: var(--shadow-xs);
@@ -213,10 +190,8 @@
     box-shadow: var(--shadow-md);
   }
 
-  /* Kept for backwards compatibility with existing screens, but
-     deliberately toned right down from the original heavy glass. */
   .glass-card {
-    @apply rounded-xl border border-border bg-card/85 backdrop-blur-md;
+    @apply rounded-xl border border-border bg-card/90 backdrop-blur-md;
     box-shadow: var(--shadow-sm);
   }
 
@@ -224,16 +199,17 @@
     @apply transition-[border-color,box-shadow] duration-200;
   }
   .glass-card-hover:hover {
-    @apply border-border;
     box-shadow: var(--shadow-md);
   }
 
-  /* Small uppercase section label */
-  .eyebrow {
-    @apply text-xs font-semibold uppercase tracking-[0.12em] text-primary;
+  .kicker {
+    @apply font-display text-lg italic text-primary;
   }
 
-  /* Hairline divider that fades at both ends */
+  .eyebrow {
+    @apply font-display text-lg italic text-primary;
+  }
+
   .rule-fade {
     height: 1px;
     background: linear-gradient(
@@ -243,16 +219,26 @@
       transparent
     );
   }
+
+  .chart-sheet {
+    background-color: hsl(var(--card));
+    background-image: repeating-linear-gradient(
+      transparent,
+      transparent 27px,
+      hsl(var(--primary) / 0.06) 27px,
+      hsl(var(--primary) / 0.06) 28px
+    );
+  }
 }
 
 @layer utilities {
-  /* Interactive lift. Deliberately 1px, enough to feel responsive but
-     small enough not to look bouncy. */
   .lift {
-    @apply transition-[transform,box-shadow] duration-200 ease-out;
+    @apply transition-transform duration-200 ease-emphasized;
   }
   .lift:hover {
     transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+  }
+  .lift:active {
+    transform: translateY(0) scale(0.99);
   }
 }

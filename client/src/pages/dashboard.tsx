@@ -42,10 +42,10 @@ function DashboardContent({
         transition={transition.slow}
         className="mb-6"
       >
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
           Good to see you, {firstName}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-2 max-w-[48ch] text-muted-foreground">
           Describe how you feel, run a risk assessment, or pick up a previous
           consultation.
         </p>
@@ -59,6 +59,7 @@ function DashboardContent({
           className="space-y-6 lg:col-span-1"
         >
           <section className="user-profile-section surface p-6">
+            <p className="mb-4 font-display text-xl italic text-primary">Patient file</p>
             <UserProfile user={userProfile || {}} />
           </section>
 

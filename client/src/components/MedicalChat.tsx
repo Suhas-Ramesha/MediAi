@@ -1441,9 +1441,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   return (
     <div className="surface relative flex h-full min-h-[600px] w-full flex-col overflow-hidden chat-interface">
       <div className="z-10 flex flex-row items-center justify-between border-b border-border bg-card px-5 py-3.5">
-        <h2 className="text-base font-semibold tracking-tight">
-          Medical assistant
-        </h2>
+        <div>
+          <h2 className="font-display text-xl tracking-tight">Consultation</h2>
+          <p className="text-xs text-muted-foreground">Not a diagnosis · escalate if you need to be seen</p>
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -1454,7 +1455,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           New session
         </Button>
       </div>
-      <div className="relative flex-1 overflow-hidden bg-muted/20">
+      <div className="relative flex-1 overflow-hidden chart-sheet">
         {/* Chat Messages */}
         <ScrollArea className="h-full px-4 pt-6 pb-32">
           {messages.length === 0 ? (
@@ -1462,12 +1463,12 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
               <div className="mb-2 grid h-14 w-14 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                 <BrainCircuit className="h-7 w-7" />
               </div>
-              <p className="text-base font-medium">What can I do for you today?</p>
-              <p className="max-w-sm text-sm text-muted-foreground">
-                Start a{" "}
-                <span className="font-medium text-primary">new session</span> for
-                a risk assessment, or just describe how you feel below.
-              </p>
+                  <p className="text-base font-medium">What can I do for you today?</p>
+                  <p className="max-w-sm text-sm text-muted-foreground">
+                    Start a{" "}
+                    <span className="font-medium text-primary">new session</span> for
+                    a risk assessment, or describe how you feel below.
+                  </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1699,7 +1700,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         )}
 
         {/* Sleek Floating Input Area */}
-        <div className="absolute bottom-6 left-1/2 z-20 flex w-[92%] max-w-3xl -translate-x-1/2 items-center gap-2 rounded-full border border-border bg-card/95 p-2 pr-3 shadow-lg backdrop-blur-md">
+        <div className="absolute bottom-5 left-1/2 z-20 flex w-[92%] max-w-3xl -translate-x-1/2 items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-md">
           <label htmlFor="file-upload" className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground">
             <Upload className="h-4 w-4" />
             <Input
@@ -1731,7 +1732,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(input)}
-              placeholder="Type your symptoms or questions..."
+              placeholder="Describe how you feel"
               disabled={isLoading || isRecording}
             />
           </div>

@@ -31,6 +31,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { transition } from "@/lib/motion";
+import { BrandMark } from "@/components/BrandMark";
 import SparkWrapper from "./SparkWrapper";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -127,27 +128,11 @@ export default function Header({ user, onStartTour }: HeaderProps) {
         )}
       >
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          {/* Logo */}
           <SparkWrapper
-            className="logo-container flex shrink-0 cursor-pointer items-center gap-2.5"
+            className="logo-container flex shrink-0 cursor-pointer items-center"
             onClick={() => navTo("/dashboard")}
           >
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
-            </span>
-            <span className="text-base font-semibold tracking-tight">
-              MediAI
-            </span>
+            <BrandMark />
           </SparkWrapper>
 
           {/* Desktop nav */}

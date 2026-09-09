@@ -4,76 +4,57 @@ import {
   AnimatePresence,
   motion,
   useMotionValueEvent,
+  useReducedMotion,
   useScroll,
 } from "framer-motion";
 import {
-  Activity,
-  ArrowRight,
   CalendarCheck,
-  ClipboardList,
   FileImage,
   Info,
   LineChart,
   Lock,
-  MessageSquareText,
   Mic,
   ShieldCheck,
-  Stethoscope,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Reveal, RevealGroup, RevealItem, ScrollProgress } from "@/components/ui/reveal";
+import { BrandMark } from "@/components/BrandMark";
 import { LoginForm, SignUpForm } from "@/components/AuthForms";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import { fadeUp, scaleIn, slideIn, transition } from "@/lib/motion";
+import { transition } from "@/lib/motion";
 
-/* ------------------------------------------------------------------ */
-/* Content                                                             */
-/* ------------------------------------------------------------------ */
-
-/**
- * `span` drives an intentionally uneven grid. A row of three identical
- * feature cards is the most recognisable generated-layout signature, so the
- * rows alternate 4/2, 2/4, 3/3 instead.
- */
 const features = [
   {
-    icon: MessageSquareText,
+    n: "01",
     title: "Structured triage",
     body: "Describe how you feel in your own words. You get back what it could mean, what to do now, and the signs that mean you should not wait.",
-    span: "lg:col-span-4",
   },
   {
-    icon: LineChart,
+    n: "02",
     title: "Explained risk scores",
-    body: "Four assessments return a percentage next to the inputs that moved it.",
-    span: "lg:col-span-2",
+    body: "Diabetes, heart, liver and kidney assessments return a percentage next to the inputs that moved it.",
   },
   {
-    icon: Mic,
+    n: "03",
     title: "Voice when typing is hard",
-    body: "Speak your symptoms instead of typing them.",
-    span: "lg:col-span-2",
+    body: "Speak your symptoms instead of typing them. The transcript is still yours to edit.",
   },
   {
-    icon: FileImage,
+    n: "04",
     title: "Reports and images",
-    body: "Upload a lab report or a photo of an affected area and get a plain-language reading of what the values and visible features suggest.",
-    span: "lg:col-span-4",
+    body: "Upload a lab report or a photo of an affected area and get a plain-language reading of the values and visible features.",
   },
   {
-    icon: ClipboardList,
+    n: "05",
     title: "A diary that spots trends",
     body: "Log symptoms over days and weeks. Patterns across time are what a single consultation cannot see.",
-    span: "lg:col-span-3",
   },
   {
-    icon: CalendarCheck,
+    n: "06",
     title: "Straight through to a doctor",
     body: "When the conversation suggests you should be seen, book a real appointment without starting again somewhere else.",
-    span: "lg:col-span-3",
   },
 ];
 
@@ -92,77 +73,58 @@ const steps = [
   },
 ];
 
-/* ------------------------------------------------------------------ */
-/* Hero product preview                                                */
-/* ------------------------------------------------------------------ */
+const riskFactors = [
+  { label: "Fasting glucose", value: "142 mg/dL", weight: 82 },
+  { label: "BMI", value: "31.4", weight: 54 },
+  { label: "Family history", value: "Present", weight: 38 },
+  { label: "Age", value: "46", weight: 21 },
+];
 
-function ChatPreview() {
+function ConsultSheet() {
+  const reduce = useReducedMotion();
+  const enter = (delay: number) =>
+    reduce
+      ? {}
+      : {
+          initial: { opacity: 0, y: 10, filter: "blur(6px)" },
+          animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+          transition: { ...transition.slow, delay },
+        };
+
   return (
-    <div className="surface-raised overflow-hidden rounded-2xl">
-      <div className="border-b border-border bg-muted/40 px-5 py-3">
-        <p className="text-xs font-medium text-muted-foreground">
-          An actual reply, in the format the assistant always answers in
-        </p>
+    <div className="surface-raised overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border px-5 py-3">
+        <p className="text-sm text-muted-foreground">Live consult format</p>
+        <span className="text-xs text-muted-foreground">2 min · not a diagnosis</span>
       </div>
-
-      <div className="space-y-4 p-5 sm:p-6">
-        {/* Patient message */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...transition.slow, delay: 0.25 }}
-          className="flex justify-end"
-        >
-          <p className="max-w-[78%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground">
+      <div className="chart-sheet space-y-4 p-5 sm:p-6">
+        <motion.div {...enter(0.15)} className="flex justify-end">
+          <p className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground">
             I&apos;ve had a fever and a sore throat since yesterday
           </p>
         </motion.div>
 
-        {/* Assistant reply */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...transition.slow, delay: 0.45 }}
-          className="flex justify-start"
-        >
-          <div className="max-w-[88%] space-y-3 rounded-2xl rounded-bl-md border border-border bg-muted/40 px-4 py-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                What this could mean
-              </p>
-              <p className="mt-1 text-sm text-foreground/90">
-                Most likely a <span className="font-semibold">viral upper respiratory infection</span>.
-                Two questions to narrow it down:
-              </p>
-            </div>
-            <ul className="space-y-1.5 text-sm text-foreground/80">
-              <li className="flex gap-2">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                Is the pain worse on one side when you swallow?
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                Any rash, or trouble breathing?
-              </li>
-            </ul>
-            <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2">
-              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
-              <p className="text-xs text-foreground/80">
-                Seek care today if your temperature stays above 39&nbsp;°C or you
-                cannot keep fluids down.
-              </p>
-            </div>
+        <motion.div {...enter(0.55)} className="max-w-[92%] space-y-3 rounded-2xl rounded-bl-sm border border-border bg-card/90 px-4 py-3.5">
+          <div>
+            <p className="font-display text-base italic text-primary">What this could mean</p>
+            <p className="mt-1 text-sm leading-relaxed">
+              Most likely a <strong className="font-semibold">viral upper respiratory infection</strong>.
+              Two questions to narrow it down:
+            </p>
+          </div>
+          <ul className="space-y-1.5 text-sm text-foreground/85">
+            <li>Is the pain worse on one side when you swallow?</li>
+            <li>Any rash, or trouble breathing?</li>
+          </ul>
+          <div className="rounded-lg border border-warning/25 bg-warning/10 px-3 py-2">
+            <p className="text-sm text-foreground/85">
+              Seek care today if your temperature stays above 39 °C or you cannot keep fluids down.
+            </p>
           </div>
         </motion.div>
 
-        {/* Suggested action */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...transition.slow, delay: 0.65 }}
-          className="flex justify-start pl-1"
-        >
-          <span className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">
+        <motion.div {...enter(0.95)} className="flex">
+          <span className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
             <CalendarCheck className="h-3.5 w-3.5" />
             Book consultation
           </span>
@@ -172,67 +134,48 @@ function ChatPreview() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Risk card, used in the deep-dive row                                */
-/* ------------------------------------------------------------------ */
-
-const riskFactors = [
-  { label: "Fasting glucose", value: "142 mg/dL", weight: 82 },
-  { label: "BMI", value: "31.4", weight: 54 },
-  { label: "Family history", value: "Present", weight: 38 },
-  { label: "Age", value: "46", weight: 21 },
-];
-
 function RiskPreview() {
+  const reduce = useReducedMotion();
   return (
-    <div className="surface-raised rounded-2xl p-5 sm:p-6">
-      <div className="flex items-baseline justify-between">
-        <p className="text-sm font-semibold">Diabetes risk</p>
-        <p className="text-xs text-muted-foreground">Moderate</p>
+    <div className="surface-raised p-6">
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="font-display text-2xl">Diabetes risk</p>
+        <p className="text-sm text-muted-foreground">Moderate</p>
       </div>
-
-      <div className="mt-3 flex items-end gap-3">
-        <span className="text-4xl font-semibold tracking-tight" data-numeric>
-          38<span className="text-2xl text-muted-foreground">%</span>
-        </span>
-      </div>
-
-      {/* Bars scale on the X axis rather than animating width, which would
-          force layout on every frame. */}
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+      <p className="mt-4 text-5xl font-medium tracking-tight" data-numeric>
+        38
+        <span className="text-2xl text-muted-foreground">%</span>
+      </p>
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
         <motion.div
-          initial={{ scaleX: 0 }}
+          initial={reduce ? { scaleX: 0.38 } : { scaleX: 0 }}
           whileInView={{ scaleX: 0.38 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="h-full origin-left rounded-full bg-primary"
         />
       </div>
-
-      <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        What moved the number
-      </p>
-
-      <ul className="mt-2.5 space-y-2.5">
+      <p className="mt-6 font-display text-lg italic text-primary">What moved the number</p>
+      <ul className="mt-3 space-y-3">
         {riskFactors.map((f, i) => (
           <li key={f.label} className="space-y-1">
             <div className="flex items-baseline justify-between text-sm">
-              <span className="text-foreground/85">{f.label}</span>
-              <span className="text-xs text-muted-foreground" data-numeric>
+              <span>{f.label}</span>
+              <span className="text-muted-foreground" data-numeric>
                 {f.value}
               </span>
             </div>
             <div className="h-1 overflow-hidden rounded-full bg-muted">
               <motion.div
-                initial={{ scaleX: 0 }}
+                initial={reduce ? { scaleX: f.weight / 100 } : { scaleX: 0 }}
                 whileInView={{ scaleX: f.weight / 100 }}
                 viewport={{ once: true }}
                 transition={{
-                  duration: 0.6,
-                  ease: [0.22, 1, 0.36, 1],
-                  delay: 0.25 + i * 0.08,
+                  duration: 0.55,
+                  ease: [0.16, 1, 0.3, 1],
+                  delay: reduce ? 0 : 0.12 + i * 0.06,
                 }}
-                className="h-full origin-left rounded-full bg-primary/45"
+                className="h-full origin-left rounded-full bg-primary/50"
               />
             </div>
           </li>
@@ -242,137 +185,79 @@ function RiskPreview() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Page                                                                */
-/* ------------------------------------------------------------------ */
-
 export default function Landing() {
   const { currentUser, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [authMode, setAuthMode] = useState("login");
   const [navSolid, setNavSolid] = useState(false);
-
-  // useScroll reads scroll outside the React render cycle. A raw scroll
-  // listener would set state on every frame and re-render the whole page.
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (y) => setNavSolid(y > 16));
 
   const handleLoginSuccess = () => setLocation("/dashboard");
-
   const goToAuth = () =>
-    document
-      .getElementById("get-started")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("get-started")?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
-    <div className="min-h-screen bg-background">
-      <ScrollProgress />
-
-      {/* ---------------- Nav ---------------- */}
+    <div className="min-h-[100dvh]">
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-base ${
-          navSolid
-            ? "border-b border-border bg-background/85 backdrop-blur-md"
-            : "border-b border-transparent"
+        className={`fixed inset-x-0 top-0 z-50 transition-colors duration-base ${
+          navSolid ? "border-b border-border bg-background/80 backdrop-blur-md" : ""
         }`}
       >
         <nav className="container-page flex h-16 items-center justify-between">
-          <a href="#top" className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <Stethoscope className="h-4 w-4" />
-            </span>
-            <span className="text-base font-semibold tracking-tight">MediAI</span>
+          <a href="#top" className="text-foreground">
+            <BrandMark />
           </a>
-
           <div className="hidden items-center gap-1 md:flex">
             {[
-              ["Features", "#features"],
+              ["What it does", "#features"],
               ["How it works", "#how"],
               ["Risk scores", "#risk"],
             ].map(([label, href]) => (
               <a
                 key={href}
                 href={href}
-                className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground"
+                className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground"
               >
                 {label}
               </a>
             ))}
           </div>
-
           <div className="flex items-center gap-2">
             <ThemeToggle />
             {currentUser ? (
               <Button size="sm" onClick={() => setLocation("/dashboard")}>
-                Dashboard
+                Open dashboard
               </Button>
             ) : (
               <Button size="sm" onClick={goToAuth}>
-                Get started
+                Start a consultation
               </Button>
             )}
           </div>
         </nav>
       </header>
 
-      {/* ---------------- Hero ---------------- */}
-      <section id="top" className="relative overflow-hidden pt-16">
-        {/* One soft, static wash. A hairline grid overlay here would only be
-            decoration, and a looping drift animation communicates nothing. */}
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-40 left-1/2 h-[460px] w-[760px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
-        </div>
-
-        <div className="container-page relative grid gap-14 pb-20 pt-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-16 lg:pb-28 lg:pt-24">
+      <section id="top" className="pt-16">
+        <div className="container-page grid gap-12 pb-20 pt-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:gap-16 lg:pb-28 lg:pt-24">
           <div>
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={transition.slow}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs"
-            >
-              <Stethoscope className="h-3.5 w-3.5 text-primary" />
-              Guidance in minutes, not appointments
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...transition.slow, delay: 0.05 }}
-              className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
-            >
-              Understand your symptoms{" "}
-              <span className="text-primary">before</span> you sit in a waiting
-              room.
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...transition.slow, delay: 0.1 }}
-              className="mt-5 max-w-xl text-lg text-muted-foreground"
-            >
-              MediAI turns a description of how you feel into structured
-              guidance: what it could mean, what to do now, and the specific
-              signs that mean you should be seen today. Then it books the
-              appointment.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...transition.slow, delay: 0.15 }}
-              className="mt-8 flex flex-wrap items-center gap-3"
-            >
+            <p className="kicker">Guidance in minutes, not waiting rooms</p>
+            <h1 className="mt-4 max-w-[18ch] font-display text-4xl font-semibold tracking-tight sm:text-5xl lg:text-[3.4rem] lg:leading-[1.08]">
+              Understand your symptoms before you sit down.
+            </h1>
+            <p className="mt-5 max-w-[42ch] text-lg text-muted-foreground">
+              MediAI turns a description of how you feel into structured guidance:
+              what it could mean, what to do now, and the specific signs that mean
+              you should be seen today. Then it books the appointment.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               {currentUser ? (
                 <>
                   <Button size="lg" onClick={() => setLocation("/dashboard")}>
                     Open dashboard
-                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                   <Link href="/appointments">
                     <Button size="lg" variant="outline">
-                      <CalendarCheck className="mr-2 h-4 w-4" />
                       Book consultation
                     </Button>
                   </Link>
@@ -381,164 +266,122 @@ export default function Landing() {
                 <>
                   <Button size="lg" onClick={goToAuth}>
                     Start a consultation
-                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                   <Button size="lg" variant="outline" asChild>
                     <a href="#how">See how it works</a>
                   </Button>
                 </>
               )}
-            </motion.div>
-
-            <motion.ul
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ ...transition.slow, delay: 0.22 }}
-              className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground"
-            >
+            </div>
+            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <Lock className="h-3.5 w-3.5 text-primary" />
                 Your records stay yours
               </li>
               <li className="flex items-center gap-2">
-                <Activity className="h-3.5 w-3.5 text-primary" />
+                <LineChart className="h-3.5 w-3.5 text-primary" />
                 Four risk models
               </li>
               <li className="flex items-center gap-2">
                 <ShieldCheck className="h-3.5 w-3.5 text-primary" />
                 Escalates, never diagnoses
               </li>
-            </motion.ul>
+            </ul>
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...transition.slow, delay: 0.12 }}
-            className="lg:pl-4"
-          >
-            <ChatPreview />
-          </motion.div>
+          <ConsultSheet />
         </div>
       </section>
 
-      {/* ---------------- Features ---------------- */}
-      <section id="features" className="container-page py-20 lg:py-28">
-        <Reveal className="max-w-2xl">
-          <p className="eyebrow">What it does</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Six things, each of which finishes the job.
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Every feature ends somewhere useful: a decision, a logged data
-            point, or a booked appointment. None of them stop at a wall of text.
-          </p>
-        </Reveal>
-
-        <RevealGroup className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-          {features.map((f) => (
-            <RevealItem key={f.title} className={f.span}>
-              <article className="surface lift group h-full p-6">
-                <span className="grid h-10 w-10 place-items-center rounded-lg border border-primary/20 bg-primary/8 text-primary transition-colors duration-base group-hover:bg-primary/15">
-                  <f.icon className="h-5 w-5" />
-                </span>
-                <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {f.body}
-                </p>
-              </article>
-            </RevealItem>
-          ))}
-        </RevealGroup>
-      </section>
-
-      {/* ---------------- How it works ---------------- */}
-      <section id="how" className="border-y border-border bg-muted/25">
+      <section id="features" className="border-y border-border bg-card/40">
         <div className="container-page py-20 lg:py-28">
-          {/* Heading on the left, steps stacked on the right. Three equal
-              columns with numbered badges would read as filler. */}
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,22rem)_1fr] lg:gap-20">
-            <Reveal>
-              <p className="eyebrow">How it works</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-                Three steps, about two minutes.
-              </h2>
-              <p className="mt-4 text-muted-foreground">
-                No forms to fill in before you get anything back.
-              </p>
-            </Reveal>
-
-            <RevealGroup className="lg:pt-2" stagger={0.09}>
-              {steps.map((s, i) => (
-                <RevealItem key={s.title}>
-                  <div
-                    className={
-                      i === 0
-                        ? "pb-7"
-                        : "border-t border-border py-7 last:pb-0"
-                    }
-                  >
-                    <h3 className="text-lg font-semibold">{s.title}</h3>
-                    <p className="mt-2 max-w-xl leading-relaxed text-muted-foreground">
-                      {s.body}
-                    </p>
-                  </div>
-                </RevealItem>
-              ))}
-            </RevealGroup>
+          <div className="max-w-xl">
+            <p className="kicker">What it does</p>
+            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+              Six things, each of which finishes the job.
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Every feature ends somewhere useful: a decision, a logged data
+              point, or a booked appointment.
+            </p>
           </div>
+          <ol className="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-2">
+            {features.map((f) => (
+              <li key={f.n} className="grid grid-cols-[3rem_1fr] gap-4">
+                <span className="font-display text-2xl text-primary/70" data-numeric>
+                  {f.n}
+                </span>
+                <div>
+                  <h3 className="text-lg font-semibold">{f.title}</h3>
+                  <p className="mt-2 max-w-[46ch] text-sm leading-relaxed text-muted-foreground">
+                    {f.body}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
-      {/* ---------------- Risk deep dive ---------------- */}
-      <section id="risk" className="container-page py-20 lg:py-28">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
-          <Reveal variants={slideIn("left")}>
-            <p className="eyebrow">Risk assessment</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+      <section id="how">
+        <div className="container-page grid gap-12 py-20 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-20 lg:py-28">
+          <div>
+            <p className="kicker">How it works</p>
+            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+              Three steps, about two minutes.
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              No forms to fill in before you get anything back.
+            </p>
+          </div>
+          <ol>
+            {steps.map((s, i) => (
+              <li
+                key={s.title}
+                className={i === 0 ? "pb-8" : "border-t border-border py-8 last:pb-0"}
+              >
+                <h3 className="font-display text-2xl">{s.title}</h3>
+                <p className="mt-2 max-w-xl leading-relaxed text-muted-foreground">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section id="risk" className="border-y border-border bg-card/40">
+        <div className="container-page grid gap-12 py-20 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-28">
+          <div>
+            <p className="kicker">Risk assessment</p>
+            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
               A percentage is useless without the reason behind it.
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
               Every risk assessment returns the inputs that actually moved the
-              score, ranked by how much they contributed, with a plain-language
-              note on each one.
+              score, ranked by how much they contributed.
             </p>
-            <ul className="mt-6 space-y-3">
-              {[
-                "Diabetes, heart, liver and kidney assessments",
-                "Contributing factors ranked by weight",
-                "Plain-language explanation for every factor",
-                "Results saved to your history for comparison",
-              ].map((item) => (
-                <li key={item} className="flex gap-3 text-sm">
-                  <span className="mt-1.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-primary/12">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  </span>
-                  <span className="text-foreground/85">{item}</span>
-                </li>
-              ))}
+            <ul className="mt-6 space-y-3 text-sm">
+              <li className="flex gap-3">
+                <Mic className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                Diabetes, heart, liver and kidney assessments
+              </li>
+              <li className="flex gap-3">
+                <LineChart className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                Contributing factors ranked by weight
+              </li>
+              <li className="flex gap-3">
+                <FileImage className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                Results saved to your history for comparison
+              </li>
             </ul>
-          </Reveal>
-
-          <Reveal variants={scaleIn} className="lg:pl-6">
-            <RiskPreview />
-          </Reveal>
+          </div>
+          <RiskPreview />
         </div>
       </section>
 
-      {/* ---------------- Auth ---------------- */}
-      <section
-        id="get-started"
-        className="relative overflow-hidden border-t border-border bg-muted/25"
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-primary/5 to-transparent"
-        />
-        <div className="container-page relative py-20 lg:py-28">
-          <Reveal className="mx-auto max-w-md">
-            <div className="mb-8 text-center">
-              <h2 className="text-3xl font-semibold tracking-tight">
+      <section id="get-started">
+        <div className="container-page py-20 lg:py-28">
+          <div className="mx-auto max-w-md">
+            <div className="mb-8">
+              <h2 className="font-display text-3xl font-semibold tracking-tight">
                 {currentUser ? "Welcome back" : "Create your account"}
               </h2>
               <p className="mt-3 text-muted-foreground">
@@ -547,21 +390,14 @@ export default function Landing() {
                   : "Free to start. Your consultation history stays private to you."}
               </p>
             </div>
-
             <div className="surface-raised p-6 sm:p-8">
               {!isLoading && currentUser ? (
                 <div className="space-y-3">
-                  <Button
-                    size="lg"
-                    className="w-full"
-                    onClick={() => setLocation("/dashboard")}
-                  >
+                  <Button size="lg" className="w-full" onClick={() => setLocation("/dashboard")}>
                     Open dashboard
-                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                   <Link href="/appointments">
                     <Button size="lg" variant="outline" className="w-full">
-                      <CalendarCheck className="mr-2 h-4 w-4" />
                       Book consultation
                     </Button>
                   </Link>
@@ -577,7 +413,7 @@ export default function Landing() {
                       key={authMode}
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
+                      exit={{ opacity: 0, y: -4 }}
                       transition={transition.fast}
                     >
                       <TabsContent value="login" className="mt-0">
@@ -591,50 +427,36 @@ export default function Landing() {
                 </Tabs>
               )}
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
-      {/* ---------------- Footer ---------------- */}
       <footer className="border-t border-border">
         <div className="container-page py-12">
-          <Reveal
-            variants={fadeUp}
-            className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4"
-          >
+          <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">
-                MediAI is not a diagnostic device.
-              </span>{" "}
-              It provides health information and triage guidance to help you
-              decide whether and how urgently to seek care. It does not replace
-              examination by a qualified clinician. In an emergency, contact your
-              local emergency number immediately.
+              <span className="font-medium text-foreground">MediAI is not a diagnostic device.</span>{" "}
+              It provides health information and triage guidance to help you decide
+              whether and how urgently to seek care. It does not replace examination
+              by a qualified clinician. In an emergency, contact your local emergency
+              number immediately.
             </p>
-          </Reveal>
-
+          </div>
           <div className="mt-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
-                <Stethoscope className="h-3.5 w-3.5" />
-              </span>
-              <span className="text-sm font-semibold">MediAI</span>
-            </div>
-
+            <BrandMark />
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} MediAI. Built as a final-year project.
             </p>
-
             <div className="flex gap-5 text-sm text-muted-foreground">
-              <a href="#features" className="transition-colors duration-fast hover:text-foreground">
-                Features
+              <a href="#features" className="hover:text-foreground">
+                What it does
               </a>
-              <a href="#how" className="transition-colors duration-fast hover:text-foreground">
+              <a href="#how" className="hover:text-foreground">
                 How it works
               </a>
-              <a href="#get-started" className="transition-colors duration-fast hover:text-foreground">
-                Get started
+              <a href="#get-started" className="hover:text-foreground">
+                Start
               </a>
             </div>
           </div>

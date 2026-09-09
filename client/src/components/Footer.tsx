@@ -1,13 +1,11 @@
+import { BrandMark } from "@/components/BrandMark";
+
 export default function Footer() {
   return (
-    <footer className="border-t border-border bg-background py-6">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:px-6 md:flex-row lg:px-8">
-        <p className="font-medium text-foreground">MediAI</p>
+    <footer className="border-t border-border py-8">
+      <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:px-6 lg:px-8">
+        <BrandMark />
         <p>© {new Date().getFullYear()} MediAI. Not a diagnostic device.</p>
-        <div className="flex gap-4">
-          <span>Privacy</span>
-          <span>Terms</span>
-        </div>
       </div>
     </footer>
   );

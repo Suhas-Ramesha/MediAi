@@ -6,20 +6,22 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // Geist is self-hosted via @fontsource-variable so there is no
-        // render-blocking request to fonts.googleapis.com.
         sans: [
-          "Geist Variable",
+          "Manrope",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
           "Segoe UI",
-          "Roboto",
-          "Helvetica Neue",
           "sans-serif",
         ],
+        display: [
+          "Literata",
+          "Iowan Old Style",
+          "Palatino Linotype",
+          "Georgia",
+          "serif",
+        ],
         mono: [
-          "Geist Mono Variable",
           "ui-monospace",
           "SFMono-Regular",
           "Menlo",
@@ -69,7 +71,7 @@ export default {
         emphasized: "cubic-bezier(0.22, 1, 0.36, 1)",
         // For elements leaving; quicker so exits do not feel sluggish.
         exit: "cubic-bezier(0.4, 0, 1, 1)",
-        spring: "cubic-bezier(0.34, 1.4, 0.64, 1)",
+        spring: "cubic-bezier(0.16, 1, 0.3, 1)",
       },
 
       transitionDuration: {

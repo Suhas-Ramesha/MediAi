@@ -59,7 +59,7 @@ export function LoginForm({ onSuccess }: AuthFormsProps) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold tracking-tight">Sign in</h2>
+      <h2 className="font-display text-2xl tracking-tight">Sign in</h2>
       <form onSubmit={handleLogin} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -91,8 +91,8 @@ export function LoginForm({ onSuccess }: AuthFormsProps) {
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="rounded-full bg-background px-2 text-muted-foreground">Or continue with</span>
+        <div className="relative flex justify-center text-xs">
+          <span className="rounded-full bg-card px-2 text-muted-foreground">Or continue with</span>
         </div>
       </div>
       
@@ -192,7 +192,7 @@ export function SignUpForm({ onSuccess }: AuthFormsProps) {
         </div>
       ) : (
         <>
-          <h2 className="text-xl font-semibold tracking-tight">Create an account</h2>
+          <h2 className="font-display text-2xl tracking-tight">Create an account</h2>
           <form onSubmit={handleSignUp} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -236,8 +236,8 @@ export function SignUpForm({ onSuccess }: AuthFormsProps) {
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="rounded-full bg-background px-2 text-muted-foreground">Or continue with</span>
+            <div className="relative flex justify-center text-xs">
+              <span className="rounded-full bg-card px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
           

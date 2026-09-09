@@ -1,21 +1,22 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { Link } from "wouter";
+
+import { BrandMark } from "@/components/BrandMark";
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6">
-          <div className="flex mb-4 gap-2">
-            <AlertCircle className="h-8 w-8 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900">404 Page Not Found</h1>
-          </div>
-
-          <p className="mt-4 text-sm text-gray-600">
-            Did you forget to add the page to the router?
-          </p>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center px-6">
+      <BrandMark />
+      <h1 className="mt-8 font-display text-4xl font-semibold tracking-tight">
+        This page is not here
+      </h1>
+      <p className="mt-3 max-w-[36ch] text-center text-muted-foreground">
+        The address does not match a screen in MediAI. Go back to the start page
+        or open a consultation if you are signed in.
+      </p>
+      <Button asChild className="mt-6">
+        <Link href="/">Back to MediAI</Link>
+      </Button>
     </div>
   );
-} 
+}

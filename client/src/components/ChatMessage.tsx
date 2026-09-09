@@ -8,7 +8,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-primary-foreground">
+        <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-3 text-primary-foreground">
           <p className="whitespace-pre-line text-sm">{message.content}</p>
         </div>
       </div>
