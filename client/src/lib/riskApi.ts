@@ -38,7 +38,7 @@ function parseRiskJsonBody(
   } catch {
     throw new Error(
       trimmed.startsWith("<")
-        ? `Risk API returned HTML (HTTP ${status}) — wrong dev server or missing proxy.`
+        ? `Risk API returned HTML (HTTP ${status}). Wrong dev server or missing proxy.`
         : `Invalid JSON from risk API (HTTP ${status}).`,
     );
   }

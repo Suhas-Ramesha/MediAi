@@ -15,7 +15,7 @@ import type { Transition, Variants } from "framer-motion";
  *    slideshow and causes layout shift on mobile.
  * 5. Entrances play once. Re-animating on every scroll pass is the single
  *    most common reason a landing page feels cheap.
- * 6. Reduced motion is honoured — see `useMotionSafe` below.
+ * 6. Reduced motion is honoured. See `useMotionSafe` below.
  */
 
 /** Fast out, slow in. Default for anything entering the screen. */

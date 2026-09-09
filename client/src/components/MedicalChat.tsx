@@ -389,7 +389,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         id: `health-intro-${newConsultationId}`,
         role: "assistant",
         content:
-          "Hi! What can I do for you today?\n\nUse the buttons below for risk prediction or general consultation — or type in the box.",
+          "Hi! What can I do for you today?\n\nUse the buttons below for risk prediction or general consultation, or type in the box.",
         timestamp: new Date(),
         suggestsBooking: false,
       };
@@ -1060,10 +1060,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   ) => {
     // Add a visible banner notification at the top of the chat
     const appointmentNotificationBanner = document.createElement('div');
-    appointmentNotificationBanner.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded shadow-md';
+    appointmentNotificationBanner.className = 'bg-success/10 border border-success/30 text-success p-4 mb-4 rounded-xl';
     appointmentNotificationBanner.innerHTML = `
       <div class="flex items-center">
-        <svg class="h-6 w-6 text-green-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="h-5 w-5 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         <div>
@@ -1327,10 +1327,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     const title = DISEASE_TITLE[disease];
     const band =
       percent < 25
-        ? "This score is relatively low for this calculator — the inputs you gave looked more like lower-risk examples the model was trained on."
+        ? "This score is relatively low for this calculator. The inputs you gave looked more like lower-risk examples the model was trained on."
         : percent < 55
-          ? "This score sits in a middle band — not extreme either way, but still useful as a prompt to talk with a clinician if something worries you."
-          : "This score is on the higher side — the model is reacting to stronger signals in what you entered; follow-up with a professional is especially reasonable.";
+          ? "This score sits in a middle band. Not extreme either way, but still useful as a prompt to talk with a clinician if something worries you."
+          : "This score is on the higher side. The model is reacting to stronger signals in what you entered, so follow-up with a professional is especially reasonable.";
 
     const factorLines = (
       factors?.length
@@ -1398,7 +1398,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       setMessages((prev) => [...prev, assistantMessage]);
       await addMessageToConsultation(cid, assistantMessage);
       setBookingSpecialtyHint(DISEASE_SPECIALIST[riskModalDisease]);
-      setRiskBookingSummary(`Risk assessment — ${DISEASE_TITLE[riskModalDisease]}`);
+      setRiskBookingSummary(`Risk assessment: ${DISEASE_TITLE[riskModalDisease]}`);
       riskModalCompletedRef.current = true;
       setRiskModalOpen(false);
     } catch (e: any) {

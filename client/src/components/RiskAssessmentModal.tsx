@@ -107,13 +107,13 @@ export function RiskAssessmentModal({
   const title = useMemo(() => {
     switch (disease) {
       case "diabetes":
-        return "Diabetes risk — your numbers";
+        return "Diabetes risk: your numbers";
       case "heart":
-        return "Heart disease risk — clinical inputs";
+        return "Heart disease risk: clinical inputs";
       case "liver":
-        return "Liver disease risk — lab values";
+        return "Liver disease risk: lab values";
       case "kidney":
-        return "Kidney disease risk — your numbers";
+        return "Kidney disease risk: your numbers";
       default:
         return "Risk assessment";
     }
