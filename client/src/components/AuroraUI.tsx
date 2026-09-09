@@ -1,10 +1,17 @@
 import React, { useEffect, useRef } from 'react';
 import { Renderer, Program, Mesh, Color, Triangle } from "ogl";
+import { useTheme } from "@/components/theme-provider";
 import './AuroraUI.css';
 
 // Aurora Effect Component
-const Aurora = ({ colorStops = ["#3A29FF", "#FF94B4", "#FF3232"], amplitude = 1.0, blend = 0.5, speed = 0.5 }) => {
+const Aurora = ({ amplitude = 1.0, blend = 0.5, speed = 0.5 }) => {
   const ctnDom = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+
+  // Dynamic colors based on theme
+  const colorStops = theme === 'dark' 
+    ? ["#0F172A", "#06B6D4", "#3B82F6"] // Deep space blue, cyan, neon blue
+    : ["#F8FAFC", "#A5B4FC", "#93C5FD"]; // Frosted pearl, light indigo, light blue
 
   useEffect(() => {
     const ctn = ctnDom.current;
@@ -124,7 +131,7 @@ const Aurora = ({ colorStops = ["#3A29FF", "#FF94B4", "#FF3232"], amplitude = 1.
       }
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
-  }, [amplitude, blend, colorStops, speed]);
+  }, [amplitude, blend, theme, speed]); // React to theme changes
 
   return <div ref={ctnDom} className="aurora-container" />;
 };
@@ -132,7 +139,7 @@ const Aurora = ({ colorStops = ["#3A29FF", "#FF94B4", "#FF3232"], amplitude = 1.
 // Main AuroraUI Component
 const AuroraUI = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
   return (
-    <div className="aurora-ui-container">
+    <div className="aurora-ui-container dark:bg-black/90 transition-colors duration-500">
       <Aurora />
       <div className={`content-container ${className}`}>
         {children}

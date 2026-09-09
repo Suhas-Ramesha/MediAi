@@ -11,6 +11,7 @@ import Settings from "@/pages/settings";
 import { AuthProvider } from "@/hooks/use-auth";
 import SymptomDiaryPage from "@/app/symptom-diary/page";
 import Appointments from "@/pages/appointments";
+import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
   return (
@@ -30,12 +31,14 @@ function Router() {
 // Main App component
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router />
-        <Toaster />
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="dark" storageKey="mediai-theme">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router />
+          <Toaster />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

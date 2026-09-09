@@ -11,7 +11,7 @@ console.log('API Key loaded:', apiKey);
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TIMEOUT_MS = 40000;
 
 const withTimeout = async <T>(promise: Promise<T>, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> => {
   return Promise.race([
@@ -37,6 +37,63 @@ const retry = async <T>(fn: () => Promise<T>, maxRetries = 1, delayMs = 500): Pr
   throw lastError;
 };
 
+const SYMPTOM_HINT_RE =
+  /\b(fever|temperature|cough|cold|vomit|vomiting|nausea|pain|headache|dizzy|dizziness|diarrhea|sore throat|chills|breath|weak|fatigue)\b/i;
+
+function isSymptomLikeMessage(message: string): boolean {
+  return SYMPTOM_HINT_RE.test(message);
+}
+
+function looksTooShortForTriage(text: string): boolean {
+  const lineCount = text.split("\n").filter((l) => l.trim()).length;
+  return text.trim().length < 260 || lineCount < 5;
+}
+
+function buildExpansionPrompt(userMessage: string, initialDraft: string): string {
+  return `${HEALTH_CHAT_INSTRUCTIONS}
+
+The previous draft is too brief and not helpful enough for triage.
+
+User message:
+${userMessage}
+
+Previous short draft:
+${initialDraft}
+
+Rewrite it with this exact structure:
+**What this could mean**
+- 2-4 concise bullet points
+
+**What you can do now**
+- 4-6 practical bullet points
+
+**Questions to answer next**
+- Ask exactly 2 focused triage questions
+
+**When to seek urgent care**
+- 3-5 red-flag bullet points
+
+Keep it concise but complete and easy to scan.`;
+}
+
+async function maybeExpandShortSymptomReply(
+  model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
+  userMessage: string,
+  replyText: string,
+): Promise<string> {
+  if (!isSymptomLikeMessage(userMessage) || !looksTooShortForTriage(replyText)) {
+    return replyText;
+  }
+  const expandPrompt = buildExpansionPrompt(userMessage, replyText);
+  const expanded = await retry(
+    () => withTimeout(model.generateContent(expandPrompt), DEFAULT_TIMEOUT_MS),
+    1,
+  );
+  const expandedResp = await expanded.response;
+  const expandedText = expandedResp.text().trim();
+  return expandedText || replyText;
+}
+
 export interface Message {
   role: 'user' | 'assistant';
   id: string;
@@ -50,6 +107,46 @@ export interface Message {
   isAppointmentUpdate?: boolean;
 }
 
+const HEALTH_CHAT_INSTRUCTIONS = `You are an AI Health Assistant in a healthcare app. Rules you must follow:
+- Do NOT give a medical diagnosis or label a condition as certain.
+- You may offer general education, possible non-alarming explanations, and self-care ideas that are widely considered safe.
+- Do NOT recommend specific prescription medicines, doses, or stopping/changing prescribed drugs.
+- If symptoms could be serious, calmly suggest seeking urgent or in-person care without fear-mongering.
+
+Length & format rules (IMPORTANT):
+- For casual questions, small talk, thanks, or simple factual asks: reply in 1-3 short sentences. No sections, no bullets, no headings.
+- For active symptoms (fever, pain, cough, vomiting, dizziness, injury, etc.) OR explicit requests for guidance: use the structured triage format below.
+- Never pad a simple answer into a long structured one.
+- Keep sentences short and scannable.
+
+Structured triage format (use ONLY for symptom or guidance replies):
+**What this could mean**
+- 2-4 short bullets
+
+**What you can do now**
+- 3-6 practical bullets
+
+**Questions to answer next**
+- 1-2 focused triage questions
+
+**When to seek urgent care**
+- 2-4 red-flag bullets
+
+Always end your reply with this exact sentence on its own line:
+"This is not a medical diagnosis. Please consult a certified doctor for professional advice."`;
+
+const buildHealthPrompt = (message: string): string => `${HEALTH_CHAT_INSTRUCTIONS}
+
+User message:
+${message}
+
+Formatting requirements:
+- Use short sections with bold headings (example: **What this could mean**).
+- Use bullet points for actions and warning signs.
+- Keep lines short and easy to scan on mobile.
+
+Respond in a clear, friendly, professional tone. Avoid heavy jargon and do not be overly brief.`;
+
 export const medicalChatService = {
   async sendMessage(message: string): Promise<Message> {
     try {
@@ -59,20 +156,11 @@ export const medicalChatService = {
         model: "gemini-2.5-flash",
         generationConfig: {
           temperature: 0.4,
-          maxOutputTokens: 512,
+          maxOutputTokens: 2048,
         },
       }, { apiVersion: "v1" });
 
-      const prompt = `You are an AI medical assistant. Your role is to:
-1. Ask relevant questions about symptoms
-2. Provide preliminary analysis
-3. Recommend appropriate medications and treatments
-4. Give recovery procedures and lifestyle advice
-5. Always remind users to seek professional medical help for serious conditions
-
-User message: ${message}
-
-Please respond in a professional, caring manner.`;
+      const prompt = buildHealthPrompt(message);
 
       const result = await retry(
         () => withTimeout(model.generateContent(prompt), DEFAULT_TIMEOUT_MS),
@@ -86,10 +174,12 @@ Please respond in a professional, caring manner.`;
         throw new Error('Empty response from AI');
       }
 
+      const finalText = await maybeExpandShortSymptomReply(model, message, text.trim());
+
       return {
         id: Date.now().toString(),
         role: 'assistant',
-        content: text.trim(),
+        content: finalText,
         timestamp: new Date(),
       };
     } catch (error: any) {
@@ -110,20 +200,11 @@ Please respond in a professional, caring manner.`;
         model: "gemini-2.5-flash",
         generationConfig: {
           temperature: 0.4,
-          maxOutputTokens: 512,
+          maxOutputTokens: 2048,
         },
       }, { apiVersion: "v1" });
 
-      const prompt = `You are an AI medical assistant. Your role is to:
-1. Ask relevant questions about symptoms
-2. Provide preliminary analysis
-3. Recommend appropriate medications and treatments
-4. Give recovery procedures and lifestyle advice
-5. Always remind users to seek professional medical help for serious conditions
-
-User message: ${message}
-
-Please respond in a professional, caring manner.`;
+      const prompt = buildHealthPrompt(message);
 
       const streamResult = await retry(
         () => withTimeout(model.generateContentStream(prompt), DEFAULT_TIMEOUT_MS),
@@ -139,13 +220,30 @@ Please respond in a professional, caring manner.`;
       }
 
       if (!fullText.trim()) {
-        throw new Error('Empty response from AI');
+        const fallback = await retry(
+          () => withTimeout(model.generateContent(prompt), DEFAULT_TIMEOUT_MS),
+          1,
+        );
+        const fallbackResp = await fallback.response;
+        const fallbackText = fallbackResp.text().trim();
+        if (!fallbackText) {
+          throw new Error('Empty response from AI');
+        }
+        const finalFallback = await maybeExpandShortSymptomReply(model, message, fallbackText);
+        return {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: finalFallback,
+          timestamp: new Date(),
+        };
       }
+
+      const finalStreamed = await maybeExpandShortSymptomReply(model, message, fullText.trim());
 
       return {
         id: Date.now().toString(),
         role: 'assistant',
-        content: fullText.trim(),
+        content: finalStreamed,
         timestamp: new Date(),
       };
     } catch (error: any) {

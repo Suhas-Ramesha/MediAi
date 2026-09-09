@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import Header from "@/components/Header";
@@ -10,6 +11,7 @@ import { useConsultations } from "@/hooks/useFirebase";
 import { Consultation } from "@/lib/types";
 import AuroraUI from "@/components/AuroraUI";
 import GuidedTour from "@/components/GuidedTour";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 function DashboardContent({
   userProfile,
@@ -34,34 +36,43 @@ function DashboardContent({
   return (
     <AuroraUI>
       <GuidedTour forceStart={showTour} />
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10">
+
+      <div className="min-h-screen">
         <Header 
           user={headerUser} 
           onStartTour={() => setShowTour(true)}
         />
         
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column */}
-            <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 shadow-lg shadow-purple-500/5 border border-white/20 user-profile-section">
+            <motion.div
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="lg:col-span-1 space-y-6"
+            >
+              <div className="glass-card rounded-2xl p-6 user-profile-section transition-shadow hover:shadow-xl dark:bg-slate-900/40">
                 <UserProfile user={userProfile || {}} />
               </div>
-              
-              <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 shadow-lg shadow-purple-500/5 border border-white/20 recent-consultations">
-                <RecentConsultations 
-                  consultations={consultations} 
+
+              <div className="glass-card rounded-2xl p-6 recent-consultations transition-shadow hover:shadow-xl dark:bg-slate-900/40">
+                <RecentConsultations
+                  consultations={consultations}
                   onSelectChat={handleSelectChat}
                 />
               </div>
-            </div>
-            
+            </motion.div>
+
             {/* Right Column - Chat Area */}
-            <div className="lg:col-span-2">
-              <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 shadow-lg shadow-purple-500/5 border border-white/20 min-h-[calc(100vh-12rem)] chat-interface">
-                <MedicalChat selectedConsultation={selectedConsultation} />
-              </div>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+              className="lg:col-span-2 relative h-[calc(100vh-8rem)] min-h-[600px]"
+            >
+              <MedicalChat selectedConsultation={selectedConsultation} />
+            </motion.div>
           </div>
         </main>
       </div>

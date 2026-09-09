@@ -14,6 +14,16 @@ export default defineConfig(async ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   
   return {
+    // Standalone `vite` dev: forward risk API to Python ML service (same as Express proxy in prod).
+    server: {
+      proxy: {
+        "/api/risk/predict": {
+          target: env.ML_SERVICE_URL || "http://127.0.0.1:5050",
+          changeOrigin: true,
+          rewrite: () => "/predict",
+        },
+      },
+    },
     plugins: [
       react(),
       runtimeErrorOverlay(),

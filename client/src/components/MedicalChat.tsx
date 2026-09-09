@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Mic, PlusCircle, Upload, FileText, Image, Send, Save, CalendarPlus } from "lucide-react";
+import { Loader2, Mic, PlusCircle, Upload, FileText, Image, Send, Save, CalendarPlus, BrainCircuit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Message, Consultation } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,6 +26,109 @@ import {
 import { medicalChatService, medicalAnalysisService } from "@/lib/aiService";
 import * as AppointmentService from '@/lib/appointmentService';
 import AppointmentLoginModal from './AppointmentLoginModal';
+import { RiskAssessmentModal } from "./RiskAssessmentModal";
+import { predictRisk, type RiskContributingFactor, type RiskDisease } from "@/lib/riskApi";
+
+const DISEASE_TITLE: Record<RiskDisease, string> = {
+  diabetes: "Diabetes",
+  heart: "Heart disease",
+  liver: "Liver disease",
+  kidney: "Kidney disease",
+};
+
+const DISEASE_SPECIALIST: Record<RiskDisease, string> = {
+  diabetes: "Endocrinologist",
+  heart: "Cardiologist",
+  liver: "Hepatologist",
+  kidney: "Nephrologist",
+};
+
+/** First user turn: short hello → show route menu instead of calling the model. */
+function isRoutingGreeting(text: string): boolean {
+  const raw = text.trim().toLowerCase().replace(/[!.,?]+$/g, "");
+  if (!raw) return false;
+  const words = raw.split(/\s+/).filter(Boolean);
+  if (words.length > 5) return false;
+  return /^(hi|hello|hey|howdy|yo|sup|hii|hiya|greetings)\b/.test(raw);
+}
+
+function newBookingMessageId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `bk-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function renderAssistantText(content: string): React.ReactNode {
+  const lines = content.split("\n");
+  return (
+    <div className="text-sm space-y-1">
+      {lines.map((rawLine, i) => {
+        const line = rawLine.trimEnd();
+        if (!line.trim()) {
+          return <div key={`sp-${i}`} className="h-2" />;
+        }
+
+        const isBullet = /^[-*•]\s+/.test(line);
+        const isNumbered = /^\d+\.\s+/.test(line);
+        const cleanLine = line.replace(/^[-*•]\s+/, "").replace(/^\d+\.\s+/, "");
+        const parts = cleanLine.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+
+        const richText = parts.map((part, j) => {
+          if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+            return (
+              <strong key={`b-${i}-${j}`} className="font-semibold">
+                {part.slice(2, -2)}
+              </strong>
+            );
+          }
+          return <React.Fragment key={`t-${i}-${j}`}>{part}</React.Fragment>;
+        });
+
+        if (isBullet || isNumbered) {
+          return (
+            <div key={`l-${i}`} className="flex items-start gap-2">
+              <span aria-hidden="true">•</span>
+              <span className="whitespace-pre-wrap">{richText}</span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={`p-${i}`} className="whitespace-pre-wrap">
+            {richText}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function preventionTips(disease: RiskDisease): string {
+  const lines: Record<RiskDisease, string[]> = {
+    diabetes: [
+      "Choose steady meals with plenty of vegetables and whole grains.",
+      "Build gentle daily movement you can keep up.",
+      "Limit sugary drinks and keep alcohol modest.",
+    ],
+    heart: [
+      "Favor heart-friendly foods with less added salt.",
+      "Aim for regular walks or similar activity most days.",
+      "Avoid smoking and keep alcohol moderate.",
+    ],
+    liver: [
+      "Keep alcohol very low or none, as your doctor agrees.",
+      "Stay hydrated and choose minimally processed foods.",
+      "Maintain a steady weight with sustainable habits.",
+    ],
+    kidney: [
+      "Stay hydrated unless your doctor advised fluid limits.",
+      "Keep blood pressure in a healthy range with lifestyle support.",
+      "Avoid long-term use of kidney-stressing remedies without medical advice.",
+    ],
+  };
+  return lines[disease].map((s) => `• ${s}`).join("\n");
+}
 
 interface MedicalChatProps {
   selectedConsultation?: Consultation | null;
@@ -50,6 +154,18 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [appointmentUser, setAppointmentUser] = useState<any>(null);
+  /** Only the message with this id may render doctor / slot controls (avoids duplicate UI). */
+  const [bookingDoctorMessageId, setBookingDoctorMessageId] = useState<string | null>(null);
+  const [bookingSlotMessageId, setBookingSlotMessageId] = useState<string | null>(null);
+
+  const [showHealthMainMenu, setShowHealthMainMenu] = useState(false);
+  const [showRiskDiseaseMenu, setShowRiskDiseaseMenu] = useState(false);
+  const [riskModalOpen, setRiskModalOpen] = useState(false);
+  const [riskModalDisease, setRiskModalDisease] = useState<RiskDisease | null>(null);
+  const [riskSubmitLoading, setRiskSubmitLoading] = useState(false);
+  const [bookingSpecialtyHint, setBookingSpecialtyHint] = useState<string | undefined>(undefined);
+  const [riskBookingSummary, setRiskBookingSummary] = useState<string | undefined>(undefined);
+  const riskModalCompletedRef = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -66,6 +182,22 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       const uniqueMessages = removeDuplicateMessages(selectedConsultation.messages);
       setMessages(uniqueMessages);
       setCurrentConsultation(selectedConsultation.id);
+
+      const last = uniqueMessages[uniqueMessages.length - 1];
+      if (last?.role === "assistant" && String(last.id).startsWith("health-intro")) {
+        setShowHealthMainMenu(true);
+        setShowRiskDiseaseMenu(false);
+      } else if (
+        last?.role === "assistant" &&
+        typeof last.content === "string" &&
+        last.content.includes("Please choose the type of health risk")
+      ) {
+        setShowRiskDiseaseMenu(true);
+        setShowHealthMainMenu(false);
+      } else {
+        setShowHealthMainMenu(false);
+        setShowRiskDiseaseMenu(false);
+      }
       
       // Check for any pending appointments in the messages and resume status checks
       checkForPendingAppointments(uniqueMessages);
@@ -244,9 +376,26 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     // Clear current messages and create new consultation
     setMessages([]);
     setInput('');
+    setShowHealthMainMenu(false);
+    setShowRiskDiseaseMenu(false);
+    setRiskModalOpen(false);
+    setRiskModalDisease(null);
+    setBookingSpecialtyHint(undefined);
+    setRiskBookingSummary(undefined);
     const newConsultationId = await createConsultation();
     if (newConsultationId) {
       setCurrentConsultation(newConsultationId);
+      const introMessage: Message = {
+        id: `health-intro-${newConsultationId}`,
+        role: "assistant",
+        content:
+          "Hi! What can I do for you today?\n\nUse the buttons below for risk prediction or general consultation — or type in the box.",
+        timestamp: new Date(),
+        suggestsBooking: false,
+      };
+      setMessages([introMessage]);
+      await addMessageToConsultation(newConsultationId, introMessage);
+      setShowHealthMainMenu(true);
     }
   };
 
@@ -342,6 +491,8 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
 
     if (!text.trim() || isLoading || !currentUser) return;
 
+    const priorUserMessageCount = messages.filter((m) => m.role === "user").length;
+
     setInput('');
     setIsLoading(true);
 
@@ -366,6 +517,21 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       // Add user message to consultation
       await addMessageToConsultation(consultationId, userMessage);
 
+      if (priorUserMessageCount === 0 && isRoutingGreeting(text)) {
+        const routeMsg: Message = {
+          id: `health-intro-routes-${Date.now()}`,
+          role: "assistant",
+          content:
+            "Hi! What can I do for you today?\n\nChoose risk prediction or general consultation below, or describe what is going on in your own words.",
+          timestamp: new Date(),
+          suggestsBooking: false,
+        };
+        setMessages((prev) => [...prev, routeMsg]);
+        await addMessageToConsultation(consultationId, routeMsg);
+        setShowHealthMainMenu(true);
+        return;
+      }
+
       // Insert a placeholder message immediately, then stream content into it
       const aiMessageId = (Date.now() + 1).toString();
       const aiPlaceholder: Message = {
@@ -388,17 +554,45 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         );
       });
       
-      // Clean and format the response
-      const cleanContent = response.content
-        .replace(/\*\*/g, '') // Remove bold markers
-        .replace(/\d+\. /g, '') // Remove numbered lists
-        .replace(/\n\n/g, '\n') // Reduce multiple newlines
+      // Keep structure markers (**bold**, bullets, line breaks) for easier reading in UI.
+      let cleanContent = response.content
+        .replace(/\r\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
         .trim();
 
-      // Check if AI suggests booking
-      const suggestsBookingKeywords = ['consult', 'see a doctor', 'specialist', 'appointment', 'physician'];
+      // Avoid repetitive greeting on every turn; keep greeting mostly for first assistant turn.
+      if (priorUserMessageCount > 0) {
+        cleanContent = cleanContent.replace(
+          /^(hello(?: there)?|hi(?: there)?|hey(?: there)?)[!,.:\s]+/i,
+          "",
+        ).trim();
+      }
+
+      // Booking only when reply clearly steers to care (not the word "consult" in the fixed disclaimer)
+      const suggestsBookingKeywords = [
+        'see a doctor',
+        'see your doctor',
+        'visit a doctor',
+        'visit your doctor',
+        'specialist',
+        'appointment',
+        'physician',
+        'book an appointment',
+        'schedule an appointment',
+        'urgent care',
+        'emergency room',
+        'er visit',
+      ];
       const lowerCaseContent = cleanContent.toLowerCase();
-      const suggestsBooking = suggestsBookingKeywords.some(keyword => lowerCaseContent.includes(keyword));
+      const hasStructuredTriage =
+        /\*\*what this could mean\*\*/i.test(cleanContent) ||
+        /\*\*when to seek urgent care\*\*/i.test(cleanContent) ||
+        /\*\*what you can do now\*\*/i.test(cleanContent);
+      const suggestsBooking =
+        hasStructuredTriage ||
+        suggestsBookingKeywords.some((keyword) =>
+          lowerCaseContent.includes(keyword),
+        );
       
       console.log("[Text Response] AI Content:", cleanContent, "| Suggests Booking:", suggestsBooking);
 
@@ -523,41 +717,68 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       return;
     }
 
+    if (isBookingFlowActive) {
+      return;
+    }
+
     // Continue with booking flow as before
     setIsBookingFlowActive(true);
     setIsLoading(true);
     setBookingStep(1); // Move to doctor selection step
+    setBookingDoctorMessageId(null);
+    setBookingSlotMessageId(null);
     console.log("Starting booking flow...");
 
-    // Placeholder: Add a message indicating booking started
+    const bookingStartId = newBookingMessageId();
     const bookingStartMessage: Message = {
-      id: Date.now().toString(),
+      id: bookingStartId,
       role: 'assistant',
       content: "Okay, let's find a doctor for you. Fetching available doctors...",
       timestamp: new Date(),
       isLoading: true, // Show loading indicator
       suggestsBooking: false
     };
-    setMessages(prev => [...prev, bookingStartMessage]);
+    setMessages((prev) => [...prev, bookingStartMessage]);
 
     try {
-      // TODO: Potentially extract specialty from previous AI message?
-      const doctors = await AppointmentService.fetchDoctors();
-      setAvailableDoctors(doctors);
-      // Replace loading message with doctor list (implementation detail for later)
-      setMessages(prev => prev.map(msg => 
-        msg.id === bookingStartMessage.id 
-          ? { ...msg, content: "Please select a doctor:", isLoading: false } 
-          : msg
-      ));
+      const { doctors, specialtyFallback, attemptedSpecialty } =
+        await AppointmentService.fetchDoctors(bookingSpecialtyHint);
+      const list = Array.isArray(doctors) ? doctors : [];
+      setAvailableDoctors(list);
+      const doctorPrompt =
+        list.length > 0
+          ? specialtyFallback && attemptedSpecialty
+            ? `No doctors in this directory are listed under “${attemptedSpecialty}” yet, so here is everyone you can book with. Please select a doctor:`
+            : "Please select a doctor:"
+          : "No doctors are available to show right now. Try again later or contact support.";
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === bookingStartId
+            ? {
+                ...msg,
+                content: doctorPrompt,
+                isLoading: false,
+              }
+            : msg,
+        ),
+      );
+      if (list.length > 0) {
+        setBookingDoctorMessageId(bookingStartId);
+      }
     } catch (error) {
       console.error("Error fetching doctors:", error);
       toast({ title: "Error fetching doctors", variant: "destructive" });
-      setMessages(prev => prev.map(msg => 
-        msg.id === bookingStartMessage.id 
-          ? { ...msg, content: "Sorry, I couldn't fetch doctors right now.", isLoading: false } 
-          : msg
-      ));
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === bookingStartId
+            ? {
+                ...msg,
+                content: "Sorry, I couldn't fetch doctors right now.",
+                isLoading: false,
+              }
+            : msg,
+        ),
+      );
       resetBookingFlow(); // Reset flow on error
     } finally {
       setIsLoading(false);
@@ -584,8 +805,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     setAppointmentUser(userData);
     setShowLoginModal(false);
     
-    // Start the booking flow
-    handleStartBooking();
+    // Defer until after modal unmount + localStorage flush so fetchDoctors sees the token
+    setTimeout(() => {
+      void handleStartBooking();
+    }, 0);
   };
 
   const handleSelectDoctor = async (doctor: any) => {
@@ -597,16 +820,17 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     setBookingStep(2); // Move to slot selection
     console.log("Doctor selected:", doctor);
 
-    // Add placeholder message
+    const slotsMessageId = newBookingMessageId();
     const loadingSlotsMessage: Message = {
-      id: Date.now().toString(),
+      id: slotsMessageId,
       role: 'assistant',
       content: `Fetching available slots for ${doctor.name || (doctor.firstName ? doctor.firstName + ' ' + doctor.lastName : 'the doctor')}...`,
       timestamp: new Date(),
       isLoading: true,
       suggestsBooking: false
     };
-    setMessages(prev => [...prev, loadingSlotsMessage]);
+    setBookingSlotMessageId(null);
+    setMessages((prev) => [...prev, loadingSlotsMessage]);
 
     try {
       // Get the correct ID from the doctor object
@@ -616,20 +840,39 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       console.log("Using doctor ID for API call:", doctorId);
       
       const slots = await AppointmentService.fetchAvailability(doctorId);
-      setAvailableSlots(slots);
-       setMessages(prev => prev.map(msg => 
-        msg.id === loadingSlotsMessage.id 
-          ? { ...msg, content: "Please select an available time slot:", isLoading: false } 
-          : msg
-      ));
+      const slotList = Array.isArray(slots) ? slots : (slots as any)?.data ?? (slots as any)?.slots ?? [];
+      setAvailableSlots(slotList);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === slotsMessageId
+            ? {
+                ...msg,
+                content:
+                  slotList.length > 0
+                    ? "Please select an available time slot:"
+                    : "No open slots were returned for this doctor. Try another doctor or check back later.",
+                isLoading: false,
+              }
+            : msg,
+        ),
+      );
+      if (slotList.length > 0) {
+        setBookingSlotMessageId(slotsMessageId);
+      }
     } catch (error) {
       console.error("Error fetching slots:", error);
       toast({ title: "Error fetching time slots", variant: "destructive" });
-       setMessages(prev => prev.map(msg => 
-        msg.id === loadingSlotsMessage.id 
-          ? { ...msg, content: `Sorry, I couldn't fetch slots for ${doctor.name || (doctor.firstName ? doctor.firstName + ' ' + doctor.lastName : 'the doctor')}.`, isLoading: false } 
-          : msg
-      ));
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === slotsMessageId
+            ? {
+                ...msg,
+                content: `Sorry, I couldn't fetch slots for ${doctor.name || (doctor.firstName ? doctor.firstName + ' ' + doctor.lastName : 'the doctor')}.`,
+                isLoading: false,
+              }
+            : msg,
+        ),
+      );
       // Optionally reset only this step or the whole flow
       setBookingStep(1); // Go back to doctor selection
       setSelectedDoctor(null);
@@ -694,7 +937,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       };
       
       // Extract symptoms for the reason field
-      const symptoms = extractSymptoms();
+      const symptoms =
+        bookingSpecialtyHint && riskBookingSummary
+          ? riskBookingSummary
+          : extractSymptoms();
       
       // Prepare the appointment data for the API
       const appointmentData = {
@@ -739,13 +985,25 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       // Show confirmation message with doctor's name and appointment details
       const doctorName = selectedDoctor.name || 
                         (selectedDoctor.firstName ? `${selectedDoctor.firstName} ${selectedDoctor.lastName}` : 'the doctor');
+
+      const appointmentIdFromApi =
+        AppointmentService.extractAppointmentIdFromCreateResponse(response) ||
+        (typeof response?.appointmentId === "string" ? response.appointmentId : undefined);
+
+      if (appointmentIdFromApi) {
+        AppointmentService.persistBookingDisplayMeta(appointmentIdFromApi, {
+          date: appointmentDate,
+          time: appointmentTime,
+          doctorName,
+        });
+      }
       
       // Update the message to include appointment ID
       const updatedMessage: Message = {
         ...requestingMessage,
         content: `Appointment request sent! You will be notified once ${doctorName} confirms for ${appointmentDate} at ${appointmentTime}.`,
         isLoading: false,
-        appointmentId: response.appointmentId // Store the appointment ID
+        appointmentId: appointmentIdFromApi,
       };
       
       setMessages(prev => prev.map(msg => 
@@ -758,14 +1016,14 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       }
       
       // Show appointment ID in toast if available
-      if (response && response.appointmentId) {
+      if (response && appointmentIdFromApi) {
         toast({
           title: "Appointment Requested",
-          description: `Appointment ID: ${response.appointmentId}`,
+          description: `Appointment ID: ${appointmentIdFromApi}`,
         });
         
         // Reset the booking flow with appointment ID for status checks
-        resetBookingFlow(response.appointmentId);
+        resetBookingFlow(appointmentIdFromApi);
       } else {
         // Reset without ID if no appointment ID returned
         resetBookingFlow();
@@ -792,7 +1050,14 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   };
 
   // Add function to display a more prominent notification when appointment is approved
-  const showAppointmentApprovalNotification = (status: any) => {
+  const showAppointmentApprovalNotification = (
+    display: {
+      doctorName: string;
+      date: string;
+      time: string;
+    },
+    appointmentId: string,
+  ) => {
     // Add a visible banner notification at the top of the chat
     const appointmentNotificationBanner = document.createElement('div');
     appointmentNotificationBanner.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded shadow-md';
@@ -803,7 +1068,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         </svg>
         <div>
           <p class="font-bold">Appointment Confirmed!</p>
-          <p>Your appointment with Dr. ${status.doctorName || 'your doctor'} on ${status.date || status.appointmentDate} at ${status.time || status.startTime} has been approved.</p>
+          <p>Your appointment with Dr. ${display.doctorName} on ${display.date} at ${display.time} has been approved.</p>
         </div>
       </div>
     `;
@@ -824,7 +1089,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     }
     
     // Also store appointment in localStorage for quick access across the app
-    storeAppointment(status);
+    storeAppointment({ ...display, appointmentId });
   };
 
   // Function to store the appointment in localStorage for access from other parts of the app
@@ -900,15 +1165,17 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     try {
       const status = await AppointmentService.checkAppointmentStatus(appointmentId);
       console.log("Appointment status check:", status);
-      
-      if (status && status.status === 'approved') {
+
+      const st = typeof status?.status === "string" ? status.status.toLowerCase() : "";
+      if (status && st === "approved") {
+        const display = AppointmentService.resolveApprovedAppointmentDisplay(appointmentId, status);
         // Check if this is the first time we're seeing this approval
         const appointmentKey = `appointment_approved_${appointmentId}`;
         const alreadyNotified = sessionStorage.getItem(appointmentKey);
         
         if (!alreadyNotified) {
           // Show prominent notification
-          showAppointmentApprovalNotification(status);
+          showAppointmentApprovalNotification(display, appointmentId);
           
           // Store flag to avoid duplicate notifications
           sessionStorage.setItem(appointmentKey, 'true');
@@ -917,7 +1184,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           const confirmationMessage: Message = {
             id: `appointment_approved_${appointmentId}`,
             role: 'assistant',
-            content: `Good news! Dr. ${status.doctorName || 'The doctor'} has approved your appointment for ${status.date || status.appointmentDate} at ${status.time || status.startTime}. Please arrive 15 minutes early.`,
+            content: `Good news! Dr. ${display.doctorName} has approved your appointment for ${display.date} at ${display.time}. Please arrive 15 minutes early.`,
             timestamp: new Date(),
             suggestsBooking: false,
             isAppointmentUpdate: true,
@@ -932,7 +1199,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
             // Also show a toast notification
             toast({
               title: "Appointment Approved!",
-              description: `Your appointment with Dr. ${status.doctorName || 'The doctor'} has been approved.`,
+              description: `Your appointment with Dr. ${display.doctorName} on ${display.date} at ${display.time} has been approved.`,
               variant: "default"
             });
             
@@ -975,6 +1242,174 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     }
     
     console.log("Booking flow reset. Will monitor appointment status:", appointmentId);
+    setBookingSpecialtyHint(undefined);
+    setRiskBookingSummary(undefined);
+    setBookingDoctorMessageId(null);
+    setBookingSlotMessageId(null);
+  };
+
+  const ensureConsultationId = async (): Promise<string | null> => {
+    if (currentConsultation) return currentConsultation;
+    const id = await createConsultation();
+    if (id) setCurrentConsultation(id);
+    return id;
+  };
+
+  const chooseRiskAssessment = async () => {
+    if (!currentUser) {
+      toast({ title: "Login required", variant: "destructive" });
+      return;
+    }
+    const cid = await ensureConsultationId();
+    if (!cid) return;
+    const userMessage: Message = {
+      id: `u-risk-${Date.now()}`,
+      role: "user",
+      content: "Risk prediction",
+      timestamp: new Date(),
+      suggestsBooking: false,
+    };
+    const assistantMessage: Message = {
+      id: `a-risk-menu-${Date.now()}`,
+      role: "assistant",
+      content: "Please choose the type of health risk you want to assess:",
+      timestamp: new Date(),
+      suggestsBooking: false,
+    };
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    await addMessageToConsultation(cid, userMessage);
+    await addMessageToConsultation(cid, assistantMessage);
+    setShowHealthMainMenu(false);
+    setShowRiskDiseaseMenu(true);
+  };
+
+  const chooseGeneralConsultation = async () => {
+    if (!currentUser) {
+      toast({ title: "Login required", variant: "destructive" });
+      return;
+    }
+    const cid = await ensureConsultationId();
+    if (!cid) return;
+    const userMessage: Message = {
+      id: `u-gen-${Date.now()}`,
+      role: "user",
+      content: "Consultation",
+      timestamp: new Date(),
+      suggestsBooking: false,
+    };
+    const assistantMessage: Message = {
+      id: `a-gen-prompt-${Date.now()}`,
+      role: "assistant",
+      content:
+        "Please describe your problem or symptoms.\n\nThis is not a medical diagnosis. Please consult a certified doctor for professional advice.",
+      timestamp: new Date(),
+      suggestsBooking: false,
+    };
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    await addMessageToConsultation(cid, userMessage);
+    await addMessageToConsultation(cid, assistantMessage);
+    setShowHealthMainMenu(false);
+    setShowRiskDiseaseMenu(false);
+  };
+
+  const openRiskDiseaseModal = (disease: RiskDisease) => {
+    setRiskModalDisease(disease);
+    setRiskModalOpen(true);
+    setShowRiskDiseaseMenu(false);
+  };
+
+  const buildRiskResultText = (
+    disease: RiskDisease,
+    percent: number,
+    factors: RiskContributingFactor[],
+    riskSummary?: string,
+  ) => {
+    const title = DISEASE_TITLE[disease];
+    const band =
+      percent < 25
+        ? "This score is relatively low for this calculator — the inputs you gave looked more like lower-risk examples the model was trained on."
+        : percent < 55
+          ? "This score sits in a middle band — not extreme either way, but still useful as a prompt to talk with a clinician if something worries you."
+          : "This score is on the higher side — the model is reacting to stronger signals in what you entered; follow-up with a professional is especially reasonable.";
+
+    const factorLines = (
+      factors?.length
+        ? factors.slice(0, 4)
+        : [{ name: "Overall pattern", explanation: "The tool combined your answers into one score; details below are general hints, not a diagnosis." }]
+    )
+      .map((f) => {
+        const why = f.explanation?.trim();
+        return why ? `• ${f.name}: ${why}` : `• ${f.name}`;
+      })
+      .join("\n");
+
+    const prev = preventionTips(disease);
+    const spec = DISEASE_SPECIALIST[disease];
+    const summaryBlock = (riskSummary && riskSummary.trim()) || band;
+
+    return `Your estimated risk for ${title} is ${percent}%.\n\nWhat this means (in plain terms):\n${summaryBlock}\n\nKey contributing factors:\n${factorLines}\n\nGeneral ideas that support wellness:\n${prev}\n\nWould you like to consult a specialist? A ${spec} can review your situation in person.\n\nThis is not a medical diagnosis. Please consult a certified doctor for professional advice.`;
+  };
+
+  const handleRiskFormSubmit = async (payload: Record<string, number | string>) => {
+    if (!riskModalDisease || !currentUser) return;
+    const cid = currentConsultation;
+    if (!cid) {
+      toast({ title: "Start a chat first", variant: "destructive" });
+      return;
+    }
+    setRiskSubmitLoading(true);
+    try {
+      if (riskModalDisease === "kidney") {
+        const assistantMessage: Message = {
+          id: `a-risk-kidney-${Date.now()}`,
+          role: "assistant",
+          content: `Kidney risk scoring is not connected yet, so we cannot show a percentage. Your entries were noted for when the model is ready.\n\n${preventionTips(
+            "kidney",
+          )}\n\nWould you like to consult a specialist? A ${DISEASE_SPECIALIST.kidney} can help with kidney-related questions.\n\nThis is not a medical diagnosis. Please consult a certified doctor for professional advice.`,
+          timestamp: new Date(),
+          suggestsBooking: true,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+        await addMessageToConsultation(cid, assistantMessage);
+        setBookingSpecialtyHint(DISEASE_SPECIALIST.kidney);
+        setRiskBookingSummary(`Kidney health discussion (${DISEASE_TITLE.kidney})`);
+        riskModalCompletedRef.current = true;
+        setRiskModalOpen(false);
+        return;
+      }
+
+      const data = await predictRisk(riskModalDisease, payload);
+      const pct =
+        typeof data.riskPercent === "number" && !Number.isNaN(data.riskPercent)
+          ? data.riskPercent
+          : 0;
+      const assistantMessage: Message = {
+        id: `a-risk-result-${Date.now()}`,
+        role: "assistant",
+        content: buildRiskResultText(
+          riskModalDisease,
+          pct,
+          data.contributingFactors || [],
+          data.riskSummary,
+        ),
+        timestamp: new Date(),
+        suggestsBooking: true,
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+      await addMessageToConsultation(cid, assistantMessage);
+      setBookingSpecialtyHint(DISEASE_SPECIALIST[riskModalDisease]);
+      setRiskBookingSummary(`Risk assessment — ${DISEASE_TITLE[riskModalDisease]}`);
+      riskModalCompletedRef.current = true;
+      setRiskModalOpen(false);
+    } catch (e: any) {
+      toast({
+        title: "Risk estimate unavailable",
+        description: e?.message || "Check that the ML service is running (port 5050).",
+        variant: "destructive",
+      });
+    } finally {
+      setRiskSubmitLoading(false);
+    }
   };
 
   // Function to remove duplicate messages
@@ -1004,36 +1439,51 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Medical Assistant</CardTitle>
+    <div className="w-full h-full min-h-[600px] flex flex-col relative rounded-3xl overflow-hidden glass-card border border-white/20 dark:border-white/5 shadow-2xl">
+      <div className="flex flex-row items-center justify-between px-6 py-4 border-b border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md z-10">
+        <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white drop-shadow-sm">Medical Assistant</h2>
         <Button 
           variant="outline" 
           size="sm" 
           onClick={handleNewChat}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 glass-card hover:bg-white/50 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 shadow-sm"
         >
           <PlusCircle className="h-4 w-4" />
-          New Chat
+          New Session
         </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="flex-1 overflow-hidden relative bg-slate-50/30 dark:bg-black/20">
         {/* Chat Messages */}
-        <ScrollArea className="h-[400px] pr-4">
+        <ScrollArea className="h-[500px] px-4 pt-6 pb-32">
           {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              Describe your symptoms or ask any medical questions...
+            <div className="flex flex-col items-center justify-center h-[300px] gap-4 p-8 text-center">
+              <div className="relative h-20 w-20 flex items-center justify-center mb-2">
+                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 to-cyan-400 blur-xl opacity-20 animate-pulse rounded-full" />
+                <BrainCircuit className="h-10 w-10 text-indigo-500 dark:text-cyan-400 relative z-10" />
+              </div>
+              <p className="text-lg font-medium text-slate-800 dark:text-slate-200 drop-shadow-sm">What can I do for you today?</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+                Start a <span className="font-medium text-indigo-500 dark:text-cyan-400">New Session</span> for risk prediction, or just say hello below.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
+              <AnimatePresence initial={false}>
               {messages.map((msg) => (
-                <div
+                <motion.div
                   key={msg.id}
+                  layout
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 relative ${
-                      msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                    className={`max-w-[85%] rounded-[2rem] px-5 py-3.5 relative shadow-md backdrop-blur-md transition-all ${
+                      msg.role === 'user'
+                        ? 'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white rounded-br-sm'
+                        : 'glass-card border border-white/20 dark:border-white/5 text-slate-800 dark:text-slate-100 rounded-bl-sm'
                     }`}
                   >
                     {msg.image && (
@@ -1056,29 +1506,61 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                       <p className="text-sm whitespace-pre-wrap">
                         {msg.imagePrompt || 'Please analyze this medical image.'}
                       </p>
+                    ) : msg.role === "assistant" ? (
+                      renderAssistantText(msg.content)
                     ) : (
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     )}
+
+                    {msg.role === "assistant" &&
+                      showHealthMainMenu &&
+                      String(msg.id).startsWith("health-intro") && (
+                        <div className="mt-3 flex flex-col gap-2">
+                          <Button
+                            size="sm"
+                            className="w-full justify-center"
+                            onClick={() => void chooseRiskAssessment()}
+                            disabled={isLoading}
+                          >
+                            Risk prediction
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="w-full justify-center"
+                            onClick={() => void chooseGeneralConsultation()}
+                            disabled={isLoading}
+                          >
+                            Consultation
+                          </Button>
+                        </div>
+                      )}
                     
                     {/* Render Booking Button if AI suggests it and flow isn't active */}
                     {msg.role === 'assistant' && msg.suggestsBooking && !isBookingFlowActive && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="mt-2 flex items-center gap-1 bg-white hover:bg-slate-50"
-                        onClick={handleStartBooking}
-                        disabled={isLoading}
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15 }}
+                        className="mt-3 border-t border-slate-100 pt-3"
                       >
-                        <CalendarPlus className="h-4 w-4" />
-                        Book Appointment
-                      </Button>
+                        <Button
+                          size="sm"
+                          className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md"
+                          onClick={handleStartBooking}
+                          disabled={isLoading}
+                        >
+                          <CalendarPlus className="h-4 w-4" />
+                          Book Consultation
+                        </Button>
+                      </motion.div>
                     )}
 
-                    {/* Show doctors only in the message that asks to select a doctor */}
-                    {msg.role === 'assistant' && 
-                     bookingStep === 1 && 
-                     availableDoctors.length > 0 && 
-                     msg.content.includes('Please select a doctor') && (
+                    {/* Show doctors only on the anchored booking prompt (not every matching text bubble) */}
+                    {msg.role === "assistant" &&
+                      bookingStep === 1 &&
+                      msg.id === bookingDoctorMessageId &&
+                      availableDoctors.length > 0 && (
                        <div className="mt-2 space-y-1">
                          {availableDoctors.map(doc => (
                            <Button 
@@ -1097,11 +1579,11 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                        </div>
                     )}
 
-                    {/* Show time slots only in the message that asks to select a time slot */}
-                    {msg.role === 'assistant' && 
-                     bookingStep === 2 && 
-                     availableSlots.length > 0 && 
-                     (msg.content.includes('Please select an available time slot') || msg.content.includes('select a time slot')) && (
+                    {/* Show time slots only on the anchored slot prompt */}
+                    {msg.role === "assistant" &&
+                      bookingStep === 2 &&
+                      msg.id === bookingSlotMessageId &&
+                      availableSlots.length > 0 && (
                        <div className="mt-2 grid grid-cols-3 gap-1">
                          {availableSlots.map((slot, index) => {
                            // Handle different data formats that might come from API
@@ -1130,8 +1612,31 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                        </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               ))}
+              </AnimatePresence>
+              {showRiskDiseaseMenu && (
+                <div className="rounded-lg border border-dashed bg-muted/40 p-3">
+                  <p className="mb-2 text-sm font-medium text-foreground">
+                    Please choose the type of health risk you want to assess:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {(["diabetes", "heart", "liver", "kidney"] as RiskDisease[]).map((d) => (
+                      <Button
+                        key={d}
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="bg-background"
+                        onClick={() => openRiskDiseaseModal(d)}
+                        disabled={isLoading}
+                      >
+                        {DISEASE_TITLE[d]}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -1190,11 +1695,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           </div>
         )}
 
-        {/* Input Area */}
-        <div className="flex gap-2">
-          <label htmlFor="file-upload" className="flex items-center justify-center px-3 py-2 border border-input rounded-md bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer">
-            <Upload className="h-4 w-4 mr-2" />
-            Upload
+        {/* Sleek Floating Input Area */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl glass-card rounded-full p-2 pr-3 flex items-center gap-2 shadow-2xl border border-white/40 dark:border-white/10 z-20">
+          <label htmlFor="file-upload" className="flex items-center justify-center h-10 w-10 rounded-full bg-slate-100/50 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors text-slate-600 dark:text-slate-300">
+            <Upload className="h-4 w-4" />
             <Input
               id="file-upload"
               type="file"
@@ -1219,7 +1723,8 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           </label>
           
           <div className="relative flex-1">
-            <Input
+            <input
+              className="w-full bg-transparent border-0 focus:ring-0 text-slate-800 dark:text-white placeholder:text-slate-400 text-sm px-2 h-10 outline-none"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(input)}
@@ -1228,35 +1733,36 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
             />
           </div>
           
-          {/* Voice Recording Button */}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleVoiceRecord}
-            disabled={isLoading}
-            className={isRecording ? "bg-red-100 hover:bg-red-200" : ""}
-          >
-            <Mic className={`h-4 w-4 ${isRecording ? "text-red-500" : ""}`} />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${isRecording ? "bg-red-100/50 dark:bg-red-900/30 text-red-500" : "text-slate-600 dark:text-slate-300"}`}
+              onClick={handleVoiceRecord}
+              disabled={isLoading}
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+              onClick={() => handleLogSymptom(input)}
+              disabled={isLoading || !input.trim()}
+              title="Log symptom to diary"
+            >
+              <Save className="h-4 w-4" />
+            </Button>
 
-          {/* Send Button */}
-          <Button
-            onClick={() => handleSendMessage(input)}
-            disabled={isLoading || isRecording || !input.trim()}
-            title="Send message to AI"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-
-          {/* Log Symptom Button */}
-          <Button
-            variant="outline"
-            onClick={() => handleLogSymptom(input)}
-            disabled={isLoading || !input.trim()}
-            title="Log symptom to diary"
-          >
-            <Save className="h-4 w-4" />
-          </Button>
+            <Button
+              className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 text-white shadow-md hover:shadow-lg transition-all"
+              onClick={() => handleSendMessage(input)}
+              disabled={isLoading || isRecording || !input.trim()}
+            >
+              <Send className="h-4 w-4 ml-0.5" />
+            </Button>
+          </div>
         </div>
 
         {/* Login Modal */}
@@ -1265,7 +1771,23 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           onClose={() => setShowLoginModal(false)}
           onLoginSuccess={handleLoginSuccess}
         />
-      </CardContent>
-    </Card>
+
+        <RiskAssessmentModal
+          open={riskModalOpen}
+          onOpenChange={(open) => {
+            setRiskModalOpen(open);
+            if (!open) {
+              if (!riskModalCompletedRef.current) {
+                setShowRiskDiseaseMenu(true);
+              }
+              riskModalCompletedRef.current = false;
+            }
+          }}
+          disease={riskModalDisease}
+          onSubmit={(payload) => void handleRiskFormSubmit(payload)}
+          isSubmitting={riskSubmitLoading}
+        />
+      </div>
+    </div>
   );
 }

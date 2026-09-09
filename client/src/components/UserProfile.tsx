@@ -131,7 +131,7 @@ export default function UserProfile({ user }: UserProps) {
   // Display mode - shows user information
   if (!isEditing) {
     return (
-      <Card className="bg-white rounded-lg shadow-sm">
+      <Card className="glass-card border-0 shadow-sm">
         <CardContent className="p-6 space-y-4">
           <div className="flex items-center space-x-4">
             <Avatar className="h-16 w-16">
@@ -144,8 +144,8 @@ export default function UserProfile({ user }: UserProps) {
               )}
             </Avatar>
             <div>
-              <h2 className="text-xl font-semibold">{user.name}</h2>
-              <p className="text-slate-500 text-sm">{user.email}</p>
+              <h2 className="text-xl font-semibold dark:text-white">{user.name}</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">{user.email}</p>
             </div>
           </div>
 
@@ -183,7 +183,7 @@ export default function UserProfile({ user }: UserProps) {
 
   // Edit mode - form to update user information
   return (
-    <Card className="bg-white rounded-lg shadow-sm">
+    <Card className="glass-card border-0 shadow-sm">
       <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex flex-col items-center mb-4">
