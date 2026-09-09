@@ -1,6 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { AnimatePresence, motion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValueEvent,
+  useScroll,
+} from "framer-motion";
 import {
   Activity,
   ArrowRight,
@@ -28,62 +33,60 @@ import { fadeUp, scaleIn, slideIn, transition } from "@/lib/motion";
 /* Content                                                             */
 /* ------------------------------------------------------------------ */
 
-const capabilities = [
-  "Symptom triage",
-  "Risk assessment",
-  "Voice input",
-  "Report analysis",
-  "Symptom diary",
-  "Appointment booking",
-  "Guideline-linked answers",
-];
-
+/**
+ * `span` drives an intentionally uneven grid. A row of three identical
+ * feature cards is the most recognisable generated-layout signature, so the
+ * rows alternate 4/2, 2/4, 3/3 instead.
+ */
 const features = [
   {
     icon: MessageSquareText,
     title: "Structured triage",
     body: "Describe how you feel in your own words. You get back what it could mean, what to do now, and the signs that mean you should not wait.",
+    span: "lg:col-span-4",
   },
   {
     icon: LineChart,
     title: "Explained risk scores",
-    body: "Diabetes, heart, liver and kidney assessments return a percentage alongside the specific inputs that moved it, so the number is never a black box.",
+    body: "Four assessments return a percentage next to the inputs that moved it.",
+    span: "lg:col-span-2",
+  },
+  {
+    icon: Mic,
+    title: "Voice when typing is hard",
+    body: "Speak your symptoms instead of typing them.",
+    span: "lg:col-span-2",
   },
   {
     icon: FileImage,
     title: "Reports and images",
     body: "Upload a lab report or a photo of an affected area and get a plain-language reading of what the values and visible features suggest.",
-  },
-  {
-    icon: Mic,
-    title: "Voice when typing is hard",
-    body: "Speak your symptoms instead of typing them. Useful when you are unwell, and useful when English is not the language you think in.",
+    span: "lg:col-span-4",
   },
   {
     icon: ClipboardList,
     title: "A diary that spots trends",
     body: "Log symptoms over days and weeks. Patterns across time are what a single consultation cannot see.",
+    span: "lg:col-span-3",
   },
   {
     icon: CalendarCheck,
     title: "Straight through to a doctor",
     body: "When the conversation suggests you should be seen, book a real appointment without starting again somewhere else.",
+    span: "lg:col-span-3",
   },
 ];
 
 const steps = [
   {
-    n: "01",
     title: "Tell it what is wrong",
     body: "Type or speak. Follow-up questions narrow things down the way an intake conversation would.",
   },
   {
-    n: "02",
     title: "See the reasoning",
-    body: "Guidance arrives structured and sourced — what it could mean, what to do, and when to seek urgent care.",
+    body: "Guidance arrives structured: what it could mean, what to do, and when to seek urgent care.",
   },
   {
-    n: "03",
     title: "Act on it",
     body: "Track it in the diary, run a risk assessment, or book a consultation. Your history stays in one place.",
   },
@@ -96,14 +99,10 @@ const steps = [
 function ChatPreview() {
   return (
     <div className="surface-raised overflow-hidden rounded-2xl">
-      {/* Window chrome */}
-      <div className="flex items-center gap-2 border-b border-border bg-muted/50 px-4 py-3">
-        <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
-        <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
-        <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
-        <span className="ml-2 text-xs font-medium text-muted-foreground">
-          MediAI — consultation
-        </span>
+      <div className="border-b border-border bg-muted/40 px-5 py-3">
+        <p className="text-xs font-medium text-muted-foreground">
+          An actual reply, in the format the assistant always answers in
+        </p>
       </div>
 
       <div className="space-y-4 p-5 sm:p-6">
@@ -198,13 +197,15 @@ function RiskPreview() {
         </span>
       </div>
 
+      {/* Bars scale on the X axis rather than animating width, which would
+          force layout on every frame. */}
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
         <motion.div
-          initial={{ width: 0 }}
-          whileInView={{ width: "38%" }}
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 0.38 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-          className="h-full rounded-full bg-primary"
+          className="h-full origin-left rounded-full bg-primary"
         />
       </div>
 
@@ -223,15 +224,15 @@ function RiskPreview() {
             </div>
             <div className="h-1 overflow-hidden rounded-full bg-muted">
               <motion.div
-                initial={{ width: 0 }}
-                whileInView={{ width: `${f.weight}%` }}
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: f.weight / 100 }}
                 viewport={{ once: true }}
                 transition={{
                   duration: 0.6,
                   ease: [0.22, 1, 0.36, 1],
                   delay: 0.25 + i * 0.08,
                 }}
-                className="h-full rounded-full bg-primary/45"
+                className="h-full origin-left rounded-full bg-primary/45"
               />
             </div>
           </li>
@@ -251,12 +252,10 @@ export default function Landing() {
   const [authMode, setAuthMode] = useState("login");
   const [navSolid, setNavSolid] = useState(false);
 
-  useEffect(() => {
-    const onScroll = () => setNavSolid(window.scrollY > 16);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  // useScroll reads scroll outside the React render cycle. A raw scroll
+  // listener would set state on every frame and re-render the whole page.
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (y) => setNavSolid(y > 16));
 
   const handleLoginSuccess = () => setLocation("/dashboard");
 
@@ -318,10 +317,10 @@ export default function Landing() {
 
       {/* ---------------- Hero ---------------- */}
       <section id="top" className="relative overflow-hidden pt-16">
-        {/* Background: one faint grid, one soft wash. Nothing more. */}
+        {/* One soft, static wash. A hairline grid overlay here would only be
+            decoration, and a looping drift animation communicates nothing. */}
         <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-grid mask-fade-b" />
-          <div className="absolute -top-40 left-1/2 h-[460px] w-[760px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px] animate-drift" />
+          <div className="absolute -top-40 left-1/2 h-[460px] w-[760px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
         </div>
 
         <div className="container-page relative grid gap-14 pb-20 pt-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-16 lg:pb-28 lg:pt-24">
@@ -332,10 +331,7 @@ export default function Landing() {
               transition={transition.slow}
               className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs"
             >
-              <span className="relative grid h-1.5 w-1.5 place-items-center">
-                <span className="absolute h-1.5 w-1.5 rounded-full bg-primary animate-pulse-ring" />
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              </span>
+              <Stethoscope className="h-3.5 w-3.5 text-primary" />
               Guidance in minutes, not appointments
             </motion.div>
 
@@ -346,8 +342,8 @@ export default function Landing() {
               className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
             >
               Understand your symptoms{" "}
-              <span className="text-gradient-brand">before</span> you sit in a
-              waiting room.
+              <span className="text-primary">before</span> you sit in a waiting
+              room.
             </motion.h1>
 
             <motion.p
@@ -426,31 +422,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------- Capability marquee ---------------- */}
-      <section className="border-y border-border bg-muted/30 py-5">
-        <div className="marquee-viewport mask-fade-x overflow-hidden">
-          <div className="marquee-track flex w-max items-center">
-            {[0, 1].map((copy) => (
-              <ul
-                key={copy}
-                className="flex shrink-0 items-center"
-                aria-hidden={copy === 1}
-              >
-                {capabilities.map((c) => (
-                  <li
-                    key={`${copy}-${c}`}
-                    className="flex items-center whitespace-nowrap px-6 text-sm font-medium text-foreground/80"
-                  >
-                    <span className="mr-6 h-1 w-1 rounded-full bg-primary/60" />
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ---------------- Features ---------------- */}
       <section id="features" className="container-page py-20 lg:py-28">
         <Reveal className="max-w-2xl">
@@ -459,14 +430,14 @@ export default function Landing() {
             Six things, each of which finishes the job.
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Every feature ends somewhere useful — a decision, a logged data
+            Every feature ends somewhere useful: a decision, a logged data
             point, or a booked appointment. None of them stop at a wall of text.
           </p>
         </Reveal>
 
-        <RevealGroup className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <RevealGroup className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
           {features.map((f) => (
-            <RevealItem key={f.title}>
+            <RevealItem key={f.title} className={f.span}>
               <article className="surface lift group h-full p-6">
                 <span className="grid h-10 w-10 place-items-center rounded-lg border border-primary/20 bg-primary/8 text-primary transition-colors duration-base group-hover:bg-primary/15">
                   <f.icon className="h-5 w-5" />
@@ -484,31 +455,31 @@ export default function Landing() {
       {/* ---------------- How it works ---------------- */}
       <section id="how" className="border-y border-border bg-muted/25">
         <div className="container-page py-20 lg:py-28">
-          <Reveal className="max-w-2xl">
-            <p className="eyebrow">How it works</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Three steps, about two minutes.
-            </h2>
-          </Reveal>
+          {/* Heading on the left, steps stacked on the right. Three equal
+              columns with numbered badges would read as filler. */}
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,22rem)_1fr] lg:gap-20">
+            <Reveal>
+              <p className="eyebrow">How it works</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+                Three steps, about two minutes.
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                No forms to fill in before you get anything back.
+              </p>
+            </Reveal>
 
-          <div className="relative mt-12">
-            {/* Connector, desktop only */}
-            <div
-              aria-hidden
-              className="absolute left-0 right-0 top-5 hidden h-px bg-border lg:block"
-            />
-            <RevealGroup
-              className="grid gap-8 lg:grid-cols-3 lg:gap-10"
-              stagger={0.09}
-            >
-              {steps.map((s) => (
-                <RevealItem key={s.n}>
-                  <div className="relative">
-                    <span className="relative z-10 inline-grid h-10 w-10 place-items-center rounded-full border border-border bg-background text-sm font-semibold text-primary">
-                      {s.n}
-                    </span>
-                    <h3 className="mt-4 text-lg font-semibold">{s.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            <RevealGroup className="lg:pt-2" stagger={0.09}>
+              {steps.map((s, i) => (
+                <RevealItem key={s.title}>
+                  <div
+                    className={
+                      i === 0
+                        ? "pb-7"
+                        : "border-t border-border py-7 last:pb-0"
+                    }
+                  >
+                    <h3 className="text-lg font-semibold">{s.title}</h3>
+                    <p className="mt-2 max-w-xl leading-relaxed text-muted-foreground">
                       {s.body}
                     </p>
                   </div>

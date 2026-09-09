@@ -8,7 +8,7 @@
    One accent colour only. In healthcare the job of the interface
    is to read as calm and trustworthy, so the palette is a neutral
    slate base with a single clinical teal used for actions and
-   emphasis. `accent` follows the shadcn semantic — it is a hover
+   emphasis. `accent` follows the shadcn semantic: it is a hover
    surface, not a second brand colour.
    ============================================================ */
 
@@ -246,7 +246,7 @@
 }
 
 @layer utilities {
-  /* Interactive lift. Deliberately 1px — enough to feel responsive,
+  /* Interactive lift. Deliberately 1px, enough to feel responsive but
      small enough not to look bouncy. */
   .lift {
     @apply transition-[transform,box-shadow] duration-200 ease-out;
@@ -254,68 +254,5 @@
   .lift:hover {
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
-  }
-
-  /* Faint grid, for hero backgrounds. Masked so it fades out rather
-     than stopping at a hard edge. */
-  .bg-grid {
-    background-image:
-      linear-gradient(to right, hsl(var(--foreground) / 0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
-    background-size: 56px 56px;
-  }
-
-  .mask-fade-b {
-    mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
-  }
-
-  .mask-fade-x {
-    mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
-  }
-
-  /* Single, restrained brand gradient for the one or two places that
-     genuinely need emphasis. */
-  .text-gradient-brand {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(
-      100deg,
-      hsl(var(--primary)),
-      hsl(212 90% 52%)
-    );
-  }
-
-  /* Continuous marquee. Uses a duplicated track and a percentage
-     translate so it stays seamless at any viewport width — the
-     previous implementation used a fixed pixel offset and desynced. */
-  .marquee-track {
-    animation: marquee 32s linear infinite;
-  }
-  .marquee-viewport:hover .marquee-track {
-    animation-play-state: paused;
-  }
-
-  @keyframes marquee {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
-  }
-
-  /* Very slow ambient drift for hero background wash only. */
-  @keyframes drift {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-    50%      { transform: translate3d(0, -18px, 0) scale(1.04); }
-  }
-  .animate-drift {
-    animation: drift 18s ease-in-out infinite;
-  }
-
-  @keyframes pulse-ring {
-    0%   { opacity: 0.5; transform: scale(0.92); }
-    70%  { opacity: 0;   transform: scale(1.35); }
-    100% { opacity: 0;   transform: scale(1.35); }
-  }
-  .animate-pulse-ring {
-    animation: pulse-ring 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   }
 }

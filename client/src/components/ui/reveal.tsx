@@ -1,5 +1,11 @@
 import * as React from "react";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  type Variants,
+} from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import {
@@ -115,33 +121,20 @@ export function RevealItem({
   );
 }
 
-/** Thin progress bar showing how far down the page the reader is. */
+/**
+ * Thin progress bar showing how far down the page the reader is.
+ *
+ * Scroll progress is a continuous value, so it stays on a motion value and
+ * never touches React state. Storing it in state would re-render the whole
+ * page on every scroll frame.
+ */
 export function ScrollProgress({ className }: { className?: string }) {
-  const [progress, setProgress] = React.useState(0);
-
-  React.useEffect(() => {
-    let frame = 0;
-
-    const update = () => {
-      frame = 0;
-      const doc = document.documentElement;
-      const scrollable = doc.scrollHeight - doc.clientHeight;
-      setProgress(scrollable > 0 ? doc.scrollTop / scrollable : 0);
-    };
-
-    const onScroll = () => {
-      if (frame === 0) frame = requestAnimationFrame(update);
-    };
-
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, []);
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 180,
+    damping: 30,
+    restDelta: 0.001,
+  });
 
   return (
     <div
@@ -151,9 +144,9 @@ export function ScrollProgress({ className }: { className?: string }) {
         className,
       )}
     >
-      <div
-        className="h-full origin-left bg-primary transition-transform duration-100 ease-out"
-        style={{ transform: `scaleX(${progress})` }}
+      <motion.div
+        style={{ scaleX }}
+        className="h-full origin-left bg-primary"
       />
     </div>
   );
