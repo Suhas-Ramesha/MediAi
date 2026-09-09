@@ -10,7 +10,7 @@ export interface User {
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
-  content: string;
+  content: string; // This will hold the currently displayed language
   timestamp: Date | string; // Can be Date object or ISO string
   isLoading?: boolean;
   image?: string; // URL to the image stored in Cloudinary
@@ -18,6 +18,9 @@ export interface Message {
   suggestsBooking?: boolean;
   appointmentId?: string; // ID of the appointment if this message is related to an appointment
   isAppointmentUpdate?: boolean; // Flag to indicate if this message is an appointment status update
+  englishContent?: string; // Original English content from AI
+  translatedContent?: string; // Translated content from AI
+  showEnglish?: boolean; // Flag to determine which language to display for AI messages
 }
 
 export interface Consultation {

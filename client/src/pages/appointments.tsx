@@ -115,7 +115,12 @@ export default function Appointments() {
         consultationsSnapshot.forEach(doc => {
           const data = doc.data();
           console.log('Checking consultation for appointments:', doc.id);
-          
+
+          // Use structured fields if available
+          const structuredDoctorName = data.doctorName || (data.selectedDoctor && (data.selectedDoctor.name || (data.selectedDoctor.firstName ? data.selectedDoctor.firstName + ' ' + data.selectedDoctor.lastName : 'Doctor')));
+          const structuredDate = data.appointmentDate || (data.selectedSlot && (data.selectedSlot.date || data.selectedSlot.appointmentDate));
+          const structuredTime = data.appointmentTime || (data.selectedSlot && (data.selectedSlot.time || data.selectedSlot.startTime));
+
           // Check if messages contain appointment information
           if (data.messages && Array.isArray(data.messages)) {
             // Find appointment messages more reliably
@@ -135,44 +140,44 @@ export default function Appointments() {
               }
               return false; // Ignore other messages (like user requests)
             });
-            
+
             for (const msg of appointmentMessages) {
               console.log('Found potential appointment message:', msg); // Log candidates
 
               // Attempt extraction primarily if appointmentId exists, 
               // or if it's a confirmation message (though ID is preferred)
               if (msg.appointmentId || (msg.role === 'assistant' && (msg.content?.toLowerCase().includes('approved') || msg.content?.toLowerCase().includes('confirmed') || msg.isAppointmentUpdate))) {
-                
-                // Extract appointment details from the message content
-                const content = msg.content || '';
-                
-                // Try to extract doctor name
-                let doctorName = 'Unknown Doctor';
-                const doctorMatch = content.match(/Dr\.\s+([A-Za-z\s]+)/);
-                if (doctorMatch) {
-                  doctorName = doctorMatch[1].trim();
+                // Use structured fields if available, fallback to message extraction
+                let doctorName = structuredDoctorName || 'Unknown Doctor';
+                let date = structuredDate || '';
+                let time = structuredTime || '';
+                // If still missing, try to extract from message content
+                if (!doctorName || doctorName === 'Doctor' || doctorName === 'Unknown Doctor') {
+                  const content = msg.content || '';
+                  const doctorMatch = content.match(/Dr\.?\s+([A-Za-z\s]+)/);
+                  if (doctorMatch) {
+                    doctorName = doctorMatch[1].trim();
+                  }
                 }
-                
-                // Try to extract date and time
-                let date = '';
-                let time = '';
-                const dateTimeMatch = content.match(/for\s+([A-Za-z0-9,\s]+)\s+at\s+([0-9:]+\s*[APMapm]+)/);
-                if (dateTimeMatch) {
-                  date = dateTimeMatch[1].trim();
-                  time = dateTimeMatch[2].trim();
+                if (!date || !time) {
+                  const content = msg.content || '';
+                  const dateTimeMatch = content.match(/for\s+([A-Za-z0-9,\s-]+)\s+at\s+([0-9:]+\s*[APMapm]*)/);
+                  if (dateTimeMatch) {
+                    date = dateTimeMatch[1].trim();
+                    time = dateTimeMatch[2].trim();
+                  }
                 }
-                
                 // Determine status
                 let status = 'pending';
+                const content = msg.content || '';
                 if (content.toLowerCase().includes('approved') || 
                     content.toLowerCase().includes('confirmed') ||
                     msg.isAppointmentUpdate) {
                   status = 'approved';
                 }
-                
                 appointmentsFromConsultations.push({
                   id: msg.appointmentId,
-                  doctorId: '',
+                  doctorId: data.doctorId || '',
                   doctorName,
                   date,
                   time,

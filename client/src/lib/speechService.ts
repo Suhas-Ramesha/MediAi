@@ -1,6 +1,23 @@
 export class SpeechService {
   private recognition: any = null;
   private isListening: boolean = false;
+  private currentLanguage: string = 'en-US';
+
+  // List of supported languages
+  static readonly SUPPORTED_LANGUAGES = [
+    { code: 'en-US', name: 'English (US)' },
+    { code: 'es-ES', name: 'Spanish' },
+    { code: 'fr-FR', name: 'French' },
+    { code: 'de-DE', name: 'German' },
+    { code: 'it-IT', name: 'Italian' },
+    { code: 'pt-BR', name: 'Portuguese' },
+    { code: 'ru-RU', name: 'Russian' },
+    { code: 'ja-JP', name: 'Japanese' },
+    { code: 'ko-KR', name: 'Korean' },
+    { code: 'zh-CN', name: 'Chinese' },
+    { code: 'hi-IN', name: 'Hindi' },
+    { code: 'ar-SA', name: 'Arabic' }
+  ];
 
   initialize(onTranscript: (text: string) => void, onError: (error: string) => void) {
     try {
@@ -13,7 +30,7 @@ export class SpeechService {
       this.recognition = new SpeechRecognition();
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
-      this.recognition.lang = 'en-US';
+      this.recognition.lang = this.currentLanguage;
       this.recognition.maxAlternatives = 1;
 
       this.recognition.onresult = (event: any) => {
@@ -47,6 +64,9 @@ export class SpeechService {
           case 'network':
             message = 'Network error occurred';
             break;
+          case 'language-not-supported':
+            message = 'Selected language is not supported';
+            break;
         }
         
         onError(message);
@@ -66,6 +86,17 @@ export class SpeechService {
       onError('Speech recognition not supported in this browser');
       return false;
     }
+  }
+
+  setLanguage(languageCode: string) {
+    this.currentLanguage = languageCode;
+    if (this.recognition) {
+      this.recognition.lang = languageCode;
+    }
+  }
+
+  getCurrentLanguage(): string {
+    return this.currentLanguage;
   }
 
   startRecording() {
