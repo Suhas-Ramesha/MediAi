@@ -33,3 +33,10 @@ ml_service/models/*.pkl
 # ---- Editor / local ----
 .vscode/settings.json
 .breakpoints
+
+# ---- Agent design skills ----
+# The skill content is committed so the whole team gets it, but the detector
+# binary is platform-specific and ~16MB. Re-fetch it per machine with
+# `npx impeccable install --providers=cursor --scope=project`.
+.cursor/skills/*/scripts/bin/
+.impeccable/
