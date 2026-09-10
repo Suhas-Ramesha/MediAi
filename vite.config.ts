@@ -22,6 +22,10 @@ export default defineConfig(async ({ mode }) => {
           changeOrigin: true,
           rewrite: () => "/predict",
         },
+        "/api/mediai": {
+          target: "http://127.0.0.1:5000",
+          changeOrigin: true,
+        },
       },
     },
     plugins: [

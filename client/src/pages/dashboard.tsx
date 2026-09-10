@@ -54,7 +54,14 @@ function DashboardContent({
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Describe how you feel, run a risk assessment, or pick up a previous
-            consultation.
+            consultation.{" "}
+            <a href="/clinician/outcomes" className="text-primary hover:underline">
+              Clinician outcomes
+            </a>
+            {" · "}
+            <a href="/handoff-review" className="text-primary hover:underline">
+              Review a visit brief
+            </a>
           </p>
         </motion.div>
 

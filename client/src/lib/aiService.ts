@@ -1,13 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Verify API key
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-if (!apiKey) {
-  console.error('Gemini API key is not set in environment variables');
-  throw new Error('Gemini API key is required');
+function getGenAI(): GoogleGenerativeAI {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('Gemini API key is required to run chat, not the landing demos.');
+  }
+  return new GoogleGenerativeAI(apiKey);
 }
-
-const genAI = new GoogleGenerativeAI(apiKey);
 
 const DEFAULT_TIMEOUT_MS = 40000;
 
@@ -150,7 +149,7 @@ export const medicalChatService = {
     try {
       console.log('Starting chat request');
 
-      const model = genAI.getGenerativeModel({ 
+      const model = getGenAI().getGenerativeModel({ 
         model: "gemini-2.5-flash",
         generationConfig: {
           temperature: 0.4,
@@ -194,7 +193,7 @@ export const medicalChatService = {
     onChunk: (partialText: string) => void,
   ): Promise<Message> {
     try {
-      const model = genAI.getGenerativeModel({
+      const model = getGenAI().getGenerativeModel({
         model: "gemini-2.5-flash",
         generationConfig: {
           temperature: 0.4,
@@ -302,7 +301,7 @@ Important Notes:
 
 Please be thorough and precise while explaining in patient-friendly terms.`;
 
-      const visionModel = genAI.getGenerativeModel({ 
+      const visionModel = getGenAI().getGenerativeModel({ 
         model: "gemini-2.5-flash",
       }, { apiVersion: "v1" });
       

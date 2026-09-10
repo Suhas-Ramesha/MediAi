@@ -27,6 +27,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Reveal, RevealGroup, RevealItem, ScrollProgress } from "@/components/ui/reveal";
 import { LoginForm, SignUpForm } from "@/components/AuthForms";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ReasoningCanvasDemo } from "@/components/landing/ReasoningCanvasDemo";
+import { RiskSimulatorDemo } from "@/components/landing/RiskSimulatorDemo";
+import { ConsiliumConvergence } from "@/components/landing/ConsiliumConvergence";
+import { PlanDiffDemo } from "@/components/landing/PlanDiffDemo";
+import { ConnectedSafetyDemo } from "@/components/landing/ConnectedSafetyDemo";
 import { useAuth } from "@/hooks/use-auth";
 import { fadeUp, scaleIn, slideIn, transition } from "@/lib/motion";
 
@@ -43,7 +48,7 @@ const features = [
   {
     icon: MessageSquareText,
     title: "Structured triage",
-    body: "Describe how you feel in your own words. You get back what it could mean, what to do now, and the signs that mean you should not wait.",
+    body: "Describe how you feel in your own words. You get back what it could mean, what to do now, and the signs that mean you should not wait. Each question it asks is chosen to narrow things down fastest, not read off a fixed script.",
     span: "md:col-span-4",
   },
   {
@@ -73,7 +78,19 @@ const features = [
   {
     icon: CalendarCheck,
     title: "Straight through to a doctor",
-    body: "When the conversation suggests you should be seen, book a real appointment without starting again somewhere else.",
+    body: "When the conversation suggests you should be seen, book a real appointment without starting again somewhere else. If something urgent turns up while you are waiting on an existing appointment, it tells you immediately instead of leaving you to sit on it. And if your symptoms do not match the specialist you booked, it says so before the visit, not during it.",
+    span: "md:col-span-3",
+  },
+  {
+    icon: ClipboardList,
+    title: "Come prepared",
+    body: "Before you go in, it tells you which labs you will likely need and whether to arrive fasting, so a visit does not turn into two.",
+    span: "md:col-span-3",
+  },
+  {
+    icon: FileImage,
+    title: "A clear brief for your doctor",
+    body: "Struggling to put how you feel into words is normal, especially when you are unwell. MediAI turns your conversation into a clear summary for your doctor: your own words alongside the clinical picture, which you review and can correct before it is sent. Your doctor starts the visit already knowing what you have told MediAI, instead of asking you to explain it all again from scratch.",
     span: "md:col-span-3",
   },
 ];
@@ -85,7 +102,7 @@ const steps = [
   },
   {
     title: "See the reasoning",
-    body: "Guidance arrives structured: what it could mean, what to do, and when to seek urgent care.",
+    body: "Guidance arrives structured, with claim checks and a skeptic pass on non-trivial cases: what it could mean, what to do, and when to seek urgent care.",
   },
   {
     title: "Act on it",
@@ -98,6 +115,11 @@ const steps = [
 /* ------------------------------------------------------------------ */
 
 function ChatPreview() {
+  const reduceMotion = useReducedMotion();
+  const enter = reduceMotion
+    ? { opacity: 1, y: 0 }
+    : { opacity: 0, y: 8 };
+
   return (
     <div className="surface-raised overflow-hidden rounded-2xl">
       <div className="border-b border-border bg-muted/40 px-5 py-3">
@@ -109,9 +131,11 @@ function ChatPreview() {
       <div className="space-y-4 p-5 sm:p-6">
         {/* Patient message */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={enter}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ ...transition.slow, delay: 0.25 }}
+          transition={
+            reduceMotion ? { duration: 0 } : { ...transition.slow, delay: 0.25 }
+          }
           className="flex justify-end"
         >
           <p className="max-w-[78%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground">
@@ -121,9 +145,11 @@ function ChatPreview() {
 
         {/* Assistant reply */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={enter}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ ...transition.slow, delay: 0.45 }}
+          transition={
+            reduceMotion ? { duration: 0 } : { ...transition.slow, delay: 0.45 }
+          }
           className="flex justify-start"
         >
           <div className="max-w-[88%] space-y-3 rounded-2xl rounded-bl-md border border-border bg-muted/40 px-4 py-3">
@@ -158,9 +184,11 @@ function ChatPreview() {
 
         {/* Suggested action */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={enter}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ ...transition.slow, delay: 0.65 }}
+          transition={
+            reduceMotion ? { duration: 0 } : { ...transition.slow, delay: 0.65 }
+          }
           className="flex justify-start pl-1"
         >
           <span className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">
@@ -303,7 +331,9 @@ export default function Landing() {
             {[
               ["Features", "#features"],
               ["How it works", "#how"],
-              ["Risk scores", "#risk"],
+              ["Trust", "#trust"],
+              ["Risk & simulation", "#risk"],
+              ["Dashboard", "/dashboard"],
             ].map(([label, href]) => (
               <a
                 key={href}
@@ -356,9 +386,7 @@ export default function Landing() {
               transition={{ ...transition.slow, delay: 0.05 }}
               className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
             >
-              Understand your symptoms{" "}
-              <span className="text-primary">before</span> you sit in a waiting
-              room.
+              It doesn&apos;t just answer. It shows you why.
             </motion.h1>
 
             <motion.p
@@ -368,9 +396,9 @@ export default function Landing() {
               className="mt-5 max-w-xl text-lg text-muted-foreground"
             >
               MediAI turns a description of how you feel into structured
-              guidance: what it could mean, what to do now, and the specific
-              signs that mean you should be seen today. Then it books the
-              appointment.
+              guidance, and then lets you check every part of it: which claims
+              are backed by evidence, where its reasoning disagreed with itself
+              before it settled, and what would actually change your risk.
             </motion.p>
 
             <motion.div
@@ -423,6 +451,10 @@ export default function Landing() {
                 <ShieldCheck className="h-3.5 w-3.5 text-primary" />
                 Escalates, never diagnoses
               </li>
+              <li className="flex items-center gap-2">
+                <Activity className="h-3.5 w-3.5 text-primary" />
+                Shows its work
+              </li>
             </motion.ul>
           </div>
 
@@ -437,12 +469,33 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------- Features ---------------- */}
-      <section id="features" className="container-page py-20 lg:py-28">
+      {/* ---------------- Live reasoning canvas ---------------- */}
+      <section id="canvas" className="container-page scroll-mt-20 py-16 lg:py-24">
         <Reveal className="max-w-2xl">
-          <p className="eyebrow">What it does</p>
+          <p className="eyebrow">Watch it think</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Six things, each of which finishes the job.
+            Watch it think, not just answer.
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Most health apps give you a confident paragraph and nothing to check
+            it against. MediAI narrows its ranking by asking the single most
+            useful next question, checks every claim against the evidence it
+            actually retrieved, and for anything non-trivial runs four
+            independent reasoning passes that have to survive a dedicated skeptic
+            before they are shown to you.
+          </p>
+        </Reveal>
+        <Reveal className="mt-10" delay={0.08}>
+          <ReasoningCanvasDemo />
+        </Reveal>
+      </section>
+
+      {/* ---------------- Features ---------------- */}
+      <section id="features" className="container-page scroll-mt-20 py-20 lg:py-28">
+        <Reveal className="max-w-2xl">
+          <p className="eyebrow">Understand your symptoms</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+            Structured help from the first sentence.
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Every feature ends somewhere useful: a decision, a logged data
@@ -467,8 +520,103 @@ export default function Landing() {
         </RevealGroup>
       </section>
 
+      {/* ---------------- Trust ---------------- */}
+      <section id="trust" className="scroll-mt-20 border-y border-border bg-muted/25">
+        <div className="container-page py-20 lg:py-28">
+          <Reveal className="max-w-2xl">
+            <p className="eyebrow">Trust what it tells you</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+              Disagreement is not a bug here.
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Most systems hide uncertainty because it looks like weakness.
+              MediAI shows it, because it is the opposite: four independent
+              reasoning passes on your case, one of them built specifically to
+              argue against the others, so what you see has survived a real
+              check, not just a plausible first draft.
+            </p>
+          </Reveal>
+          <RevealGroup className="mt-10 grid gap-4 md:grid-cols-2">
+            <RevealItem>
+              <article className="surface h-full p-6">
+                <h3 className="text-base font-semibold">Claims you can check</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Every factual statement in a reply is checked against the
+                  evidence retrieved for your specific case. If something is not
+                  backed, you will see it flagged, not buried.
+                </p>
+              </article>
+            </RevealItem>
+            <RevealItem>
+              <article className="surface h-full p-6">
+                <h3 className="text-base font-semibold">
+                  A second opinion, automatically compared
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Seen two doctors for the same issue? MediAI lists both plans
+                  (drug, dose, duration, tests ordered) side by side, without
+                  taking a side.
+                </p>
+                <PlanDiffDemo />
+              </article>
+            </RevealItem>
+          </RevealGroup>
+          <Reveal className="mt-4" delay={0.06}>
+            <ConsiliumConvergence />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ---------------- Connected ---------------- */}
+      <section id="connected" className="container-page scroll-mt-20 py-20 lg:py-28">
+        <Reveal className="max-w-2xl">
+          <p className="eyebrow">Everything connected</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+            Your medication history, actually complete.
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Photograph a prescription from any doctor and MediAI adds it to one
+            reconciled record, checked against your full history, allergies, and
+            organ function, not just what one clinic prescribed. OCR plus medical
+            NER only keeps names that resolve to a RxNorm CUI. An unreadable photo
+            is refused, not guessed into a medication list. When a new symptom
+            shows up, it checks whether something you started recently could be
+            the cause, even weeks later.
+          </p>
+        </Reveal>
+        <RevealGroup className="mt-10 grid gap-4 md:grid-cols-2">
+          <RevealItem>
+            <article className="surface h-full p-6">
+              <h3 className="text-base font-semibold">
+                Outcomes that come back to your doctor
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Doctors rarely learn what happened after a patient leaves.
+                MediAI tracks reported outcomes and shows aggregate results:
+                how many patients felt better within a week, under which
+                treatment, only when the sample is large enough to say so.
+              </p>
+            </article>
+          </RevealItem>
+          <RevealItem>
+            <article className="surface h-full p-6">
+              <h3 className="text-base font-semibold">Where you live matters</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                MediAI can check your symptom diary against local air quality
+                and weather. If your symptoms consistently follow a pollution
+                spike by a day or two, you will see that pattern, not just the
+                individual entries.
+              </p>
+            </article>
+          </RevealItem>
+        </RevealGroup>
+        <Reveal className="mt-2" delay={0.05}>
+          <ConnectedSafetyDemo />
+        </Reveal>
+      </section>
+
       {/* ---------------- How it works ---------------- */}
-      <section id="how" className="border-y border-border bg-muted/25">
+      <section id="how" className="scroll-mt-20 border-y border-border bg-muted/25">
         <div className="container-page py-20 lg:py-28">
           <Reveal className="mx-auto max-w-2xl">
             <p className="eyebrow">How it works</p>
@@ -500,17 +648,17 @@ export default function Landing() {
       </section>
 
       {/* ---------------- Risk deep dive ---------------- */}
-      <section id="risk" className="container-page py-20 lg:py-28">
+      <section id="risk" className="container-page scroll-mt-20 py-20 lg:py-28">
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
           <Reveal variants={slideIn("left")}>
             <p className="eyebrow">Risk assessment</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              A percentage is useless without the reason behind it.
+              See what changing it would do.
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Every risk assessment returns the inputs that actually moved the
-              score, ranked by how much they contributed, with a plain-language
-              note on each one.
+              Drag any factor and watch your projected risk curve move: the same
+              local model, re-run on the new numbers, not a guess. Or ask for
+              the smallest realistic change that helps most.
             </p>
             <ul className="mt-6 space-y-3">
               {[
@@ -529,8 +677,9 @@ export default function Landing() {
             </ul>
           </Reveal>
 
-          <Reveal variants={scaleIn} className="lg:pl-6">
+          <Reveal variants={scaleIn} className="space-y-4 lg:pl-6">
             <RiskPreview />
+            <RiskSimulatorDemo />
           </Reveal>
         </div>
       </section>
@@ -616,10 +765,19 @@ export default function Landing() {
               <span className="font-medium text-foreground">
                 MediAI is not a diagnostic device.
               </span>{" "}
-              It provides health information and triage guidance to help you
-              decide whether and how urgently to seek care. It does not replace
-              examination by a qualified clinician. In an emergency, contact your
-              local emergency number immediately.
+              Claim checks, consilium passes, risk curves, medication audits,
+              escalation flags, and outcome estimates are decision-support
+              prototypes. They do not verify clinical truth, do not replace a
+              qualified clinician, and must not be used as the sole basis for
+              starting, stopping, or combining medicines. Prescription photos
+              are read by a lexicon-constrained OCR pipeline: unresolved or
+              unreadable images return incomplete, never a guessed drug.
+              Colloquial wording is translated only through a sourced phrase
+              map. Cross-doctor safety checks only cover drugs in the local
+              graph plus optional RxNav CUIs. Causal outcome numbers are
+              adjusted estimates on sample data, not proof that a treatment
+              works. In an emergency, contact your local emergency number
+              immediately.
             </p>
           </Reveal>
 
