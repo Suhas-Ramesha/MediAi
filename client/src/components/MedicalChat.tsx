@@ -87,6 +87,8 @@ function userTranscript(messages: Message[]): string {
     .map((m) => m.content)
     .join("\n");
 }
+
+function newBookingMessageId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
