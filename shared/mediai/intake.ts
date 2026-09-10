@@ -5,6 +5,7 @@ import {
   toClinicalText,
   type AppliedMapping,
 } from "./colloquial.ts";
+import { inferTriageFromTranscript } from "./triage.ts";
 
 export interface TimelineEvent {
   t: number;
@@ -41,29 +42,77 @@ export function reconstructTimeline(
 export const SPECIALTY_HINTS: Record<string, string[]> = {
   dermatology: ["rash", "itch", "skin", "acne"],
   ent: ["throat", "ear", "sinus", "swallow"],
-  cardiology: ["chest pain", "palpitation", "syncope"],
+  cardiology: [
+    "chest pain",
+    "chestpain",
+    "crushing chest",
+    "palpitation",
+    "palpitations",
+    "syncope",
+    "pain radiating to the arm",
+    "heart racing",
+  ],
   urology: ["urine", "dysuria", "burning when"],
   general: [],
 };
 
+/** Directory search strings that typically match a cluster (tried in order). */
+export const SPECIALTY_DIRECTORY_QUERIES: Record<string, string[]> = {
+  cardiology: ["Cardiologist", "Cardiology"],
+  dermatology: ["Dermatologist", "Dermatology"],
+  ent: ["ENT", "Otolaryngologist"],
+  urology: ["Urologist", "Urology"],
+  endocrinology: ["Endocrinologist"],
+  hepatology: ["Hepatologist"],
+  nephrology: ["Nephrologist"],
+};
+
+export function normalizeSpecialtyLabel(raw: string): string {
+  const t = raw.toLowerCase().replace(/[^a-z]/g, " ").replace(/\s+/g, " ").trim();
+  if (/cardio|heart/.test(t)) return "cardiology";
+  if (/derm|skin/.test(t)) return "dermatology";
+  if (/\bent\b|otolaryng/.test(t)) return "ent";
+  if (/uro/.test(t)) return "urology";
+  if (/hepato/.test(t)) return "hepatology";
+  if (/nephro/.test(t)) return "nephrology";
+  if (/endocrin/.test(t)) return "endocrinology";
+  if (/general|family|internal|gp\b/.test(t)) return "general";
+  return t.replace(/ologist$/, "ology");
+}
+
+export function inferSpecialtyHint(text: string): {
+  cluster: string;
+  directoryQueries: string[];
+  hits: number;
+} | null {
+  const hay = `${text} ${toClinicalText(text)}`.toLowerCase();
+  let best: { spec: string; hits: number } = { spec: "general", hits: 0 };
+  for (const [spec, keys] of Object.entries(SPECIALTY_HINTS)) {
+    const hits = keys.filter((k) => hay.includes(k.toLowerCase())).length;
+    if (hits > best.hits) best = { spec, hits };
+  }
+  if (best.hits === 0 || best.spec === "general") return null;
+  return {
+    cluster: best.spec,
+    directoryQueries: SPECIALTY_DIRECTORY_QUERIES[best.spec] ?? [best.spec],
+    hits: best.hits,
+  };
+}
+
 export function specialtyGuard(
   timelineText: string,
   bookedSpecialty: string,
-): { mismatch: boolean; reason: string } {
-  const text = `${timelineText} ${toClinicalText(timelineText)}`.toLowerCase();
-  const booked = bookedSpecialty.toLowerCase();
-  let best: { spec: string; hits: number } = { spec: "general", hits: 0 };
-  for (const [spec, keys] of Object.entries(SPECIALTY_HINTS)) {
-    const hits = keys.filter((k) => text.includes(k)).length;
-    if (hits > best.hits) best = { spec, hits };
-  }
-  if (best.hits === 0) {
+): { mismatch: boolean; reason: string; expected?: string } {
+  const hinted = inferSpecialtyHint(timelineText);
+  if (!hinted) {
     return { mismatch: false, reason: "not enough signal to flag a mismatch" };
   }
-  if (best.spec !== booked && booked !== "general") {
+  const booked = normalizeSpecialtyLabel(bookedSpecialty);
+  if (booked !== hinted.cluster) {
     return {
       mismatch: true,
-      reason: `Symptoms look closer to ${best.spec} than ${booked}.`,
+      expected: hinted.cluster,
+      reason: `Symptoms look closer to ${hinted.cluster} than ${booked || "an unmatched specialty"}. Do not book until a matching specialist is available.`,
     };
   }
   return { mismatch: false, reason: "specialty matches leading symptom cluster" };
@@ -77,6 +126,13 @@ export interface PrepResult {
 }
 
 const GUIDELINES: { match: RegExp; labs: string[]; fasting: boolean; guideline: string }[] = [
+  {
+    match: /chest pain|crushing chest|pain radiating to the arm/,
+    labs: ["12-lead ECG at presentation (do not delay the visit)"],
+    fasting: false,
+    guideline:
+      "Chest pain: come prepared to describe onset, radiation, and current medicines. Do not skip or delay care for fasting labs.",
+  },
   {
     match: /chest pain|palpitation/,
     labs: ["ECG", "troponin if acute"],
@@ -219,6 +275,105 @@ function newBriefId(): string {
   return `brief-${briefSeq}-${Date.now()}`;
 }
 
+function normalizeUtterance(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function tokenSet(s: string): Set<string> {
+  return new Set(normalizeUtterance(s).split(" ").filter((w) => w.length > 1));
+}
+
+function similarUtterance(a: string, b: string): boolean {
+  const na = normalizeUtterance(a);
+  const nb = normalizeUtterance(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  if (na.includes(nb) || nb.includes(na)) {
+    const shorter = na.length < nb.length ? na : nb;
+    if (shorter.split(" ").length >= 4) return true;
+  }
+  const A = tokenSet(a);
+  const B = tokenSet(b);
+  if (A.size === 0 || B.size === 0) return false;
+  let inter = 0;
+  for (const t of A) if (B.has(t)) inter += 1;
+  const j = inter / new Set([...A, ...B]).size;
+  return j >= 0.86;
+}
+
+/** Collapse a single bubble that pasted the same speech twice. */
+export function collapseRepeatedSpeech(text: string): string {
+  const t = text.replace(/\s+/g, " ").trim();
+  if (t.length < 24) return text.trim();
+  const mid = Math.floor(t.length / 2);
+  for (const split of [mid, t.indexOf(". ", mid - 20) + 1, t.indexOf("? ", mid - 20) + 1]) {
+    if (split <= 8 || split >= t.length - 8) continue;
+    const left = t.slice(0, split).trim();
+    const right = t.slice(split).trim();
+    if (similarUtterance(left, right)) return left;
+  }
+  return text.trim();
+}
+
+export function dedupePatientFragments(fragments: string[]): string[] {
+  const collapsed = fragments
+    .map((s) => collapseRepeatedSpeech(s))
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const out: string[] = [];
+  for (const f of collapsed) {
+    if (out.some((p) => similarUtterance(p, f))) continue;
+    out.push(f);
+  }
+  return out;
+}
+
+function flaggedPhrases(text: string): string[] {
+  const lower = text.toLowerCase();
+  return RED_FLAGS.filter((f) => {
+    const idx = lower.indexOf(f);
+    return idx >= 0 && !isNegatedAt(lower, idx);
+  });
+}
+
+function composeClinicalSynthesis(input: {
+  timeline: { text: string }[];
+  mappings: AppliedMapping[];
+  medications: string[];
+  flags: string[];
+}): string {
+  const seen = new Set<string>();
+  const events: string[] = [];
+  for (const ev of input.timeline) {
+    const phrase = ev.text.replace(/\s+/g, " ").trim();
+    const key = normalizeUtterance(phrase);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    events.push(phrase);
+  }
+  const mapped = [
+    ...new Set(input.mappings.map((m) => m.clinical).filter(Boolean)),
+  ];
+  const parts: string[] = [];
+  if (events.length) {
+    parts.push(
+      `Patient-reported picture, in time order: ${events.join("; ")}.`,
+    );
+  }
+  if (mapped.length) {
+    parts.push(`Mapped terms from the patient's own wording: ${mapped.join(", ")}.`);
+  }
+  if (input.medications.length) {
+    parts.push(`Medicines named: ${input.medications.join(", ")}.`);
+  } else {
+    parts.push("No medicines were named in the submitted words.");
+  }
+  if (input.flags.length) {
+    parts.push(`Red-flag phrases present: ${input.flags.join(", ")}.`);
+  }
+  return parts.join(" ");
+}
+
 /**
  * Clinical sentences in the synthesis layer must be supported by the
  * patient transcript. Triage ranking is kept off this string on purpose.
@@ -250,9 +405,9 @@ export function assertTranscriptSupport(
 export function buildHandoffBrief(input: {
   fragments: string[];
   medications: string[];
-  differential: { condition: string; probability: number }[];
+  differential?: { condition: string; probability: number }[];
 }): HandoffBrief {
-  const fragments = input.fragments.map((s) => s.trim()).filter(Boolean);
+  const fragments = dedupePatientFragments(input.fragments);
   if (!fragments.length) {
     throw new Error("unsourced_claim");
   }
@@ -290,16 +445,13 @@ export function buildHandoffBrief(input: {
     fragments,
   );
 
-  const synthesis = timeline
-    .map((e, i) => {
-      const raw = timelineRaw[i];
-      const translated = applyColloquialMap(raw.text);
-      if (translated.mappings.length) {
-        return `${translated.clinical} (patient: "${translated.mappings.map((m) => m.sourceSpan).join(", ")}")`;
-      }
-      return translated.clinical;
-    })
-    .join(" ");
+  const flags = flaggedPhrases(fragments.join(" "));
+  const synthesis = composeClinicalSynthesis({
+    timeline,
+    mappings,
+    medications: input.medications,
+    flags,
+  });
 
   assertMappedSourcing(
     timeline.map((e) => e.text).join(" "),
@@ -307,9 +459,17 @@ export function buildHandoffBrief(input: {
     mappings,
   );
 
-  const lead = input.differential[0];
-  const triageSnapshot = lead
-    ? `Triage ranking (engine, not a patient statement): ${lead.condition} ${Math.round(lead.probability * 100)}%. Ranking, not a diagnosis.`
+  const joined = fragments.join("\n");
+  const differential =
+    input.differential && input.differential.length
+      ? input.differential
+      : inferTriageFromTranscript(joined).slice(0, 5);
+  const ranked = differential
+    .slice(0, 4)
+    .map((d) => `${d.condition.replace(/_/g, " ")} ${Math.round(d.probability * 100)}%`)
+    .join("; ");
+  const triageSnapshot = differential[0]
+    ? `Triage ranking (engine, not a patient statement): ${ranked}.`
     : "Triage ranking (engine, not a patient statement): undetermined.";
 
   return {
@@ -321,7 +481,7 @@ export function buildHandoffBrief(input: {
     traces,
     mappings,
     medications: input.medications,
-    differential: input.differential,
+    differential,
     triageSnapshot,
     patientReview: { status: "draft" },
   };

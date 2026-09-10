@@ -118,7 +118,6 @@ export class SpeechService {
         this.onError?.("No speech detected");
         return "";
       }
-      this.onTranscript?.(text);
       return text;
     } catch (error) {
       console.error("Speech transcription error:", error);

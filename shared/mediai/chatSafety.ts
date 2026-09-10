@@ -19,6 +19,8 @@ import {
 } from "./rxnorm.ts";
 import { isRxnavLive } from "./types.ts";
 import { verifyClaims, type ClaimVerdict } from "./verifier.ts";
+import { inferTriageFromTranscript } from "./triage.ts";
+import { runConsilium, type ConsiliumResult } from "./consilium.ts";
 
 export interface ChatEngineResult {
   verdicts: ClaimVerdict[];
@@ -32,6 +34,8 @@ export interface ChatEngineResult {
   audit: AuditResult | null;
   incomplete: boolean;
   graph: SafetyGraph;
+  differential: { condition: string; probability: number }[];
+  consilium: ConsiliumResult;
 }
 
 export function emptySafetyGraph(patientId: string, allergies: string[] = []): SafetyGraph {
@@ -123,7 +127,25 @@ export function analyzeChatTurn(input: {
   const incomplete =
     audit?.status === "incomplete" || mentions.some((m) => !m.rxcui);
 
-  return { verdicts, escalation, mentions, audit, incomplete, graph };
+  const findings = [
+    ...escalation.flags,
+    ...mentions.filter((m) => m.generic).map((m) => `medicine:${m.generic}`),
+  ];
+  if (/\bfever\b/i.test(input.userText)) findings.push("fever");
+  if (/\bheadache\b/i.test(input.userText)) findings.push("headache");
+  const differential = inferTriageFromTranscript(input.userText);
+  const consilium = runConsilium(differential, findings.length ? findings : [input.userText.slice(0, 180)]);
+
+  return {
+    verdicts,
+    escalation,
+    mentions,
+    audit,
+    incomplete,
+    graph,
+    differential,
+    consilium,
+  };
 }
 
 export function hitFromMention(raw: string): RxNormHit | null {

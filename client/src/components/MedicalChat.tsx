@@ -27,11 +27,14 @@ import { medicalChatService, medicalAnalysisService } from "@/lib/aiService";
 import { stripDiagnosisDisclaimer } from "@/lib/disclaimer";
 import {
   appendAudit,
+  loadBriefsLocal,
   loadGraph,
   persistChatSession,
   restoreChatSession,
   saveGraph,
   stashHandoffFromChat,
+  stashPendingSlotBook,
+  takePendingSlotBook,
 } from "@/lib/engineStore";
 import { analyzeChatTurn, emptySafetyGraph } from "@shared/mediai/chatSafety";
 import type { ChatEngineResult } from "@shared/mediai/chatSafety";
@@ -44,6 +47,12 @@ import * as AppointmentService from '@/lib/appointmentService';
 import AppointmentLoginModal from './AppointmentLoginModal';
 import { RiskAssessmentModal } from "./RiskAssessmentModal";
 import { predictRisk, type RiskContributingFactor, type RiskDisease } from "@/lib/riskApi";
+import {
+  collapseRepeatedSpeech,
+  comePrepared,
+  inferSpecialtyHint,
+  specialtyGuard,
+} from "@shared/mediai/intake";
 
 const DISEASE_TITLE: Record<RiskDisease, string> = {
   diabetes: "Diabetes",
@@ -68,7 +77,16 @@ function isRoutingGreeting(text: string): boolean {
   return /^(hi|hello|hey|howdy|yo|sup|hii|hiya|greetings)\b/.test(raw);
 }
 
-function newBookingMessageId(): string {
+function doctorSpecialtyOf(doc: any): string {
+  return String(doc?.specialization || doc?.specialty || doc?.speciality || "");
+}
+
+function userTranscript(messages: Message[]): string {
+  return messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content)
+    .join("\n");
+}
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
@@ -234,6 +252,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   /** Only the message with this id may render doctor / slot controls (avoids duplicate UI). */
   const [bookingDoctorMessageId, setBookingDoctorMessageId] = useState<string | null>(null);
   const [bookingSlotMessageId, setBookingSlotMessageId] = useState<string | null>(null);
+  const [bookingBriefMessageId, setBookingBriefMessageId] = useState<string | null>(null);
 
   const [showHealthMainMenu, setShowHealthMainMenu] = useState(false);
   const [showRiskDiseaseMenu, setShowRiskDiseaseMenu] = useState(false);
@@ -307,9 +326,8 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   useEffect(() => {
     speechService.current = new SpeechService();
     speechService.current.initialize(
-      // Handle transcript updates
-      (text) => {
-        setInput(text);
+      () => {
+        /* Transcript is applied once in handleVoiceRecord to avoid double typing. */
       },
       // Handle errors
       (error) => {
@@ -346,9 +364,14 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         title: "Transcribing",
         description: "Converting your speech to text...",
       });
-      const text = await speechService.current.stopRecording();
+      const text = collapseRepeatedSpeech(await speechService.current.stopRecording());
       if (text) {
-        setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+        setInput((prev) => {
+          const p = collapseRepeatedSpeech(prev);
+          if (!p) return text;
+          const merged = collapseRepeatedSpeech(`${p} ${text}`);
+          return merged;
+        });
         toast({
           title: "Ready",
           description: "Transcript added. Review it, then send.",
@@ -505,7 +528,8 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     return text.replace(/\*/g, '');
   };
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (rawText: string) => {
+    const text = collapseRepeatedSpeech(rawText);
     // If there's a file, handle image analysis first
     if (file && fileType === 'image') {
       try {
@@ -897,16 +921,26 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     setMessages((prev) => [...prev, bookingStartMessage]);
 
     try {
-      const { doctors, specialtyFallback, attemptedSpecialty } =
-        await AppointmentService.fetchDoctors(bookingSpecialtyHint);
+      const transcript = userTranscript(messages);
+      const inferred = inferSpecialtyHint(transcript);
+      const specialtyArg = bookingSpecialtyHint
+        ? [bookingSpecialtyHint]
+        : inferred?.directoryQueries;
+      const { doctors, specialtyMiss, attemptedSpecialty } =
+        await AppointmentService.fetchDoctors(specialtyArg);
       const list = Array.isArray(doctors) ? doctors : [];
       setAvailableDoctors(list);
-      const doctorPrompt =
-        list.length > 0
-          ? specialtyFallback && attemptedSpecialty
-            ? `No doctors in this directory are listed under “${attemptedSpecialty}” yet, so here is everyone you can book with. Please select a doctor:`
-            : "Please select a doctor:"
-          : "No doctors are available to show right now. Try again later or contact support.";
+      const needed = attemptedSpecialty || inferred?.cluster || bookingSpecialtyHint;
+      let doctorPrompt: string;
+      if (specialtyMiss || (needed && list.length === 0)) {
+        doctorPrompt = `No doctor listed as ${needed} is in this directory, so booking is stopped here. Chest pain and similar red flags need a matching specialist — not a substitute from another list.`;
+      } else if (list.length > 0) {
+        doctorPrompt = inferred?.cluster
+          ? `Doctors listed for ${inferred.cluster}. Select only if the specialty matches:`
+          : "Please select a doctor:";
+      } else {
+        doctorPrompt = "No doctors are available to show right now. Try again later or contact support.";
+      }
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === bookingStartId
@@ -918,7 +952,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
             : msg,
         ),
       );
-      if (list.length > 0) {
+      if (list.length > 0 && !specialtyMiss) {
         setBookingDoctorMessageId(bookingStartId);
       }
     } catch (error) {
@@ -967,34 +1001,31 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     }, 0);
   };
 
-  const handleSelectDoctor = async (doctor: any) => {
-    // Log the entire doctor object to see its structure
-    console.log("SELECTED DOCTOR OBJECT:", doctor);
-    
+  const loadSlotsForDoctor = async (doctor: any) => {
     setSelectedDoctor(doctor);
     setIsLoading(true);
-    setBookingStep(2); // Move to slot selection
-    console.log("Doctor selected:", doctor);
-
+    setBookingStep(2);
+    setBookingBriefMessageId(null);
     const slotsMessageId = newBookingMessageId();
+    const prep = comePrepared(userTranscript(messages));
     const loadingSlotsMessage: Message = {
       id: slotsMessageId,
-      role: 'assistant',
-      content: `Fetching available slots for ${doctor.name || (doctor.firstName ? doctor.firstName + ' ' + doctor.lastName : 'the doctor')}...`,
+      role: "assistant",
+      content: `Come prepared: ${prep.guideline}${
+        prep.labs.length ? ` Labs: ${prep.labs.join(", ")}.` : ""
+      } Fetching available slots for ${
+        doctor.name ||
+        (doctor.firstName ? doctor.firstName + " " + doctor.lastName : "the doctor")
+      }...`,
       timestamp: new Date(),
       isLoading: true,
-      suggestsBooking: false
+      suggestsBooking: false,
     };
     setBookingSlotMessageId(null);
     setMessages((prev) => [...prev, loadingSlotsMessage]);
 
     try {
-      // Get the correct ID from the doctor object
-      // MongoDB ObjectIds are typically stored in _id
       const doctorId = doctor._id || doctor.id;
-      
-      console.log("Using doctor ID for API call:", doctorId);
-      
       const slots = await AppointmentService.fetchAvailability(doctorId);
       const slotList = Array.isArray(slots) ? slots : (slots as any)?.data ?? (slots as any)?.slots ?? [];
       setAvailableSlots(slotList);
@@ -1005,7 +1036,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                 ...msg,
                 content:
                   slotList.length > 0
-                    ? "Please select an available time slot:"
+                    ? `${loadingSlotsMessage.content.replace(/Fetching available slots.*/, "")}Please select an available time slot:`
                     : "No open slots were returned for this doctor. Try another doctor or check back later.",
                 isLoading: false,
               }
@@ -1023,19 +1054,108 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           msg.id === slotsMessageId
             ? {
                 ...msg,
-                content: `Sorry, I couldn't fetch slots for ${doctor.name || (doctor.firstName ? doctor.firstName + ' ' + doctor.lastName : 'the doctor')}.`,
+                content: `Sorry, I couldn't fetch slots for ${doctor.name || (doctor.firstName ? doctor.firstName + " " + doctor.lastName : "the doctor")}.`,
                 isLoading: false,
               }
             : msg,
         ),
       );
-      // Optionally reset only this step or the whole flow
-      setBookingStep(1); // Go back to doctor selection
+      setBookingStep(1);
       setSelectedDoctor(null);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleSelectDoctor = async (doctor: any) => {
+    console.log("SELECTED DOCTOR OBJECT:", doctor);
+    const guard = specialtyGuard(userTranscript(messages), doctorSpecialtyOf(doctor));
+    if (guard.mismatch) {
+      const id = newBookingMessageId();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id,
+          role: "assistant",
+          content: guard.reason,
+          timestamp: new Date(),
+          suggestsBooking: false,
+        },
+      ]);
+      toast({ title: "Specialty does not match", description: guard.reason, variant: "destructive" });
+      return;
+    }
+
+    setSelectedDoctor(doctor);
+    setIsBookingFlowActive(true);
+    setBookingStep(15);
+    const prep = comePrepared(userTranscript(messages));
+    const briefId = newBookingMessageId();
+    setBookingBriefMessageId(briefId);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: briefId,
+        role: "assistant",
+        content: `Before a slot is booked: do you want to create a visit brief for the doctor?\n\nCome prepared: ${prep.guideline}${
+          prep.labs.length ? `\nLabs: ${prep.labs.join(", ")}` : ""
+        }\nFasting: ${prep.fasting ? "yes" : "no"}.`,
+        timestamp: new Date(),
+        suggestsBooking: false,
+        briefPrompt: true,
+      },
+    ]);
+  };
+
+  const acceptBriefThenBook = () => {
+    const lines = messages
+      .filter((m) => m.role === "user")
+      .map((m) => collapseRepeatedSpeech(m.content.trim()))
+      .filter(Boolean);
+    const meds = [
+      ...new Set(
+        messages.flatMap((m) =>
+          (m.engine?.mentions ?? [])
+            .filter((x) => x.generic)
+            .map((x) => x.generic as string),
+        ),
+      ),
+    ];
+    stashHandoffFromChat(lines, meds);
+    if (selectedDoctor) {
+      stashPendingSlotBook({ doctor: selectedDoctor, afterBrief: true });
+    }
+    setLocation("/handoff-review?next=book");
+  };
+
+  const skipBriefThenBook = () => {
+    if (!selectedDoctor) return;
+    void loadSlotsForDoctor(selectedDoctor);
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("book") !== "1") return;
+    const pending = takePendingSlotBook();
+    if (!pending?.afterBrief || !pending.doctor) return;
+    const latest = loadBriefsLocal().at(-1);
+    const ok =
+      latest &&
+      (latest.patientReview.status === "approved" ||
+        latest.patientReview.status === "waived");
+    if (!ok) {
+      stashPendingSlotBook(pending);
+      toast({
+        title: "Approve the brief first",
+        description: "A slot is offered only after you approve or waive the visit brief.",
+      });
+      return;
+    }
+    setIsBookingFlowActive(true);
+    void loadSlotsForDoctor(pending.doctor);
+    // Resume once after returning from handoff-review.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSelectSlot = async (slot: any) => {
     // Log the full slot object to understand its structure
@@ -1402,6 +1522,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     setRiskBookingSummary(undefined);
     setBookingDoctorMessageId(null);
     setBookingSlotMessageId(null);
+    setBookingBriefMessageId(null);
   };
 
   const ensureConsultationId = async (): Promise<string | null> => {
@@ -1775,6 +1896,29 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                          ))}
                        </div>
                     )}
+
+                    {msg.role === "assistant" &&
+                      bookingStep === 15 &&
+                      msg.id === bookingBriefMessageId &&
+                      msg.briefPrompt && (
+                        <div className="mt-3 flex flex-col gap-2">
+                          <Button
+                            size="sm"
+                            onClick={acceptBriefThenBook}
+                            disabled={isLoading}
+                          >
+                            Yes, create a visit brief
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={skipBriefThenBook}
+                            disabled={isLoading}
+                          >
+                            No, pick a slot now
+                          </Button>
+                        </div>
+                      )}
 
                     {/* Show time slots only on the anchored slot prompt */}
                     {msg.role === "assistant" &&
