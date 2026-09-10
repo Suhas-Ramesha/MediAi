@@ -24,6 +24,22 @@ import {
   arrayUnion
 } from 'firebase/firestore';
 import { medicalChatService, medicalAnalysisService } from "@/lib/aiService";
+import { stripDiagnosisDisclaimer } from "@/lib/disclaimer";
+import {
+  appendAudit,
+  loadGraph,
+  persistChatSession,
+  restoreChatSession,
+  saveGraph,
+  stashHandoffFromChat,
+} from "@/lib/engineStore";
+import { analyzeChatTurn, emptySafetyGraph } from "@shared/mediai/chatSafety";
+import type { ChatEngineResult } from "@shared/mediai/chatSafety";
+import { draftEngineReply } from "@shared/mediai/engineReply";
+import { decorateText, type ClaimVerdict } from "@shared/mediai/verifier";
+import type { SafetyGraph } from "@shared/mediai/medication";
+import { ChatEnginePanel } from "@/components/ChatEnginePanel";
+import { useLocation } from "wouter";
 import * as AppointmentService from '@/lib/appointmentService';
 import AppointmentLoginModal from './AppointmentLoginModal';
 import { RiskAssessmentModal } from "./RiskAssessmentModal";
@@ -59,7 +75,44 @@ function newBookingMessageId(): string {
   return `bk-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
-function renderAssistantText(content: string): React.ReactNode {
+function decorateClass(status?: ClaimVerdict["status"]): string | undefined {
+  if (status === "contradicted") {
+    return "underline decoration-wavy decoration-destructive";
+  }
+  if (status === "unsupported") {
+    return "underline decoration-dotted decoration-warning";
+  }
+  return undefined;
+}
+
+function renderRichParts(cleanLine: string, verdicts?: ClaimVerdict[]) {
+  const spans = decorateText(cleanLine, verdicts ?? []);
+  return spans.map((span, j) => {
+    const inner = span.text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+    const rich = inner.map((part, k) => {
+      if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+        return (
+          <strong key={`b-${j}-${k}`} className="font-semibold">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return <React.Fragment key={`t-${j}-${k}`}>{part}</React.Fragment>;
+    });
+    const cls = decorateClass(span.status);
+    if (!cls) return <React.Fragment key={`s-${j}`}>{rich}</React.Fragment>;
+    return (
+      <span key={`s-${j}`} className={cls} title={span.status}>
+        {rich}
+      </span>
+    );
+  });
+}
+
+function renderAssistantText(
+  content: string,
+  verdicts?: ClaimVerdict[],
+): React.ReactNode {
   const lines = content.split("\n");
   return (
     <div className="text-sm space-y-1">
@@ -72,18 +125,7 @@ function renderAssistantText(content: string): React.ReactNode {
         const isBullet = /^[-*•]\s+/.test(line);
         const isNumbered = /^\d+\.\s+/.test(line);
         const cleanLine = line.replace(/^[-*•]\s+/, "").replace(/^\d+\.\s+/, "");
-        const parts = cleanLine.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
-
-        const richText = parts.map((part, j) => {
-          if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
-            return (
-              <strong key={`b-${i}-${j}`} className="font-semibold">
-                {part.slice(2, -2)}
-              </strong>
-            );
-          }
-          return <React.Fragment key={`t-${i}-${j}`}>{part}</React.Fragment>;
-        });
+        const richText = renderRichParts(cleanLine, verdicts);
 
         if (isBullet || isNumbered) {
           return (
@@ -102,6 +144,37 @@ function renderAssistantText(content: string): React.ReactNode {
       })}
     </div>
   );
+}
+
+async function runChatEngines(
+  userText: string,
+  assistantText: string,
+  graph: SafetyGraph,
+  patientId: string,
+): Promise<ChatEngineResult> {
+  const local = analyzeChatTurn({
+    userText,
+    assistantText,
+    graph,
+    evidence: [userText],
+  });
+  try {
+    const r = await fetch("/api/mediai/chat/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userText,
+        assistantText,
+        graph,
+        patientId,
+        evidence: [userText],
+      }),
+    });
+    if (r.ok) return (await r.json()) as ChatEngineResult;
+  } catch {
+    /* Express / RxNav down: keep the in-browser engines */
+  }
+  return local;
 }
 
 function preventionTips(disease: RiskDisease): string {
@@ -136,7 +209,11 @@ interface MedicalChatProps {
 
 export default function MedicalChat({ selectedConsultation }: MedicalChatProps) {
   const { toast } = useToast();
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
+  const [, setLocation] = useLocation();
+  const [safetyGraph, setSafetyGraph] = useState<SafetyGraph>(() =>
+    emptySafetyGraph("anon"),
+  );
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -174,6 +251,28 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    const allergies = String(userProfile?.allergies ?? "")
+      .split(/[,;/]/)
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    const pid = currentUser?.uid ?? "anon";
+    void loadGraph(currentUser?.uid ?? null, pid, allergies).then(setSafetyGraph);
+  }, [currentUser?.uid, userProfile?.allergies]);
+
+  useEffect(() => {
+    if (selectedConsultation?.id) return;
+    const saved = restoreChatSession();
+    if (!saved?.messages.length) return;
+    setCurrentConsultation(saved.consultationId);
+    setMessages(saved.messages as Message[]);
+  }, [selectedConsultation?.id]);
+
+  useEffect(() => {
+    if (!messages.length) return;
+    persistChatSession(currentConsultation ?? "local", messages);
+  }, [currentConsultation, messages]);
 
   // Update messages when selectedConsultation changes
   useEffect(() => {
@@ -269,7 +368,11 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
 
   // Create a new consultation
   const createConsultation = async (firstMessage?: string) => {
-    if (!currentUser) return null;
+    if (!currentUser) {
+      const id = `local_${Date.now()}`;
+      setCurrentConsultation(id);
+      return id;
+    }
 
     try {
       // Create a unique chat ID
@@ -305,8 +408,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
 
   // Add message to consultation
   const addMessageToConsultation = async (consultationId: string, message: Message) => {
-    if (!consultationId) {
-      console.error('No consultation ID provided');
+    if (!consultationId || consultationId.startsWith("local_")) {
       return;
     }
 
@@ -335,7 +437,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   // Start a new chat
   const handleNewChat = async () => {
     // If there's an existing consultation with messages, update its status
-    if (currentConsultation && messages.length > 0) {
+    if (currentConsultation && messages.length > 0 && !currentConsultation.startsWith("local_")) {
       try {
         const consultationRef = doc(db, 'consultations', currentConsultation);
         
@@ -447,9 +549,27 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         setMessages(prev => [...prev, loadingMessage]);
         
         // Analyze the image
-        const analysis = await medicalAnalysisService.analyzeImage(file, text || 'Please analyze this medical image.');
+        const analysis = stripDiagnosisDisclaimer(
+          await medicalAnalysisService.analyzeImage(file, text || 'Please analyze this medical image.'),
+        );
         
         console.log("AI Response:", analysis, "Suggests Booking:", false);
+
+        const engine = await runChatEngines(
+          text || "Please analyze this medical image.",
+          analysis,
+          safetyGraph,
+          currentUser?.uid ?? "anon",
+        );
+        setSafetyGraph(engine.graph);
+        void saveGraph(currentUser?.uid ?? null, engine.graph);
+        void appendAudit(currentUser?.uid ?? null, {
+          consultationId,
+          userText: text || "Please analyze this medical image.",
+          assistantText: analysis,
+          result: engine,
+          at: new Date().toISOString(),
+        });
         
         // Create analysis message
         const aiMessage: Message = {
@@ -457,7 +577,8 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           role: 'assistant',
           content: analysis,
           timestamp: new Date(),
-          suggestsBooking: false
+          suggestsBooking: false,
+          engine,
         };
         
         // Replace loading message with analysis result
@@ -488,7 +609,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       return;
     }
 
-    if (!text.trim() || isLoading || !currentUser) return;
+    if (!text.trim() || isLoading) return;
 
     const priorUserMessageCount = messages.filter((m) => m.role === "user").length;
 
@@ -543,21 +664,39 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       };
       setMessages(prev => [...prev, aiPlaceholder]);
 
-      const response = await medicalChatService.streamMessage(text, (partialText) => {
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === aiMessageId
-              ? { ...msg, content: partialText, isLoading: true }
-              : msg
-          )
+      let cleanContent = "";
+      let responseMeta: Partial<Message> = { role: "assistant" };
+      try {
+        const response = await medicalChatService.streamMessage(text, (partialText) => {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === aiMessageId
+                ? { ...msg, content: stripDiagnosisDisclaimer(partialText), isLoading: true }
+                : msg
+            )
+          );
+        });
+        responseMeta = response;
+        cleanContent = stripDiagnosisDisclaimer(
+          response.content.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim(),
         );
-      });
-      
-      // Keep structure markers (**bold**, bullets, line breaks) for easier reading in UI.
-      let cleanContent = response.content
-        .replace(/\r\n/g, '\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
+      } catch (err) {
+        console.warn("Gemini unavailable; using engine draft", err);
+        const preview = analyzeChatTurn({
+          userText: text,
+          assistantText: text,
+          graph: safetyGraph,
+          evidence: [text],
+        });
+        cleanContent = draftEngineReply(text, preview);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessageId
+              ? { ...msg, content: cleanContent, isLoading: true }
+              : msg,
+          ),
+        );
+      }
 
       // Avoid repetitive greeting on every turn; keep greeting mostly for first assistant turn.
       if (priorUserMessageCount > 0) {
@@ -595,27 +734,45 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       
       console.log("[Text Response] AI Content:", cleanContent, "| Suggests Booking:", suggestsBooking);
 
+      const engine = await runChatEngines(
+        text,
+        cleanContent,
+        safetyGraph,
+        currentUser?.uid ?? "anon",
+      );
+      setSafetyGraph(engine.graph);
+      void saveGraph(currentUser?.uid ?? null, engine.graph);
+      void appendAudit(currentUser?.uid ?? null, {
+        consultationId: consultationId,
+        userText: text,
+        assistantText: cleanContent,
+        result: engine,
+        at: new Date().toISOString(),
+      });
+
       const aiMessage: Message = {
-        ...response,
+        ...responseMeta,
         id: aiMessageId,
+        role: "assistant",
         content: cleanContent,
         timestamp: new Date(),
         isLoading: false,
-        suggestsBooking: suggestsBooking
+        suggestsBooking: suggestsBooking,
+        engine,
       };
 
       // Add AI message to consultation
       await addMessageToConsultation(consultationId, aiMessage);
       setMessages(prev => prev.map(msg => msg.id === aiMessageId ? aiMessage : msg));
 
-      // Update consultation status and any medical insights
-      await updateDoc(doc(db, 'consultations', consultationId), {
-        status: 'active',
-        lastUpdated: serverTimestamp(),
-        // Extract potential medical insights from AI response
-        diagnosis: extractDiagnosis(aiMessage.content),
-        recommendations: extractRecommendations(aiMessage.content),
-      });
+      if (!consultationId.startsWith("local_")) {
+        await updateDoc(doc(db, 'consultations', consultationId), {
+          status: 'active',
+          lastUpdated: serverTimestamp(),
+          diagnosis: extractDiagnosis(aiMessage.content),
+          recommendations: extractRecommendations(aiMessage.content),
+        });
+      }
 
     } catch (error: any) {
       toast({
@@ -1300,7 +1457,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       id: `a-gen-prompt-${Date.now()}`,
       role: "assistant",
       content:
-        "Please describe your problem or symptoms.\n\nThis is not a medical diagnosis. Please consult a certified doctor for professional advice.",
+        "Please describe your problem or symptoms.",
       timestamp: new Date(),
       suggestsBooking: false,
     };
@@ -1346,7 +1503,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     const spec = DISEASE_SPECIALIST[disease];
     const summaryBlock = (riskSummary && riskSummary.trim()) || band;
 
-    return `Your estimated risk for ${title} is ${percent}%.\n\nWhat this means (in plain terms):\n${summaryBlock}\n\nKey contributing factors:\n${factorLines}\n\nGeneral ideas that support wellness:\n${prev}\n\nWould you like to consult a specialist? A ${spec} can review your situation in person.\n\nThis is not a medical diagnosis. Please consult a certified doctor for professional advice.`;
+    return `Your estimated risk for ${title} is ${percent}%.\n\nWhat this means (in plain terms):\n${summaryBlock}\n\nKey contributing factors:\n${factorLines}\n\nGeneral ideas that support wellness:\n${prev}\n\nWould you like to consult a specialist? A ${spec} can review your situation in person.`;
   };
 
   const handleRiskFormSubmit = async (payload: Record<string, number | string>) => {
@@ -1364,7 +1521,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           role: "assistant",
           content: `Kidney risk scoring is not connected yet, so we cannot show a percentage. Your entries were noted for when the model is ready.\n\n${preventionTips(
             "kidney",
-          )}\n\nWould you like to consult a specialist? A ${DISEASE_SPECIALIST.kidney} can help with kidney-related questions.\n\nThis is not a medical diagnosis. Please consult a certified doctor for professional advice.`,
+          )}\n\nWould you like to consult a specialist? A ${DISEASE_SPECIALIST.kidney} can help with kidney-related questions.`,
           timestamp: new Date(),
           suggestsBooking: true,
         };
@@ -1443,15 +1600,50 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         <h2 className="text-base font-semibold tracking-tight">
           Medical assistant
         </h2>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleNewChat}
-          className="flex items-center gap-2"
-        >
-          <PlusCircle className="h-4 w-4" />
-          New session
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const lines = messages
+                .filter((m) => m.role === "user")
+                .map((m) => m.content.trim())
+                .filter(Boolean);
+              if (!lines.length) {
+                toast({
+                  title: "No patient words yet",
+                  description: "Send a symptom message first.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              const meds = [
+                ...new Set(
+                  messages.flatMap((m) =>
+                    (m.engine?.mentions ?? [])
+                      .filter((x) => x.generic)
+                      .map((x) => x.generic as string),
+                  ),
+                ),
+              ];
+              stashHandoffFromChat(lines, meds);
+              setLocation("/handoff-review");
+            }}
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Send to doctor brief
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleNewChat}
+            className="flex items-center gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            New session
+          </Button>
+        </div>
       </div>
       <div className="relative flex-1 overflow-hidden bg-muted/20">
         {/* Chat Messages */}
@@ -1509,7 +1701,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                         {msg.imagePrompt || 'Please analyze this medical image.'}
                       </p>
                     ) : msg.role === "assistant" ? (
-                      renderAssistantText(msg.content)
+                      <>
+                        {renderAssistantText(msg.content, msg.engine?.verdicts)}
+                        {msg.engine && <ChatEnginePanel result={msg.engine} />}
+                      </>
                     ) : (
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     )}

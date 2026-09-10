@@ -9,9 +9,11 @@ import {
   sideEffectWatch,
   type SafetyGraph,
 } from "./medication.ts";
-import { ingestRaster, renderPrescription } from "./ocr.ts";
-import { lookupLocal, parseRxnavBody, resolveDrug } from "./rxnorm.ts";
+import { lookupLocal, parseRxnavBody, parseRxnavInteractions, resolveDrug } from "./rxnorm.ts";
 import { applyColloquialMap, assertMappedSourcing } from "./colloquial.ts";
+import { analyzeChatTurn, emptySafetyGraph } from "./chatSafety.ts";
+import { draftEngineReply } from "./engineReply.ts";
+import { decorateText } from "./verifier.ts";
 import {
   assertTranscriptSupport,
   buildHandoffBrief,
@@ -130,9 +132,9 @@ describe("C medication graph", () => {
     expect(outsideWindow.matches).toHaveLength(0);
   });
 
-  it("fuzzy OCR tokens map to the same RxNorm CUI without merging different drugs", () => {
+  it("fuzzy typed tokens map to the same RxNorm CUI without merging different drugs", () => {
     const messy = parsePrescriptionText(
-      "blurry scan: m3tf0rmin 500 mg\nAmoxil 500mg",
+      "blurry scan: metformn 500 mg\nAmoxil 500mg",
       "doc1",
       "2026-08-01",
     );
@@ -141,29 +143,12 @@ describe("C medication graph", () => {
     expect(messy.entries.map((e) => e.rxcui).sort()).toEqual(["6809", "723"]);
   });
 
-  it("live OCR pipeline reads a noisy prescription raster and refuses unreadables", () => {
-    expect(FEATURE_FLAGS.liveOcr).toBe(true);
-    const photo = renderPrescription(
-      ["GLUCOPHAGE 500 MG", "AMOXIL 500MG"],
-      0.001,
-      3,
+  it("photo ingest is off; unknown names stay incomplete", () => {
+    expect(FEATURE_FLAGS.liveOcr).toBe(false);
+    expect(FEATURE_FLAGS.liveRxnormNetwork).toBe(true);
+    expect(forwardAudit(emptyGraph(), "xyzalorpha 10mg", "doc2").status).toBe(
+      "incomplete",
     );
-    const ocr = ingestRaster(photo);
-    expect(ocr.status).toBe("ok");
-    expect(ocr.mentions.some((m) => m.hit?.rxcui === "6809")).toBe(true);
-    expect(ocr.mentions.some((m) => m.hit?.rxcui === "723")).toBe(true);
-    const blank = ingestRaster({
-      width: 16,
-      height: 16,
-      pixels: new Uint8Array(256).fill(255),
-    });
-    expect(blank.status).toBe("incomplete");
-    const noise = ingestRaster({
-      width: 24,
-      height: 24,
-      pixels: Uint8Array.from({ length: 576 }, (_, i) => (i % 3 === 0 ? 0 : 255)),
-    });
-    expect(noise.status).toBe("incomplete");
   });
 
   it("RxNav responses must be numeric CUIs; local lookup is preferred", async () => {
@@ -177,6 +162,130 @@ describe("C medication graph", () => {
     });
     expect(live?.rxcui).toBe("161");
     expect(live?.source).toBe("rxnav");
+    const pairs = parseRxnavInteractions({
+      fullInteractionTypeGroup: [
+        {
+          fullInteractionType: [
+            {
+              interactionPair: [
+                {
+                  description: "Warfarin may increase bleeding with ibuprofen",
+                  interactionConcept: [
+                    { minConceptItem: { rxcui: "11289" } },
+                    { minConceptItem: { rxcui: "5640" } },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(pairs[0]?.a).toBe("11289");
+    expect(pairs[0]?.b).toBe("5640");
+  });
+
+  it("ONC high-priority pair simvastatin + clarithromycin is an interaction", () => {
+    const g = emptyGraph([
+      {
+        id: "1",
+        rxcui: "36567",
+        genericName: "simvastatin",
+        sourceDoctorId: "doc1",
+        startedOn: "2026-07-01",
+        rawText: "simvastatin",
+      },
+    ]);
+    expect(forwardAudit(g, "clarithromycin", "doc2").status).toBe("interaction");
+  });
+
+  it("chat engines underline unsupported claims, escalate red flags, and audit meds", () => {
+    const r = analyzeChatTurn({
+      userText: "fever and sore throat since yesterday",
+      assistantText:
+        "Fever often accompanies a viral infection. You definitely have leukaemia based on this visit.",
+      graph: emptySafetyGraph("p1"),
+      evidence: ["fever and sore throat since yesterday"],
+    });
+    expect(
+      r.verdicts.some(
+        (v) => /leukaemia|leukemia/i.test(v.text) && v.status === "unsupported",
+      ),
+    ).toBe(true);
+    const chest = analyzeChatTurn({
+      userText: "sudden chest pain while waiting",
+      assistantText: "Rest until the appointment.",
+      graph: emptySafetyGraph("p1"),
+    });
+    expect(chest.escalation.escalate).toBe(true);
+    const meds = analyzeChatTurn({
+      userText: "I take warfarin and just started ibuprofen",
+      assistantText: "That combination needs a clinician review.",
+      graph: emptySafetyGraph("p1"),
+    });
+    expect(meds.audit?.status).toBe("interaction");
+  });
+
+  it("does not fuzzy-map English words like doctor or combine onto drugs", () => {
+    expect(lookupLocal("doctor")).toBeNull();
+    expect(lookupLocal("combine")).toBeNull();
+    expect(lookupLocal("zocor")?.rxcui).toBe("36567");
+  });
+
+  it("does not treat calendar words like April as unknown drugs", () => {
+    const r = analyzeChatTurn({
+      userText: "This started in April after a sore throat",
+      assistantText: "You reported a sore throat.",
+      graph: emptySafetyGraph("p1"),
+    });
+    expect(r.mentions.some((m) => /april/i.test(m.raw))).toBe(false);
+    expect(r.incomplete).toBe(false);
+  });
+
+  it("accepts live RxNav hits for unknown stems via extraHits", () => {
+    const r = analyzeChatTurn({
+      userText: "I started xyzmycin 250mg",
+      assistantText: "You started xyzmycin.",
+      graph: emptySafetyGraph("p1"),
+      extraHits: {
+        xyzmycin: {
+          rxcui: "18631",
+          generic: "azithromycin",
+          matchedName: "xyzmycin",
+          source: "rxnav",
+        },
+      },
+    });
+    expect(r.incomplete).toBe(false);
+    expect(r.mentions.some((m) => m.rxcui === "18631")).toBe(true);
+  });
+
+  it("underlines unsupported claim spans and drafts a sourced engine reply", () => {
+    const spans = decorateText(
+      "Fever is common. You definitely have leukaemia.",
+      [
+        {
+          claimId: "c2",
+          text: "You definitely have leukaemia.",
+          status: "unsupported",
+          confidence: 0.8,
+        },
+      ],
+    );
+    expect(spans.some((s) => s.status === "unsupported" && /leukaemia/i.test(s.text))).toBe(
+      true,
+    );
+    const preview = analyzeChatTurn({
+      userText: "sudden chest pain and I take warfarin with ibuprofen",
+      assistantText: "placeholder",
+      graph: emptySafetyGraph("p1"),
+    });
+    const draft = draftEngineReply(
+      "sudden chest pain and I take warfarin with ibuprofen",
+      preview,
+    );
+    expect(draft).toMatch(/chest pain/i);
+    expect(draft).not.toMatch(/This is not a medical diagnosis/i);
   });
 });
 

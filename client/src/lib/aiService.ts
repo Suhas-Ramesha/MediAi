@@ -1,5 +1,7 @@
+import { stripDiagnosisDisclaimer } from "./disclaimer";
+
 export interface Message {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   id: string;
   content: string;
   timestamp: Date | string;
@@ -19,7 +21,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.message || `Request failed (${res.status})`);
+    throw new Error((data as { message?: string }).message || `Request failed (${res.status})`);
   }
   return data as T;
 }
@@ -27,7 +29,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 export const medicalChatService = {
   async sendMessage(message: string): Promise<Message> {
     const data = await postJson<{ text: string }>("/api/chat", { message });
-    const text = (data.text || "").trim();
+    const text = stripDiagnosisDisclaimer(data.text || "");
     if (!text) {
       throw new Error("Empty response from AI");
     }
@@ -71,7 +73,7 @@ export const medicalAnalysisService = {
         mimeType: file.type || "image/jpeg",
         data,
       });
-      const text = (payload.text || "").trim();
+      const text = stripDiagnosisDisclaimer(payload.text || "");
       if (!text) {
         throw new Error("Empty response from AI");
       }
@@ -84,13 +86,13 @@ export const medicalAnalysisService = {
 };
 
 export const voiceService = {
-  recognition: typeof window !== 'undefined' ? new (window as any).webkitSpeechRecognition() : null,
-  synthesis: typeof window !== 'undefined' ? window.speechSynthesis : null,
+  recognition: typeof window !== "undefined" ? new (window as any).webkitSpeechRecognition() : null,
+  synthesis: typeof window !== "undefined" ? window.speechSynthesis : null,
 
   startListening(): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!this.recognition) {
-        reject('Speech recognition not supported');
+        reject("Speech recognition not supported");
         return;
       }
 
@@ -110,13 +112,13 @@ export const voiceService = {
   speak(text: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.synthesis) {
-        reject('Speech synthesis not supported');
+        reject("Speech synthesis not supported");
         return;
       }
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.onerror = (error) => {
-        console.error('Speech error:', error);
+        console.error("Speech error:", error);
         reject(error);
       };
       const timeout = setTimeout(() => {
@@ -128,5 +130,5 @@ export const voiceService = {
       };
       this.synthesis.speak(utterance);
     });
-  }
+  },
 };

@@ -1,7 +1,6 @@
 import express from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { registerMediaiRoutes } from "./mediaiRoutes.ts";
-import { corpusPng } from "../shared/mediai/ocrPng.ts";
 import type { Server } from "http";
 
 describe("mediai HTTP integration", () => {
@@ -89,7 +88,7 @@ describe("mediai HTTP integration", () => {
     expect(ok.status).toBe(200);
   });
 
-  it("C: image OCR is refused rather than guessed", async () => {
+  it("C: image ingest is refused; typed corpus still merges", async () => {
     const r = await fetch(`${base}/api/mediai/medication/ingest`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -100,15 +99,14 @@ describe("mediai HTTP integration", () => {
     expect(data.status).toBe("incomplete");
   });
 
-  it("C: photographed prescription corpus OCRs to RxNorm without false merges", async () => {
-    const png = corpusPng(["GLUCOPHAGE 500 MG", "AMOXIL 500MG"], 0.001);
+  it("C: typed Glucophage + Amoxil merge to RxNorm without false merges", async () => {
     const r = await fetch(`${base}/api/mediai/medication/ingest`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         patientId: "photo-corpus",
         doctorId: "doc1",
-        imageBase64: Buffer.from(png).toString("base64"),
+        text: "GLUCOPHAGE 500 MG\nAMOXIL 500MG",
         startedOn: "2026-08-01",
       }),
     });
@@ -280,5 +278,26 @@ describe("mediai HTTP integration", () => {
     expect(data.diffs.some((d: { field: string }) => d.field === "drug")).toBe(
       true,
     );
+  });
+
+  it("chat analyze runs verifier and red-flag engines", async () => {
+    const r = await fetch(`${base}/api/mediai/chat/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userText: "sudden chest pain while waiting",
+        assistantText: "You may have a pulled muscle. You definitely have leukaemia.",
+        patientId: "chat-demo",
+      }),
+    });
+    const data = await r.json();
+    expect(r.status).toBe(200);
+    expect(data.escalation.escalate).toBe(true);
+    expect(
+      data.verdicts.some(
+        (v: { text: string; status: string }) =>
+          /leukaemia|leukemia/i.test(v.text) && v.status === "unsupported",
+      ),
+    ).toBe(true);
   });
 });

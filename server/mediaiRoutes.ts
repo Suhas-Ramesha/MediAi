@@ -14,11 +14,9 @@ import {
   waitingWindowEscalation,
   type HandoffBrief,
 } from "../shared/mediai/intake.ts";
-import {
-  FEATURE_FLAGS,
-} from "../shared/mediai/types.ts";
-import { ingestImageBase64 } from "../shared/mediai/ocrPng.ts";
-import { resolveDrug } from "../shared/mediai/rxnorm.ts";
+import { isRxnavLive } from "../shared/mediai/types.ts";
+import { analyzeChatTurnLive } from "../shared/mediai/chatSafety.ts";
+import { fetchRxnavInteractions, resolveDrug } from "../shared/mediai/rxnorm.ts";
 import {
   forwardAudit,
   mergeIntoGraph,
@@ -40,10 +38,21 @@ import {
   type RiskInputs,
 } from "../shared/mediai/risk.ts";
 import type { TriageState } from "../shared/mediai/triage.ts";
+import { loadMediaiStore, saveMediaiStore } from "./mediaiPersist.ts";
 
-const graphs = new Map<string, SafetyGraph>();
-const briefs = new Map<string, HandoffBrief>();
+const disk = loadMediaiStore();
+const graphs = new Map<string, SafetyGraph>(Object.entries(disk.graphs));
+const briefs = new Map<string, HandoffBrief>(Object.entries(disk.briefs));
+const audits: unknown[] = disk.audits;
 const DEMO_COHORT = synthesizeConfoundedCohort(220, 3);
+
+function persistDisk(): void {
+  saveMediaiStore({
+    graphs: Object.fromEntries(graphs),
+    briefs: Object.fromEntries(briefs),
+    audits: audits.slice(-200),
+  });
+}
 
 function graphFor(patientId: string): SafetyGraph {
   if (!graphs.has(patientId)) {
@@ -69,74 +78,83 @@ export function registerMediaiRoutes(app: Express): void {
     res.json({ events });
   });
 
+  app.post("/api/mediai/chat/analyze", async (req: Request, res: Response) => {
+    const patientId = String(req.body?.patientId ?? "demo");
+    const graph = req.body?.graph ?? graphFor(patientId);
+    const result = await analyzeChatTurnLive({
+      userText: String(req.body?.userText ?? ""),
+      assistantText: String(req.body?.assistantText ?? ""),
+      graph,
+      evidence: req.body?.evidence,
+      appointmentDaysOut: Number(req.body?.appointmentDaysOut ?? 12),
+      fetchImpl: fetch,
+    });
+    graphs.set(patientId, result.graph);
+    audits.push({
+      patientId,
+      userText: req.body?.userText,
+      assistantText: req.body?.assistantText,
+      incomplete: result.incomplete,
+      at: new Date().toISOString(),
+    });
+    persistDisk();
+    res.json(result);
+  });
+
   app.post("/api/mediai/medication/ingest", async (req: Request, res: Response) => {
     const patientId = String(req.body?.patientId ?? "demo");
     const doctorId = String(req.body?.doctorId ?? "unknown");
     const startedOn = String(req.body?.startedOn ?? "2026-09-01");
 
     if (req.body?.imageBase64) {
-      if (!FEATURE_FLAGS.liveOcr) {
-        return res.status(409).json({
-          status: "incomplete",
-          message: "Live OCR is disabled. Submit prescription text, not a silent guess from pixels.",
-        });
-      }
-      const ocr = ingestImageBase64(String(req.body.imageBase64));
-      if (ocr.status === "incomplete") {
-        return res.status(409).json({
-          status: "incomplete",
-          reason: ocr.reason,
-          confidence: ocr.confidence,
-          text: ocr.text,
-          message: "Photograph could not be resolved to RxNorm. Nothing was guessed.",
-        });
-      }
-      let parsed = parsePrescriptionText(ocr.text, doctorId, startedOn);
-      if (FEATURE_FLAGS.liveRxnormNetwork) {
-        for (const token of [...parsed.unknownTokens]) {
-          const live = await resolveDrug(token, {
-            fetchImpl: fetch,
-            liveNetwork: true,
-          });
-          if (!live) continue;
-          parsed = parsePrescriptionText(
-            `${ocr.text}\n${live.generic}`,
-            doctorId,
-            startedOn,
-          );
-        }
-      }
-      if (!parsed.entries.length) {
-        return res.status(409).json({
-          status: "incomplete",
-          reason: "no_rxnorm_match",
-          text: ocr.text,
-          message: "OCR text did not resolve to a RxNorm CUI.",
-        });
-      }
-      const merged = mergeIntoGraph(graphFor(patientId), parsed.entries);
-      graphs.set(patientId, merged.graph);
-      return res.json({
-        graph: merged.graph,
-        merged: merged.merged,
-        added: merged.added,
-        unknownTokens: parsed.unknownTokens,
-        ocr,
+      return res.status(409).json({
+        status: "incomplete",
+        message: "Photo ingest is not available. Submit prescription text.",
       });
     }
 
-    const parsed = parsePrescriptionText(
+    let parsed = parsePrescriptionText(
       String(req.body?.text ?? ""),
       doctorId,
       startedOn,
     );
+    if (isRxnavLive()) {
+      for (const token of [...parsed.unknownTokens]) {
+        const live = await resolveDrug(token, {
+          fetchImpl: fetch,
+          liveNetwork: true,
+        });
+        if (!live) continue;
+        parsed = parsePrescriptionText(
+          `${req.body?.text ?? ""}\n${live.generic}`,
+          doctorId,
+          startedOn,
+        );
+      }
+    }
+    if (!parsed.entries.length && String(req.body?.text ?? "").trim()) {
+      return res.status(409).json({
+        status: "incomplete",
+        unknownTokens: parsed.unknownTokens,
+        message: "No token resolved to a RxNorm CUI. Nothing was guessed.",
+      });
+    }
     const merged = mergeIntoGraph(graphFor(patientId), parsed.entries);
     graphs.set(patientId, merged.graph);
+    persistDisk();
+    let livePairs: { a: string; b: string; note: string }[] = [];
+    if (isRxnavLive() && merged.graph.medications.length >= 2) {
+      livePairs = await fetchRxnavInteractions(
+        merged.graph.medications.map((m) => m.rxcui),
+        fetch,
+      );
+    }
     res.json({
       graph: merged.graph,
       merged: merged.merged,
       added: merged.added,
       unknownTokens: parsed.unknownTokens,
+      rxnavInteractions: livePairs,
     });
   });
 
@@ -192,6 +210,7 @@ export function registerMediaiRoutes(app: Express): void {
         differential: req.body?.differential ?? [],
       });
       briefs.set(brief.id, brief);
+      persistDisk();
       res.json(brief);
     } catch {
       res.status(422).json({ error: "unsourced_claim" });
@@ -208,6 +227,7 @@ export function registerMediaiRoutes(app: Express): void {
     try {
       const next = markReviewed(brief, status, req.body?.note);
       briefs.set(next.id, next);
+      persistDisk();
       res.json(next);
     } catch {
       res.status(422).json({ error: "unsourced_claim" });
@@ -220,6 +240,7 @@ export function registerMediaiRoutes(app: Express): void {
     try {
       const next = correctBrief(brief, req.body?.fragments ?? brief.patientWords);
       briefs.set(next.id, next);
+      persistDisk();
       res.json(next);
     } catch {
       res.status(422).json({ error: "unsourced_claim" });

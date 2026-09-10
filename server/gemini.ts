@@ -23,10 +23,7 @@ Structured triage format (use ONLY for symptom or guidance replies):
 - 1-2 focused triage questions
 
 **When to seek urgent care**
-- 2-4 red-flag bullets
-
-Always end your reply with this exact sentence on its own line:
-"This is not a medical diagnosis. Please consult a certified doctor for professional advice."`;
+- 2-4 red-flag bullets`;
 
 function apiKey(): string {
   const key = process.env.GEMINI_API_KEY || "";
@@ -137,7 +134,13 @@ Keep it concise but complete and easy to scan.`;
     text = (await generateContent([{ text: expandPrompt }])) || text;
   }
 
-  return text;
+  return text
+    .replace(
+      /This is not a medical diagnosis\. Please consult a certified doctor for professional advice\.?/gi,
+      "",
+    )
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export async function generateImageAnalysis(

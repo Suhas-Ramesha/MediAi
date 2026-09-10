@@ -22,16 +22,51 @@ export interface SafetyGraph {
 }
 
 
-export const INTERACTIONS: { a: string; b: string; note: string }[] = [
-  { a: "11289", b: "5640", note: "Warfarin + NSAID: bleeding risk" },
-  { a: "36567", b: "5640", note: "Statin + ibuprofen: monitor liver and muscle symptoms" },
+/**
+ * Published high-priority DDI subset (ONC 2014 high-priority list + NLM RxNav
+ * ingredient CUIs). Unknown pairs stay incomplete, never a silent all-clear.
+ */
+export const INTERACTIONS: { a: string; b: string; note: string; source: string }[] = [
+  { a: "11289", b: "5640", note: "Warfarin + NSAID: bleeding risk", source: "ONC high-priority DDI" },
+  { a: "11289", b: "7258", note: "Warfarin + naproxen: bleeding risk", source: "ONC high-priority DDI" },
+  { a: "11289", b: "3355", note: "Warfarin + diclofenac: bleeding risk", source: "ONC high-priority DDI" },
+  { a: "11289", b: "1191", note: "Warfarin + aspirin: bleeding risk", source: "ONC high-priority DDI" },
+  { a: "11289", b: "703", note: "Warfarin + amiodarone: INR can rise", source: "ONC high-priority DDI" },
+  { a: "11289", b: "4450", note: "Warfarin + fluconazole: INR can rise", source: "ONC high-priority DDI" },
+  { a: "11289", b: "6922", note: "Warfarin + metronidazole: INR can rise", source: "ONC high-priority DDI" },
+  { a: "11289", b: "10180", note: "Warfarin + sulfamethoxazole: bleeding risk", source: "ONC high-priority DDI" },
+  { a: "11289", b: "10831", note: "Warfarin + co-trimoxazole: bleeding risk", source: "ONC high-priority DDI" },
+  { a: "36567", b: "5640", note: "Statin + ibuprofen: monitor liver and muscle symptoms", source: "local conservative pair" },
+  { a: "36567", b: "21212", note: "Simvastatin + clarithromycin: myopathy / rhabdomyolysis risk", source: "ONC high-priority DDI" },
+  { a: "36567", b: "4053", note: "Simvastatin + erythromycin: myopathy risk", source: "ONC high-priority DDI" },
+  { a: "83367", b: "21212", note: "Atorvastatin + clarithromycin: myopathy risk", source: "ONC high-priority DDI" },
+  { a: "136411", b: "4917", note: "Sildenafil + nitrate: severe hypotension", source: "ONC high-priority DDI" },
+  { a: "9997", b: "8591", note: "Spironolactone + potassium: hyperkalemia", source: "ONC high-priority DDI" },
+  { a: "29046", b: "9997", note: "ACE inhibitor + spironolactone: hyperkalemia", source: "ONC high-priority DDI" },
+  { a: "29046", b: "8591", note: "ACE inhibitor + potassium: hyperkalemia", source: "ONC high-priority DDI" },
+  { a: "10689", b: "36437", note: "Tramadol + SSRI: serotonin / seizure risk", source: "ONC high-priority DDI" },
+  { a: "10689", b: "4493", note: "Tramadol + fluoxetine: serotonin / seizure risk", source: "ONC high-priority DDI" },
+  { a: "3407", b: "21212", note: "Digoxin + clarithromycin: digoxin toxicity", source: "ONC high-priority DDI" },
+  { a: "10438", b: "2551", note: "Theophylline + ciprofloxacin: theophylline toxicity", source: "ONC high-priority DDI" },
+  { a: "6851", b: "10829", note: "Methotrexate + trimethoprim: marrow toxicity", source: "ONC high-priority DDI" },
+  { a: "32968", b: "1191", note: "Clopidogrel + aspirin: bleeding risk (dual antiplatelet)", source: "ONC high-priority DDI" },
 ];
 
-/** Conservative cross-reactivity. Penicillin allergy must flag amoxicillin. */
+/** Conservative cross-reactivity from published allergy classes. */
 export const ALLERGY_CLASSES: Record<string, string[]> = {
-  penicillin: ["penicillin", "amoxicillin", "ampicillin"],
+  penicillin: ["penicillin", "amoxicillin", "ampicillin", "piperacillin"],
   amoxicillin: ["penicillin", "amoxicillin", "ampicillin"],
   ampicillin: ["penicillin", "amoxicillin", "ampicillin"],
+  cephalexin: ["cephalexin", "cefixime", "penicillin"],
+  cefixime: ["cefixime", "cephalexin", "penicillin"],
+  sulfa: ["sulfamethoxazole", "sulfamethoxazole / trimethoprim", "cotrimoxazole"],
+  sulfamethoxazole: ["sulfamethoxazole", "sulfamethoxazole / trimethoprim"],
+  nsaid: ["ibuprofen", "naproxen", "diclofenac", "aspirin"],
+  ibuprofen: ["ibuprofen", "naproxen", "diclofenac"],
+  aspirin: ["aspirin", "ibuprofen", "naproxen"],
+  opioid: ["morphine", "codeine", "tramadol"],
+  morphine: ["morphine", "codeine"],
+  codeine: ["codeine", "morphine"],
 };
 
 export function allergyConflict(allergies: string[], generic: string): boolean {
@@ -56,6 +91,8 @@ export const SIDER: {
   { rxcui: "6809", effect: "diarrhea", onsetDaysMin: 1, onsetDaysMax: 21 },
   { rxcui: "723", effect: "rash", onsetDaysMin: 1, onsetDaysMax: 14 },
   { rxcui: "11289", effect: "bruising", onsetDaysMin: 2, onsetDaysMax: 60 },
+  { rxcui: "36567", effect: "muscle pain", onsetDaysMin: 7, onsetDaysMax: 90 },
+  { rxcui: "29046", effect: "cough", onsetDaysMin: 3, onsetDaysMax: 90 },
 ];
 
 export function normalizeDrugName(raw: string): { rxcui: string; generic: string } | null {
@@ -64,7 +101,7 @@ export function normalizeDrugName(raw: string): { rxcui: string; generic: string
   return { rxcui: hit.rxcui, generic: hit.generic };
 }
 
-/** Parse messy OCR / typed prescription text. Does not invent drugs. */
+/** Parse typed prescription / chat text. Does not invent drugs. */
 export function parsePrescriptionText(
   text: string,
   sourceDoctorId: string,
@@ -97,6 +134,54 @@ export function parsePrescriptionText(
     });
   }
   return { entries, unknownTokens };
+}
+
+const DRUG_HINT = /\b(\d+\s?(mg|mcg|g|iu|ml)|tablet|capsule|syrup|injection)\b/i;
+const LOOKS_LIKE_STEM =
+  /(cillin|mycin|pril|sartan|statin|olol|azepam|formin|dronate|gliptin|prazole|coxib)$/i;
+
+/** Calendar / English tokens that share a stem with real INNs (april ~ -pril). */
+const NER_STOP = new Set([
+  "april", "march", "june", "july", "august", "since", "started", "taking",
+  "tablet", "tablets", "capsule", "morning", "night", "today", "yesterday",
+  "about", "after", "before", "could", "would", "should", "there", "their",
+  "have", "been", "this", "that", "with", "from", "pain", "fever", "cough",
+  "throat", "chest", "water", "blood", "pressure", "doctor", "clinic",
+  "combine", "prescription", "medicines", "medicine", "monitor", "symptoms",
+  "something", "nothing", "anything", "information", "condition",
+]);
+
+/** NER over free text. Tokens without a CUI stay unmatched (incomplete). */
+export function extractDrugMentionsFromText(text: string): {
+  raw: string;
+  hit: ReturnType<typeof normalizeDrugName>;
+}[] {
+  const tokens = text.split(/[^a-zA-Z0-9+/]+/).filter((t) => t.length >= 4);
+  const seen = new Set<string>();
+  const mentions: { raw: string; hit: ReturnType<typeof normalizeDrugName> }[] = [];
+  const consider = (raw: string) => {
+    const key = raw.toLowerCase();
+    if (seen.has(key)) return;
+    if (/^\d+\s?(mg|mcg|g|iu|ml)$/i.test(raw)) return;
+    const parts = raw.split(/\s+/).map((p) => p.toLowerCase());
+    const hit = normalizeDrugName(raw);
+    if (hit) {
+      seen.add(key);
+      mentions.push({ raw, hit });
+      return;
+    }
+    if (parts.length > 1) return;
+    if (NER_STOP.has(key)) return;
+    if (raw.length < 5) return;
+    if (!LOOKS_LIKE_STEM.test(raw) && !DRUG_HINT.test(raw)) return;
+    seen.add(key);
+    mentions.push({ raw, hit: null });
+  };
+  for (let i = 0; i < tokens.length; i++) {
+    consider(tokens[i]);
+    if (i + 1 < tokens.length) consider(`${tokens[i]} ${tokens[i + 1]}`);
+  }
+  return mentions;
 }
 
 export function mergeIntoGraph(

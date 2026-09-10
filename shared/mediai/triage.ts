@@ -17,6 +17,7 @@ export const CONDITIONS: ConditionId[] = [
   "gerd",
   "uti",
   "covid",
+  "gastroenteritis",
 ];
 
 export const QUESTIONS: Question[] = [
@@ -33,6 +34,7 @@ export const QUESTIONS: Question[] = [
       gerd: 0.05,
       uti: 0.35,
       covid: 0.75,
+      gastroenteritis: 0.35,
     },
   },
   {
@@ -48,6 +50,7 @@ export const QUESTIONS: Question[] = [
       gerd: 0.15,
       uti: 0.04,
       covid: 0.45,
+      gastroenteritis: 0.08,
     },
   },
   {
@@ -63,6 +66,7 @@ export const QUESTIONS: Question[] = [
       gerd: 0.2,
       uti: 0.04,
       covid: 0.8,
+      gastroenteritis: 0.08,
     },
   },
   {
@@ -78,6 +82,7 @@ export const QUESTIONS: Question[] = [
       gerd: 0.1,
       uti: 0.03,
       covid: 0.35,
+      gastroenteritis: 0.05,
     },
   },
   {
@@ -93,6 +98,7 @@ export const QUESTIONS: Question[] = [
       gerd: 0.05,
       uti: 0.02,
       covid: 0.1,
+      gastroenteritis: 0.04,
     },
   },
   {
@@ -108,6 +114,7 @@ export const QUESTIONS: Question[] = [
       gerd: 0.02,
       uti: 0.03,
       covid: 0.08,
+      gastroenteritis: 0.06,
     },
   },
   {
@@ -123,6 +130,7 @@ export const QUESTIONS: Question[] = [
       gerd: 0.08,
       uti: 0.15,
       covid: 0.4,
+      gastroenteritis: 0.15,
     },
   },
   {
@@ -138,6 +146,7 @@ export const QUESTIONS: Question[] = [
       gerd: 0.03,
       uti: 0.03,
       covid: 0.08,
+      gastroenteritis: 0.04,
     },
   },
   {
@@ -153,6 +162,7 @@ export const QUESTIONS: Question[] = [
       gerd: 0.02,
       uti: 0.9,
       covid: 0.03,
+      gastroenteritis: 0.04,
     },
   },
   {
@@ -168,6 +178,55 @@ export const QUESTIONS: Question[] = [
       gerd: 0.88,
       uti: 0.04,
       covid: 0.05,
+      gastroenteritis: 0.12,
+    },
+  },
+  {
+    id: "vomiting",
+    text: "Have you been vomiting?",
+    pYes: {
+      viral_uri: 0.2,
+      strep_pharyngitis: 0.08,
+      influenza: 0.4,
+      pneumonia_suspect: 0.15,
+      migraine: 0.55,
+      tension_headache: 0.08,
+      gerd: 0.25,
+      uti: 0.08,
+      covid: 0.18,
+      gastroenteritis: 0.85,
+    },
+  },
+  {
+    id: "diarrhea",
+    text: "Do you have diarrhea?",
+    pYes: {
+      viral_uri: 0.12,
+      strep_pharyngitis: 0.05,
+      influenza: 0.15,
+      pneumonia_suspect: 0.06,
+      migraine: 0.04,
+      tension_headache: 0.04,
+      gerd: 0.08,
+      uti: 0.06,
+      covid: 0.12,
+      gastroenteritis: 0.9,
+    },
+  },
+  {
+    id: "neck_stiffness",
+    text: "Is your neck stiff or painful to bend?",
+    pYes: {
+      viral_uri: 0.04,
+      strep_pharyngitis: 0.08,
+      influenza: 0.06,
+      pneumonia_suspect: 0.05,
+      migraine: 0.12,
+      tension_headache: 0.2,
+      gerd: 0.02,
+      uti: 0.02,
+      covid: 0.04,
+      gastroenteritis: 0.03,
     },
   },
 ];
@@ -175,7 +234,7 @@ export const QUESTIONS: Question[] = [
 const MIN_ANSWERS_BEFORE_STOP = 2;
 const MAX_QUESTIONS = 8;
 const CONFIDENCE_STOP = 0.82;
-export const RED_FLAG_QUESTION_IDS = ["dyspnea"] as const;
+export const RED_FLAG_QUESTION_IDS = ["dyspnea", "neck_stiffness"] as const;
 
 export interface TriageState {
   answers: Record<string, AnswerValue>;
@@ -270,6 +329,7 @@ export type StopReason = "confidence" | "max_questions" | "red_flag" | null;
 export function shouldStop(state: TriageState, post: Record<ConditionId, number>): StopReason {
   const answered = Object.values(state.answers).filter((a) => a !== "unknown").length;
   if (state.answers.dyspnea === "yes") return "red_flag";
+  if (state.answers.neck_stiffness === "yes") return "red_flag";
   if (answered < MIN_ANSWERS_BEFORE_STOP) return null;
   if (answered >= MAX_QUESTIONS) return "max_questions";
   const top = Math.max(...CONDITIONS.map((c) => post[c]));
