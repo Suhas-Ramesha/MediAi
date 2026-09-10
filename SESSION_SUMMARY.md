@@ -69,4 +69,14 @@ Footer now states: not a diagnostic device; claim checks, consilium, curves, aud
 7. Privacy, consent, and key rotation (see `docs/SECURITY-KEY-ROTATION.md`) before any production patient traffic.
 8. Accessibility and Lighthouse on the new sections in the project's own CI, not only this session's browser pass.
 
-Passing 42 tests does not make this safe to use as a diagnostic, prescribing, or triage device.
+## Browser verification (this session)
+
+Headed Chrome against `http://127.0.0.1:5173/` (Firebase placeholders in gitignored `.env` so Auth can boot). Gemini is no longer required to mount the landing page.
+
+- Hero, trust chips, reasoning canvas (dotted leukaemia claim + Show reasoning), plan diff, connected copy, footer disclaimer, come-prepared/brief cards: pass
+- Handoff: doctor view blocked on draft, synthesis shown after approve: pass
+- Reduced-motion / mobile canvas: underlined claims and probability bars present in the static end-state: pass
+- BMI slider: keyboard from 31.4 to 27.4 updates the chart title and counterfactual line: pass
+- Lighthouse CI is still not in the repo. A Chromium pass was used instead of the computer-use agent (spend limit).
+
+Passing 42 tests plus this browser pass does not make this safe to use as a diagnostic, prescribing, or triage device.

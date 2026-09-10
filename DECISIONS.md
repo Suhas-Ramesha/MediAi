@@ -19,4 +19,4 @@ Log of judgment calls not specified in the master prompt. Newest last.
 - D5 clinical synthesis organises the patient's own fragments in time and does not translate colloquial language into untraceable clinical terms. Triage ranking is a separately labeled engine snapshot, never mixed into sourced patient statements.
 - Section 7 keeps the existing explained-risk card and adds the BMI slider/counterfactual demo beneath it (extend, do not replace).
 - Visual regression + Lighthouse CI is not in this repo's toolchain. Reduced-motion is handled in the new demos via `useReducedMotion` (static end-state). A Chromium pass is attempted in-session; absence of Lighthouse is logged as a follow-up, not papered over.
-- Counterfactual candidate grid is 11 bounded single-feature changes (5 glucose, 4 BMI, 2 systolic) on the canonical demo input.
+- Gemini client init is lazy. Importing the SPA (and the marketing landing) must not throw if `VITE_GEMINI_API_KEY` is absent; chat still fails visibly when a reply is requested.

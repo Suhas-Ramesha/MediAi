@@ -459,7 +459,7 @@ export default function Landing() {
       </section>
 
       {/* ---------------- Live reasoning canvas ---------------- */}
-      <section id="canvas" className="container-page py-16 lg:py-24">
+      <section id="canvas" className="container-page scroll-mt-20 py-16 lg:py-24">
         <Reveal className="max-w-2xl">
           <p className="eyebrow">Watch it think</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -480,7 +480,7 @@ export default function Landing() {
       </section>
 
       {/* ---------------- Features ---------------- */}
-      <section id="features" className="container-page py-20 lg:py-28">
+      <section id="features" className="container-page scroll-mt-20 py-20 lg:py-28">
         <Reveal className="max-w-2xl">
           <p className="eyebrow">Understand your symptoms</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -510,7 +510,7 @@ export default function Landing() {
       </section>
 
       {/* ---------------- Trust ---------------- */}
-      <section id="trust" className="border-y border-border bg-muted/25">
+      <section id="trust" className="scroll-mt-20 border-y border-border bg-muted/25">
         <div className="container-page py-20 lg:py-28">
           <Reveal className="max-w-2xl">
             <p className="eyebrow">Trust what it tells you</p>
@@ -557,7 +557,7 @@ export default function Landing() {
       </section>
 
       {/* ---------------- Connected ---------------- */}
-      <section id="connected" className="container-page py-20 lg:py-28">
+      <section id="connected" className="container-page scroll-mt-20 py-20 lg:py-28">
         <Reveal className="max-w-2xl">
           <p className="eyebrow">Everything connected</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -605,7 +605,7 @@ export default function Landing() {
       </section>
 
       {/* ---------------- How it works ---------------- */}
-      <section id="how" className="border-y border-border bg-muted/25">
+      <section id="how" className="scroll-mt-20 border-y border-border bg-muted/25">
         <div className="container-page py-20 lg:py-28">
           <Reveal className="mx-auto max-w-2xl">
             <p className="eyebrow">How it works</p>
@@ -637,7 +637,7 @@ export default function Landing() {
       </section>
 
       {/* ---------------- Risk deep dive ---------------- */}
-      <section id="risk" className="container-page py-20 lg:py-28">
+      <section id="risk" className="container-page scroll-mt-20 py-20 lg:py-28">
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
           <Reveal variants={slideIn("left")}>
             <p className="eyebrow">Risk assessment</p>
