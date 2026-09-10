@@ -8,6 +8,18 @@
     <title>MediAI - Your Intelligent Healthcare Companion</title>
     <meta name="description" content="Your intelligent healthcare companion powered by advanced AI. Get instant medical advice, symptoms analysis, and health recommendations." />
     <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("mediai-theme");
+          var dark =
+            stored === "dark" ||
+            (stored !== "light" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
