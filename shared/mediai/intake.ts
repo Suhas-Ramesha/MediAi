@@ -5,7 +5,7 @@ import {
   toClinicalText,
   type AppliedMapping,
 } from "./colloquial.ts";
-import { inferTriageFromTranscript } from "./triage.ts";
+import { answersFromTranscript, inferTriageFromTranscript } from "./triage.ts";
 
 export interface TimelineEvent {
   t: number;
@@ -336,32 +336,59 @@ function flaggedPhrases(text: string): string[] {
   });
 }
 
+const FACT_LABELS: Record<string, string> = {
+  fever: "fever",
+  sore_throat: "sore throat",
+  cough: "cough",
+  dyspnea: "shortness of breath",
+  headache: "headache",
+  photophobia: "photophobia",
+  dysuria: "dysuria",
+  reflux: "post-meal chest burning",
+  vomiting: "vomiting",
+  diarrhea: "diarrhea",
+  rash: "rash",
+  neck_stiffness: "neck stiffness",
+};
+
+function isQuestionOrFiller(s: string): boolean {
+  const t = s.trim();
+  if (/\?/.test(t)) return true;
+  return /what do you think|do you think|i guess|\big\b/i.test(t) &&
+    !/\bfever\b|\bheadache\b|\bpain\b|\bvomit|\bcough|\brash\b/i.test(t);
+}
+
 function composeClinicalSynthesis(input: {
   timeline: { text: string }[];
   mappings: AppliedMapping[];
   medications: string[];
   flags: string[];
+  sourceText: string;
 }): string {
-  const seen = new Set<string>();
+  const answers = answersFromTranscript(input.sourceText);
+  const reported = Object.entries(answers)
+    .filter(([, v]) => v === "yes")
+    .map(([id]) => FACT_LABELS[id] ?? id.replace(/_/g, " "));
+  const mapped = [
+    ...new Set(input.mappings.map((m) => m.clinical).filter(Boolean)),
+  ];
   const events: string[] = [];
+  const seen = new Set<string>();
   for (const ev of input.timeline) {
+    if (isQuestionOrFiller(ev.text)) continue;
     const phrase = ev.text.replace(/\s+/g, " ").trim();
     const key = normalizeUtterance(phrase);
     if (!key || seen.has(key)) continue;
     seen.add(key);
     events.push(phrase);
   }
-  const mapped = [
-    ...new Set(input.mappings.map((m) => m.clinical).filter(Boolean)),
-  ];
   const parts: string[] = [];
-  if (events.length) {
-    parts.push(
-      `Patient-reported picture, in time order: ${events.join("; ")}.`,
-    );
-  }
-  if (mapped.length) {
-    parts.push(`Mapped terms from the patient's own wording: ${mapped.join(", ")}.`);
+  if (reported.length) {
+    parts.push(`Patient reports: ${[...new Set([...reported, ...mapped])].join(", ")}.`);
+  } else if (events.length) {
+    parts.push(`Patient-reported picture, in time order: ${events.join("; ")}.`);
+  } else if (mapped.length) {
+    parts.push(`Patient reports: ${mapped.join(", ")}.`);
   }
   if (input.medications.length) {
     parts.push(`Medicines named: ${input.medications.join(", ")}.`);
@@ -451,6 +478,7 @@ export function buildHandoffBrief(input: {
     mappings,
     medications: input.medications,
     flags,
+    sourceText: fragments.join(" "),
   });
 
   assertMappedSourcing(

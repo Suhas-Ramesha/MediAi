@@ -452,7 +452,8 @@ describe("D intake", () => {
       medications: [],
     });
     expect(fever.patientWords.length).toBeLessThan(3);
-    expect(fever.synthesis).not.toMatch(/what do you think about it\? i think i have a fever/i);
+    expect(fever.synthesis).toMatch(/patient reports: fever/i);
+    expect(fever.synthesis).not.toMatch(/what do you think about it/i);
     expect(fever.triageSnapshot).not.toMatch(/Ranking, not a diagnosis/);
     expect(fever.differential[0].condition).not.toBe("migraine");
     const headache = buildHandoffBrief({
