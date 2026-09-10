@@ -38,7 +38,10 @@ export function ConnectedSafetyDemo() {
     [graph],
   );
   const ocr = useMemo(
-    () => ingestRaster(renderPrescription(["GLUCOPHAGE 500 MG"], 0.001, 3)),
+    () =>
+      ingestRaster(
+        renderPrescription(["GLUCOPHAGE 500 MG", "AMOXIL 500MG"], 0.001, 3),
+      ),
     [],
   );
   const env = useMemo(() => {
