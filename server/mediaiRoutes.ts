@@ -17,6 +17,8 @@ import {
 import {
   FEATURE_FLAGS,
 } from "../shared/mediai/types.ts";
+import { ingestImageBase64 } from "../shared/mediai/ocrPng.ts";
+import { resolveDrug } from "../shared/mediai/rxnorm.ts";
 import {
   forwardAudit,
   mergeIntoGraph,
@@ -67,18 +69,66 @@ export function registerMediaiRoutes(app: Express): void {
     res.json({ events });
   });
 
-  app.post("/api/mediai/medication/ingest", (req: Request, res: Response) => {
-    if (!FEATURE_FLAGS.liveOcr && req.body?.imageBase64) {
-      return res.status(409).json({
-        status: "incomplete",
-        message: "Live OCR is disabled. Submit prescription text, not a silent guess from pixels.",
+  app.post("/api/mediai/medication/ingest", async (req: Request, res: Response) => {
+    const patientId = String(req.body?.patientId ?? "demo");
+    const doctorId = String(req.body?.doctorId ?? "unknown");
+    const startedOn = String(req.body?.startedOn ?? "2026-09-01");
+
+    if (req.body?.imageBase64) {
+      if (!FEATURE_FLAGS.liveOcr) {
+        return res.status(409).json({
+          status: "incomplete",
+          message: "Live OCR is disabled. Submit prescription text, not a silent guess from pixels.",
+        });
+      }
+      const ocr = ingestImageBase64(String(req.body.imageBase64));
+      if (ocr.status === "incomplete") {
+        return res.status(409).json({
+          status: "incomplete",
+          reason: ocr.reason,
+          confidence: ocr.confidence,
+          text: ocr.text,
+          message: "Photograph could not be resolved to RxNorm. Nothing was guessed.",
+        });
+      }
+      let parsed = parsePrescriptionText(ocr.text, doctorId, startedOn);
+      if (FEATURE_FLAGS.liveRxnormNetwork) {
+        for (const token of [...parsed.unknownTokens]) {
+          const live = await resolveDrug(token, {
+            fetchImpl: fetch,
+            liveNetwork: true,
+          });
+          if (!live) continue;
+          parsed = parsePrescriptionText(
+            `${ocr.text}\n${live.generic}`,
+            doctorId,
+            startedOn,
+          );
+        }
+      }
+      if (!parsed.entries.length) {
+        return res.status(409).json({
+          status: "incomplete",
+          reason: "no_rxnorm_match",
+          text: ocr.text,
+          message: "OCR text did not resolve to a RxNorm CUI.",
+        });
+      }
+      const merged = mergeIntoGraph(graphFor(patientId), parsed.entries);
+      graphs.set(patientId, merged.graph);
+      return res.json({
+        graph: merged.graph,
+        merged: merged.merged,
+        added: merged.added,
+        unknownTokens: parsed.unknownTokens,
+        ocr,
       });
     }
-    const patientId = String(req.body?.patientId ?? "demo");
+
     const parsed = parsePrescriptionText(
       String(req.body?.text ?? ""),
-      String(req.body?.doctorId ?? "unknown"),
-      String(req.body?.startedOn ?? "2026-09-01"),
+      doctorId,
+      startedOn,
     );
     const merged = mergeIntoGraph(graphFor(patientId), parsed.entries);
     graphs.set(patientId, merged.graph);

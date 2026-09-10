@@ -9,8 +9,8 @@ Deterministic engines live in `shared/mediai/` and are served from `server/media
 | Group | What shipped | Frontend surface |
 | --- | --- | --- |
 | A Reasoning Canvas | Information-gain triage, claim verifier (empty evidence flags all), four-persona consilium with mandatory skeptic objection, unified event stream with partial-failure isolation | Section 2 live canvas (claim underlines, probability bars, Show reasoning with all four personas). Section 4 consilium convergence diagram |
-| C Medication graph | RxNorm-ish brand/generic merge, cross-doctor interaction audit, SIDER-window side-effect watch, penicillin-class allergy, unknown-drug `incomplete`, live OCR **off** | Section 5 connected copy + cross-doctor audit demo |
-| D Intake | Timeline reconstruction, specialty guard, come-prepared (explicit `no_prep_needed`), red-flag escalation, sourced handoff brief with patient review/waiver gate | Section 3 card copy; `/handoff-review` patient gate |
+| C Medication graph | RxNorm CUIs, brand/generic merge, cross-doctor interaction audit, SIDER-window side-effect watch, penicillin-class allergy, unknown-drug `incomplete`, reviewed OCR+NER (unreadables → incomplete) | Section 5 connected copy + cross-doctor audit + photographed-label OCR demo |
+| D Intake | Timeline reconstruction, specialty guard, come-prepared, red-flag escalation, sourced handoff brief with colloquial→clinical map and patient review/waiver gate | Section 3 card copy; `/handoff-review` patient gate |
 | B Risk simulator | Monotonic local projection, &lt;200ms slider budget, 11 bounded counterfactuals ranked by combined risk drop | Section 7 existing risk card + BMI slider curves |
 | F Environment | Lagged Pearson; shuffle/null does not invent a signal | Section 5 environmental demo (synthetic series) |
 | E Outcomes | Confounded synthetic cohort, propensity matching, day-7 PRO with insufficient-data state, non-editorial plan diff | Section 4 plan-diff demo; `/clinician/outcomes` |
@@ -19,23 +19,23 @@ Hero, trust chips, nav (`Features · How it works · Trust · Risk & simulation 
 
 ## Tests
 
-`npx vitest run` — 42 tests across:
+`npx vitest run` — 47 tests across:
 
 - `shared/mediai/canvas.test.ts` (A1–A4, including verifier failure not dropping triage/consilium)
-- `shared/mediai/groups.test.ts` (C, D, B, F, E; adversarial: unknown drug, empty brief, unsourced haematuria, negated red flag, penicillin/amoxicillin)
+- `shared/mediai/groups.test.ts` (C, D, B, F, E; adversarial: unknown drug, empty brief, unsourced haematuria, negated red flag, penicillin/amoxicillin, noisy OCR raster, colloquial translation)
 - `server/mediaiRoutes.test.ts` (HTTP flows into the same contracts, including OCR 409, doctor 403 until review, waiver, env lag, plan diff)
 
 `npm run build` is run in this session for the Vite client. Pre-existing `tsc` errors outside `shared/mediai` were not used as a reason to weaken new checks.
 
 ## Stubbed / deferred (and why)
 
-- **Live OCR / NER / real RxNorm** — disabled. Image ingest returns HTTP 409 `incomplete`. Follow-up: a reviewed OCR pipeline.
 - **Live Gradio/HF risk models on the slider** — not used. Local monotonic surface, labeled as such.
 - **Python DiCE, DoWhy, EconML** — not in this stack. Constrained TS search and TS propensity matching instead.
 - **Live Open-Meteo in the marketing demo** — synthetic lagged series so the demo is reproducible offline.
-- **Colloquial-to-clinical translation in D5** — not done. Synthesis is chronological organisation of the patient's words, because translation without a sourced mapping would fail the unsourced-claim rule.
-- **Visual regression + Lighthouse CI** — not part of the repo toolchain. Reduced-motion end-states are in the components. Manual Chromium pass attempted in-session.
-- **Persistent store** — graphs, briefs, and the outcomes cohort are in-process maps/fixtures. They reset on server restart.
+- **NLM RxNav network** — client implemented and stub-tested; `liveRxnormNetwork` is false until a human allows egress.
+- **Arbitrary camera JPEG/PDF fonts** — the reviewed OCR is template-matching on high-contrast Latin rasters plus lexicon NER. Unreadable real-world photos still return incomplete rather than a guessed drug. A measured Tesseract/vision engine can be swapped behind the same incomplete-on-failure contract.
+- **Visual regression + Lighthouse CI** — not part of the repo toolchain.
+- **Persistent store** — graphs, briefs, and the outcomes cohort are in-process maps/fixtures.
 
 ## Manual demo script (text)
 
@@ -56,7 +56,7 @@ Hero, trust chips, nav (`Features · How it works · Trust · Risk & simulation 
 
 ## Disclaimer vs copy
 
-Footer now states: not a diagnostic device; claim checks, consilium, curves, audits, escalation, and outcome numbers are decision-support prototypes; they do not verify clinical truth; cross-doctor checks only cover the local graph; causal numbers are adjusted estimates on sample data; emergencies go to local emergency services. OCR photography is not claimed on the page.
+Footer now states: not a diagnostic device; claim checks, consilium, curves, audits, escalation, and outcome numbers are decision-support prototypes; they do not verify clinical truth; prescription photos are lexicon-constrained OCR that refuse unreadables; colloquial translation is map-sourced; cross-doctor checks cover the local graph plus optional RxNav CUIs; causal numbers are adjusted estimates on sample data; emergencies go to local emergency services.
 
 ## Human review required before real patient data
 
@@ -64,7 +64,7 @@ Footer now states: not a diagnostic device; claim checks, consilium, curves, aud
 2. Replace lexical entailment with a reviewed NLI stack, or keep it and never present “supported” as clinical truth (current disclaimer).
 3. Independent safety review of D4 (negation handling can hide a real red flag in odd phrasing) and D5 (doctors must not treat the organised brief as complete history).
 4. Wire engines to authenticated persistence, audit logs, and the real chat transcript — not in-memory maps.
-5. Turn OCR on only after a measured error rate on a real prescription corpus; until then keep `liveOcr: false`.
+5. Keep OCR's incomplete-on-failure contract if a camera/Tesseract engine is swapped in; measure error rates on a real prescription photo corpus before calling it production-ready. Review `COLLOQUIAL_LEXICON` with a clinician.
 6. Do not attach the local risk surface to treatment decisions; if the Gradio models return, prove monotonicity and latency before swapping them into the slider.
 7. Privacy, consent, and key rotation (see `docs/SECURITY-KEY-ROTATION.md`) before any production patient traffic.
 8. Accessibility and Lighthouse on the new sections in the project's own CI, not only this session's browser pass.
@@ -79,4 +79,4 @@ Headed Chrome against `http://127.0.0.1:5173/` (Firebase placeholders in gitigno
 - BMI slider: keyboard from 31.4 to 27.4 updates the chart title and counterfactual line: pass
 - Lighthouse CI is still not in the repo. A Chromium pass was used instead of the computer-use agent (spend limit).
 
-Passing 42 tests plus this browser pass does not make this safe to use as a diagnostic, prescribing, or triage device.
+Passing 47 tests plus this browser pass does not make this safe to use as a diagnostic, prescribing, or triage device.

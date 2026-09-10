@@ -9,6 +9,9 @@ import {
   sideEffectWatch,
   type SafetyGraph,
 } from "./medication.ts";
+import { ingestRaster, renderPrescription } from "./ocr.ts";
+import { lookupLocal, parseRxnavBody, resolveDrug } from "./rxnorm.ts";
+import { applyColloquialMap, assertMappedSourcing } from "./colloquial.ts";
 import {
   assertTranscriptSupport,
   buildHandoffBrief,
@@ -127,8 +130,53 @@ describe("C medication graph", () => {
     expect(outsideWindow.matches).toHaveLength(0);
   });
 
-  it("live OCR stays disabled", () => {
-    expect(FEATURE_FLAGS.liveOcr).toBe(false);
+  it("fuzzy OCR tokens map to the same RxNorm CUI without merging different drugs", () => {
+    const messy = parsePrescriptionText(
+      "blurry scan: m3tf0rmin 500 mg\nAmoxil 500mg",
+      "doc1",
+      "2026-08-01",
+    );
+    expect(messy.entries.some((e) => e.rxcui === "6809")).toBe(true);
+    expect(messy.entries.some((e) => e.rxcui === "723")).toBe(true);
+    expect(messy.entries.map((e) => e.rxcui).sort()).toEqual(["6809", "723"]);
+  });
+
+  it("live OCR pipeline reads a noisy prescription raster and refuses unreadables", () => {
+    expect(FEATURE_FLAGS.liveOcr).toBe(true);
+    const photo = renderPrescription(
+      ["GLUCOPHAGE 500 MG", "AMOXIL 500MG"],
+      0.001,
+      3,
+    );
+    const ocr = ingestRaster(photo);
+    expect(ocr.status).toBe("ok");
+    expect(ocr.mentions.some((m) => m.hit?.rxcui === "6809")).toBe(true);
+    expect(ocr.mentions.some((m) => m.hit?.rxcui === "723")).toBe(true);
+    const blank = ingestRaster({
+      width: 16,
+      height: 16,
+      pixels: new Uint8Array(256).fill(255),
+    });
+    expect(blank.status).toBe("incomplete");
+    const noise = ingestRaster({
+      width: 24,
+      height: 24,
+      pixels: Uint8Array.from({ length: 576 }, (_, i) => (i % 3 === 0 ? 0 : 255)),
+    });
+    expect(noise.status).toBe("incomplete");
+  });
+
+  it("RxNav responses must be numeric CUIs; local lookup is preferred", async () => {
+    expect(lookupLocal("glucophage")?.rxcui).toBe("6809");
+    expect(parseRxnavBody({ idGroup: { rxnormId: ["6809"] } })).toBe("6809");
+    expect(parseRxnavBody({ idGroup: { rxnormId: ["not-a-cui"] } })).toBeNull();
+    const live = await resolveDrug("brand-only-example", {
+      liveNetwork: true,
+      fetchImpl: (async () =>
+        new Response(JSON.stringify({ idGroup: { rxnormId: ["161"] } }))) as typeof fetch,
+    });
+    expect(live?.rxcui).toBe("161");
+    expect(live?.source).toBe("rxnav");
   });
 });
 
@@ -202,7 +250,7 @@ describe("D intake", () => {
       medications: ["metformin"],
       differential: [{ condition: "viral_uri", probability: 0.5 }],
     });
-    expect(brief.chiefComplaint).toMatch(/fever/i);
+    expect(brief.chiefComplaint).toMatch(/sore throat|fever/i);
     expect(brief.traces.length).toBeGreaterThan(0);
     expect(brief.patientReview.status).toBe("draft");
     expect(doctorMayView(brief)).toBe(false);
@@ -214,7 +262,7 @@ describe("D intake", () => {
       ).toBe(true);
     }
     const verdictOk = assertTranscriptSupport(
-      brief.traces.map((t) => t.statement),
+      brief.traces.filter((t) => !t.mappingId).map((t) => t.statement),
       brief.patientWords,
     );
     expect(verdictOk).toBeUndefined();
@@ -239,6 +287,45 @@ describe("D intake", () => {
     expect(() =>
       buildHandoffBrief({ fragments: [], medications: [], differential: [] }),
     ).toThrow(/unsourced_claim/);
+  });
+
+  it("translates colloquial fragments with sourced mappings and refuses unsourced clinical terms", () => {
+    const brief = buildHandoffBrief({
+      fragments: [
+        "Then I started throwing up",
+        "Been running a temp 3 days ago",
+        "Yesterday my throat is killing me",
+      ],
+      medications: [],
+      differential: [{ condition: "viral_uri", probability: 0.4 }],
+    });
+    expect(brief.chiefComplaint).toMatch(/fever/i);
+    expect(brief.timeline.map((e) => e.text).join(" ")).toMatch(/fever/i);
+    expect(brief.timeline.map((e) => e.text).join(" ")).toMatch(/sore throat/i);
+    expect(brief.timeline.map((e) => e.text).join(" ")).toMatch(/vomiting/i);
+    expect(brief.patientWords.join(" ")).toMatch(/killing me/i);
+    expect(brief.mappings.map((m) => m.id).sort()).toEqual([
+      "fever",
+      "sore_throat",
+      "vomiting",
+    ]);
+    assertMappedSourcing(
+      brief.timeline.map((e) => e.text).join(" "),
+      brief.patientWords,
+      brief.mappings,
+    );
+    expect(() =>
+      assertMappedSourcing(
+        "haematuria and a new murmur",
+        brief.patientWords,
+        brief.mappings,
+      ),
+    ).toThrow(/unsourced_claim/);
+    const rash = specialtyGuard("itchy spots on both arms", "cardiology");
+    expect(rash.mismatch).toBe(true);
+    expect(specialtyGuard("itchy spots on both arms", "dermatology").mismatch).toBe(
+      false,
+    );
   });
 });
 

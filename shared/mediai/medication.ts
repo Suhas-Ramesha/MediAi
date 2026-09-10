@@ -1,3 +1,8 @@
+import { lookupLocal, RXNORM, type RxNormHit } from "./rxnorm.ts";
+
+export { RXNORM };
+export type { RxNormHit };
+
 export interface MedicationEntry {
   id: string;
   rxcui: string;
@@ -16,19 +21,6 @@ export interface SafetyGraph {
   medications: MedicationEntry[];
 }
 
-/** Brand/generic map. Same rxcui must merge; different rxcui must not. */
-export const RXNORM: Record<string, { rxcui: string; generic: string }> = {
-  metformin: { rxcui: "6809", generic: "metformin" },
-  glucophage: { rxcui: "6809", generic: "metformin" },
-  amoxicillin: { rxcui: "723", generic: "amoxicillin" },
-  amoxil: { rxcui: "723", generic: "amoxicillin" },
-  warfarin: { rxcui: "11289", generic: "warfarin" },
-  coumadin: { rxcui: "11289", generic: "warfarin" },
-  ibuprofen: { rxcui: "5640", generic: "ibuprofen" },
-  advil: { rxcui: "5640", generic: "ibuprofen" },
-  lisinopril: { rxcui: "29046", generic: "lisinopril" },
-  simvastatin: { rxcui: "36567", generic: "simvastatin" },
-};
 
 export const INTERACTIONS: { a: string; b: string; note: string }[] = [
   { a: "11289", b: "5640", note: "Warfarin + NSAID: bleeding risk" },
@@ -66,14 +58,10 @@ export const SIDER: {
   { rxcui: "11289", effect: "bruising", onsetDaysMin: 2, onsetDaysMax: 60 },
 ];
 
-const KNOWN = Object.keys(RXNORM);
-
 export function normalizeDrugName(raw: string): { rxcui: string; generic: string } | null {
-  const key = raw.toLowerCase().replace(/[^a-z]/g, "");
-  for (const name of KNOWN) {
-    if (key.includes(name)) return RXNORM[name];
-  }
-  return null;
+  const hit = lookupLocal(raw);
+  if (!hit) return null;
+  return { rxcui: hit.rxcui, generic: hit.generic };
 }
 
 /** Parse messy OCR / typed prescription text. Does not invent drugs. */
@@ -86,7 +74,13 @@ export function parsePrescriptionText(
   const entries: Omit<MedicationEntry, "id">[] = [];
   const unknownTokens: string[] = [];
   for (const part of parts) {
-    const hit = normalizeDrugName(part);
+    const hit =
+      normalizeDrugName(part) ??
+      part
+        .split(/\s+/)
+        .map((tok) => normalizeDrugName(tok))
+        .find((h) => h) ??
+      null;
     if (!hit) {
       if (/[a-z]{4,}/i.test(part)) unknownTokens.push(part);
       continue;

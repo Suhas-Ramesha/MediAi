@@ -1,4 +1,10 @@
 import { verifyClaims } from "./verifier.ts";
+import {
+  applyColloquialMap,
+  assertMappedSourcing,
+  toClinicalText,
+  type AppliedMapping,
+} from "./colloquial.ts";
 
 export interface TimelineEvent {
   t: number;
@@ -44,7 +50,7 @@ export function specialtyGuard(
   timelineText: string,
   bookedSpecialty: string,
 ): { mismatch: boolean; reason: string } {
-  const text = timelineText.toLowerCase();
+  const text = `${timelineText} ${toClinicalText(timelineText)}`.toLowerCase();
   const booked = bookedSpecialty.toLowerCase();
   let best: { spec: string; hits: number } = { spec: "general", hits: 0 };
   for (const [spec, keys] of Object.entries(SPECIALTY_HINTS)) {
@@ -92,8 +98,9 @@ const GUIDELINES: { match: RegExp; labs: string[]; fasting: boolean; guideline: 
 ];
 
 export function comePrepared(presentation: string): PrepResult {
+  const text = `${presentation} ${toClinicalText(presentation)}`;
   for (const g of GUIDELINES) {
-    if (g.match.test(presentation)) {
+    if (g.match.test(text)) {
       const prep = g.labs.length > 0 || g.fasting;
       return {
         labs: g.labs,
@@ -167,6 +174,7 @@ export function waitingWindowEscalation(input: {
 export interface SourceSpan {
   statement: string;
   sourceText: string;
+  mappingId?: string;
 }
 
 export interface HandoffBrief {
@@ -176,6 +184,7 @@ export interface HandoffBrief {
   patientWords: string[];
   synthesis: string;
   traces: SourceSpan[];
+  mappings: AppliedMapping[];
   medications: string[];
   differential: { condition: string; probability: number }[];
   /** Engine ranking. Labeled separately so it is never a patient-sourced claim. */
@@ -227,25 +236,56 @@ export function buildHandoffBrief(input: {
   if (!fragments.length) {
     throw new Error("unsourced_claim");
   }
-  const timeline = reconstructTimeline(fragments);
+  const timelineRaw = reconstructTimeline(fragments);
+  const mappings: AppliedMapping[] = [];
   const traces: SourceSpan[] = [];
 
-  const chief = fragments[0];
-  traces.push({ statement: chief, sourceText: chief });
-  for (const ev of timeline) {
+  const timeline = timelineRaw.map((ev) => {
+    const translated = applyColloquialMap(ev.text);
+    mappings.push(...translated.mappings);
     traces.push({
-      statement: ev.text,
-      sourceText: ev.source,
+      statement: translated.clinical,
+      sourceText: translated.mappings[0]?.sourceSpan ?? ev.source,
+      mappingId: translated.mappings[0]?.id,
     });
-  }
+    return { ...ev, text: translated.clinical };
+  });
 
+  const chiefSource = timelineRaw[0];
+  const chiefTranslated = applyColloquialMap(chiefSource.text);
+  const chief = chiefTranslated.clinical;
+  traces.unshift({
+    statement: chief,
+    sourceText: chiefTranslated.mappings[0]?.sourceSpan ?? chiefSource.source,
+    mappingId: chiefTranslated.mappings[0]?.id,
+  });
+
+  assertMappedSourcing(
+    traces.map((t) => t.statement).join(" "),
+    fragments,
+    mappings,
+  );
   assertTranscriptSupport(
-    traces.map((t) => t.statement),
+    traces.filter((t) => !t.mappingId).map((t) => t.statement),
     fragments,
   );
 
-  const synthesis = timeline.map((e) => e.text).join(" ");
-  assertTranscriptSupport([synthesis], fragments);
+  const synthesis = timeline
+    .map((e, i) => {
+      const raw = timelineRaw[i];
+      const translated = applyColloquialMap(raw.text);
+      if (translated.mappings.length) {
+        return `${translated.clinical} (patient: "${translated.mappings.map((m) => m.sourceSpan).join(", ")}")`;
+      }
+      return translated.clinical;
+    })
+    .join(" ");
+
+  assertMappedSourcing(
+    timeline.map((e) => e.text).join(" "),
+    fragments,
+    mappings,
+  );
 
   const lead = input.differential[0];
   const triageSnapshot = lead
@@ -259,6 +299,7 @@ export function buildHandoffBrief(input: {
     patientWords: fragments,
     synthesis,
     traces,
+    mappings,
     medications: input.medications,
     differential: input.differential,
     triageSnapshot,
@@ -284,9 +325,10 @@ export function markReviewed(
   status: "approved" | "waived",
   note?: string,
 ): HandoffBrief {
-  assertTranscriptSupport(
-    brief.traces.map((t) => t.statement),
+  assertMappedSourcing(
+    brief.traces.map((t) => t.statement).join(" "),
     brief.patientWords,
+    brief.mappings,
   );
   return { ...brief, patientReview: { status, note } };
 }

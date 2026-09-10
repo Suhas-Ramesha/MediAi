@@ -12,7 +12,7 @@ import {
 
 export default function HandoffReview() {
   const [fragments, setFragments] = useState(
-    "fever since yesterday\nsore throat for 3 days\nthen the cough started",
+    "Been running a temp since yesterday\nmy throat is killing me\nthen I started throwing up",
   );
   const [brief, setBrief] = useState<HandoffBrief | null>(null);
   const [doctorPayload, setDoctorPayload] = useState<string>("");
@@ -87,7 +87,8 @@ export default function HandoffReview() {
         Review the brief before it is sent
       </h1>
       <p className="mt-3 max-w-2xl text-muted-foreground">
-        Your own words stay visible next to the organised picture. Nothing is
+        Your own words stay visible next to the clinical picture. Colloquial
+        phrases are translated only when a sourced map matches them. Nothing is
         sent to a doctor until you approve it, or explicitly waive review.
       </p>
 
@@ -127,6 +128,15 @@ export default function HandoffReview() {
           <article className="surface p-5">
             <h2 className="text-sm font-semibold">Clinical synthesis</h2>
             <p className="mt-3 text-sm">{brief.synthesis}</p>
+            {brief.mappings.length > 0 && (
+              <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                {brief.mappings.map((m) => (
+                  <li key={`${m.id}-${m.sourceSpan}`}>
+                    &quot;{m.sourceSpan}&quot; → {m.clinical}
+                  </li>
+                ))}
+              </ul>
+            )}
             <p className="mt-3 text-xs text-muted-foreground">
               {brief.triageSnapshot}
             </p>

@@ -8,6 +8,7 @@ import {
   sideEffectWatch,
   type SafetyGraph,
 } from "@shared/mediai/medication";
+import { ingestRaster, renderPrescription } from "@shared/mediai/ocr";
 
 function demoGraph(): SafetyGraph {
   const parsed = parsePrescriptionText("warfarin 5mg", "doc1", "2026-07-01");
@@ -35,6 +36,10 @@ export function ConnectedSafetyDemo() {
   const watch = useMemo(
     () => sideEffectWatch(graph, "watery diarrhea since this morning", "2026-09-08"),
     [graph],
+  );
+  const ocr = useMemo(
+    () => ingestRaster(renderPrescription(["GLUCOPHAGE 500 MG"], 0.001, 3)),
+    [],
   );
   const env = useMemo(() => {
     const air = Array.from({ length: 40 }, (_, i) => Math.sin(i / 4));
@@ -64,6 +69,15 @@ export function ConnectedSafetyDemo() {
             after start).
           </p>
         )}
+        <p className="mt-3 text-sm text-muted-foreground">
+          Photographed label OCR:{" "}
+          {ocr.status === "ok"
+            ? `${ocr.text.replace(/\s+/g, " ")} → ${ocr.mentions
+                .filter((m) => m.hit)
+                .map((m) => `${m.hit!.generic} (RxCUI ${m.hit!.rxcui})`)
+                .join(", ")}`
+            : "incomplete, nothing guessed"}
+        </p>
       </article>
       <article className="surface p-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

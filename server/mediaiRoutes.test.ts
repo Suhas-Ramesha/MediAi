@@ -1,6 +1,7 @@
 import express from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { registerMediaiRoutes } from "./mediaiRoutes.ts";
+import { corpusPng } from "../shared/mediai/ocrPng.ts";
 import type { Server } from "http";
 
 describe("mediai HTTP integration", () => {
@@ -99,6 +100,37 @@ describe("mediai HTTP integration", () => {
     expect(data.status).toBe("incomplete");
   });
 
+  it("C: photographed prescription corpus OCRs to RxNorm without false merges", async () => {
+    const png = corpusPng(["GLUCOPHAGE 500 MG", "AMOXIL 500MG"], 0.001);
+    const r = await fetch(`${base}/api/mediai/medication/ingest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        patientId: "photo-corpus",
+        doctorId: "doc1",
+        imageBase64: Buffer.from(png).toString("base64"),
+        startedOn: "2026-08-01",
+      }),
+    });
+    expect(r.status).toBe(200);
+    const data = await r.json();
+    const cuis = data.graph.medications.map((m: { rxcui: string }) => m.rxcui).sort();
+    expect(cuis).toEqual(["6809", "723"]);
+    const again = await fetch(`${base}/api/mediai/medication/ingest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        patientId: "photo-corpus",
+        doctorId: "doc2",
+        text: "Metformin 500 mg",
+        startedOn: "2026-08-02",
+      }),
+    }).then((x) => x.json());
+    expect(again.graph.medications.filter((m: { rxcui: string }) => m.rxcui === "6809")).toHaveLength(
+      1,
+    );
+  });
+
   it("B: projection stays under the slider latency budget", async () => {
     const r = await fetch(`${base}/api/mediai/risk/project`, {
       method: "POST",
@@ -165,6 +197,27 @@ describe("mediai HTTP integration", () => {
       body: JSON.stringify({ fragments: [] }),
     });
     expect(created.status).toBe(422);
+  });
+
+  it("D5: colloquial input is translated and still blocked until review", async () => {
+    const created = await fetch(`${base}/api/mediai/handoff`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fragments: [
+          "Been running a temp since yesterday",
+          "my throat is killing me",
+        ],
+        medications: [],
+        differential: [{ condition: "viral_uri", probability: 0.4 }],
+      }),
+    }).then((r) => r.json());
+    expect(created.chiefComplaint).toMatch(/fever|sore throat/i);
+    expect(created.synthesis).toMatch(/fever|sore throat/i);
+    expect(created.patientWords.join(" ")).toMatch(/killing me|running a temp/i);
+    expect(
+      (await fetch(`${base}/api/mediai/handoff/${created.id}/doctor`)).status,
+    ).toBe(403);
   });
 
   it("D5: waiver is an explicit gate, not a silent skip", async () => {

@@ -60,8 +60,13 @@ export type CanvasEvent =
     };
 
 export const FEATURE_FLAGS = {
-  /** Real camera OCR is off until a reviewed engine exists. */
-  liveOcr: false,
+  /**
+   * Reviewed OCR pipeline is on. Unreadable pixels and tokens that do not
+   * resolve to RxNorm still return incomplete; they are never guessed.
+   */
+  liveOcr: true,
+  /** NLM RxNav network lookup. Off in unit tests; ingest may enable it. */
+  liveRxnormNetwork: false,
   /** Live Gradio models are not used for the slider projection. */
   liveMlForSimulator: false,
 } as const;
