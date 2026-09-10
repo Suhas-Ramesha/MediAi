@@ -11,6 +11,8 @@ import Settings from "@/pages/settings";
 import { AuthProvider } from "@/hooks/use-auth";
 import SymptomDiaryPage from "@/app/symptom-diary/page";
 import Appointments from "@/pages/appointments";
+import ClinicianOutcomes from "@/pages/clinician-outcomes";
+import HandoffReview from "@/pages/handoff-review";
 import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
@@ -23,6 +25,8 @@ function Router() {
       <Route path="/symptom-diary" component={SymptomDiaryPage} />
       <Route path="/settings" component={Settings} />
       <Route path="/appointments" component={Appointments} />
+      <Route path="/clinician/outcomes" component={ClinicianOutcomes} />
+      <Route path="/handoff-review" component={HandoffReview} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -6,7 +6,7 @@ import path from "path";
 import { z } from "zod";
 import { insertMessageSchema } from "@shared/schema";
 import fs from "fs";
-import { nanoid } from "nanoid";
+import { registerMediaiRoutes } from "./mediaiRoutes";
 
 // Configure multer for file storage
 const memStorage = multer.memoryStorage();
@@ -165,6 +165,8 @@ const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:5050";
 export async function registerRoutes(app: Express): Promise<Server> {
   // prefix all routes with /api
   const apiRouter = (route: string) => `/api${route}`;
+
+  registerMediaiRoutes(app);
 
   app.post(apiRouter("/risk/predict"), async (req: Request, res: Response) => {
     try {
