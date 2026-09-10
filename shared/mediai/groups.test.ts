@@ -134,7 +134,7 @@ describe("C medication graph", () => {
 
   it("fuzzy typed tokens map to the same RxNorm CUI without merging different drugs", () => {
     const messy = parsePrescriptionText(
-      "blurry scan: m3tf0rmin 500 mg\nAmoxil 500mg",
+      "blurry scan: metformn 500 mg\nAmoxil 500mg",
       "doc1",
       "2026-08-01",
     );
@@ -224,6 +224,12 @@ describe("C medication graph", () => {
       graph: emptySafetyGraph("p1"),
     });
     expect(meds.audit?.status).toBe("interaction");
+  });
+
+  it("does not fuzzy-map English words like doctor or combine onto drugs", () => {
+    expect(lookupLocal("doctor")).toBeNull();
+    expect(lookupLocal("combine")).toBeNull();
+    expect(lookupLocal("zocor")?.rxcui).toBe("36567");
   });
 
   it("does not treat calendar words like April as unknown drugs", () => {

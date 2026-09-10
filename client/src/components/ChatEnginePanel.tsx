@@ -16,9 +16,11 @@ export function ChatEnginePanel({ result }: { result: ChatEngineResult }) {
         </p>
       )}
       {result.audit && result.audit.status !== "clear" && result.audit.status !== "incomplete" && (
-        <p className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1.5">
-          Medication check: {result.audit.status}. {result.audit.findings[0]}
-        </p>
+        <ul className="space-y-1 rounded-md border border-warning/40 bg-warning/10 px-2 py-1.5">
+          {result.audit.findings.map((f) => (
+            <li key={f}>Medication check: {result.audit?.status}. {f}</li>
+          ))}
+        </ul>
       )}
       {flagged.length > 0 && (
         <p className="text-muted-foreground">

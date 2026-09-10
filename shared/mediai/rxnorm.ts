@@ -149,8 +149,13 @@ export function lookupLocal(raw: string): RxNormHit | null {
   let best: { name: string; d: number } | null = null;
   let ties = 0;
   for (const name of RXNORM_NAMES) {
+    if (key[0] !== name[0]) continue;
     const d = levenshtein(key, name);
-    if (d > 2) continue;
+    const prefix3 = key.slice(0, 3) === name.slice(0, 3);
+    const ok =
+      (d === 1 && Math.abs(key.length - name.length) <= 2) ||
+      (d === 2 && prefix3 && key.length >= 8 && name.length >= 8);
+    if (!ok) continue;
     if (!best || d < best.d) {
       best = { name, d };
       ties = 1;

@@ -147,6 +147,7 @@ const NER_STOP = new Set([
   "about", "after", "before", "could", "would", "should", "there", "their",
   "have", "been", "this", "that", "with", "from", "pain", "fever", "cough",
   "throat", "chest", "water", "blood", "pressure", "doctor", "clinic",
+  "combine", "prescription", "medicines", "medicine", "monitor", "symptoms",
   "something", "nothing", "anything", "information", "condition",
 ]);
 
