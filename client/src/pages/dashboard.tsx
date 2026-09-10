@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useLocation } from "wouter";
-
 import { useAuth } from "@/hooks/use-auth";
 import Header from "@/components/Header";
 import UserProfile from "@/components/UserProfile";
@@ -153,7 +151,6 @@ const formatArrayField = (field: any): string => {
 
 export default function Dashboard() {
   const { currentUser, userProfile, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
 
   const { data: consultations = [], isLoading: isLoadingConsultations } =
     useConsultations(currentUser?.uid);
@@ -171,18 +168,17 @@ export default function Dashboard() {
     recommendations: formatArrayField(c.recommendations),
   }));
 
-  React.useEffect(() => {
-    if (!isLoading && !currentUser) {
-      setLocation("/");
-    }
-  }, [isLoading, currentUser, setLocation]);
-
   if (isLoading || (currentUser && isLoadingConsultations)) {
     return <DashboardSkeleton />;
   }
 
   if (!currentUser) {
-    return <DashboardSkeleton />;
+    return (
+      <DashboardContent
+        userProfile={{ name: "Guest", email: "", allergies: "" }}
+        consultations={[]}
+      />
+    );
   }
 
   return (

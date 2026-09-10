@@ -15,7 +15,7 @@ import {
   type HandoffBrief,
 } from "../shared/mediai/intake.ts";
 import { isRxnavLive } from "../shared/mediai/types.ts";
-import { analyzeChatTurn } from "../shared/mediai/chatSafety.ts";
+import { analyzeChatTurnLive } from "../shared/mediai/chatSafety.ts";
 import { fetchRxnavInteractions, resolveDrug } from "../shared/mediai/rxnorm.ts";
 import {
   forwardAudit,
@@ -38,10 +38,21 @@ import {
   type RiskInputs,
 } from "../shared/mediai/risk.ts";
 import type { TriageState } from "../shared/mediai/triage.ts";
+import { loadMediaiStore, saveMediaiStore } from "./mediaiPersist.ts";
 
-const graphs = new Map<string, SafetyGraph>();
-const briefs = new Map<string, HandoffBrief>();
+const disk = loadMediaiStore();
+const graphs = new Map<string, SafetyGraph>(Object.entries(disk.graphs));
+const briefs = new Map<string, HandoffBrief>(Object.entries(disk.briefs));
+const audits: unknown[] = disk.audits;
 const DEMO_COHORT = synthesizeConfoundedCohort(220, 3);
+
+function persistDisk(): void {
+  saveMediaiStore({
+    graphs: Object.fromEntries(graphs),
+    briefs: Object.fromEntries(briefs),
+    audits: audits.slice(-200),
+  });
+}
 
 function graphFor(patientId: string): SafetyGraph {
   if (!graphs.has(patientId)) {
@@ -67,17 +78,26 @@ export function registerMediaiRoutes(app: Express): void {
     res.json({ events });
   });
 
-  app.post("/api/mediai/chat/analyze", (req: Request, res: Response) => {
+  app.post("/api/mediai/chat/analyze", async (req: Request, res: Response) => {
     const patientId = String(req.body?.patientId ?? "demo");
     const graph = req.body?.graph ?? graphFor(patientId);
-    const result = analyzeChatTurn({
+    const result = await analyzeChatTurnLive({
       userText: String(req.body?.userText ?? ""),
       assistantText: String(req.body?.assistantText ?? ""),
       graph,
       evidence: req.body?.evidence,
       appointmentDaysOut: Number(req.body?.appointmentDaysOut ?? 12),
+      fetchImpl: fetch,
     });
     graphs.set(patientId, result.graph);
+    audits.push({
+      patientId,
+      userText: req.body?.userText,
+      assistantText: req.body?.assistantText,
+      incomplete: result.incomplete,
+      at: new Date().toISOString(),
+    });
+    persistDisk();
     res.json(result);
   });
 
@@ -121,6 +141,7 @@ export function registerMediaiRoutes(app: Express): void {
     }
     const merged = mergeIntoGraph(graphFor(patientId), parsed.entries);
     graphs.set(patientId, merged.graph);
+    persistDisk();
     let livePairs: { a: string; b: string; note: string }[] = [];
     if (isRxnavLive() && merged.graph.medications.length >= 2) {
       livePairs = await fetchRxnavInteractions(
@@ -189,6 +210,7 @@ export function registerMediaiRoutes(app: Express): void {
         differential: req.body?.differential ?? [],
       });
       briefs.set(brief.id, brief);
+      persistDisk();
       res.json(brief);
     } catch {
       res.status(422).json({ error: "unsourced_claim" });
@@ -205,6 +227,7 @@ export function registerMediaiRoutes(app: Express): void {
     try {
       const next = markReviewed(brief, status, req.body?.note);
       briefs.set(next.id, next);
+      persistDisk();
       res.json(next);
     } catch {
       res.status(422).json({ error: "unsourced_claim" });
@@ -217,6 +240,7 @@ export function registerMediaiRoutes(app: Express): void {
     try {
       const next = correctBrief(brief, req.body?.fragments ?? brief.patientWords);
       briefs.set(next.id, next);
+      persistDisk();
       res.json(next);
     } catch {
       res.status(422).json({ error: "unsourced_claim" });

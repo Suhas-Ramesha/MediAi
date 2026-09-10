@@ -115,3 +115,21 @@ export function takeStashedHandoff(): { fragments: string[]; medications: string
   localStorage.removeItem(HANDOFF_FRAGMENTS_KEY);
   return { fragments, medications };
 }
+
+const LS_CHAT = "mediai.chatSession";
+
+export function persistChatSession(consultationId: string, messages: unknown[]): void {
+  writeLs(LS_CHAT, { consultationId, messages });
+}
+
+export function restoreChatSession(): {
+  consultationId: string;
+  messages: unknown[];
+} | null {
+  const raw = readLs<{ consultationId?: string; messages?: unknown[] } | null>(
+    LS_CHAT,
+    null,
+  );
+  if (!raw?.consultationId || !Array.isArray(raw.messages)) return null;
+  return { consultationId: raw.consultationId, messages: raw.messages };
+}

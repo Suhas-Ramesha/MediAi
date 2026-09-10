@@ -113,6 +113,21 @@ export const COLLOQUIAL_LEXICON: ColloquialMapping[] = [
     clinical: "loss of appetite",
     patterns: [/\bno appetite\b/i, /\bcan(?:not|'t) eat\b/i],
   },
+  {
+    id: "chest_pain",
+    clinical: "chest pain",
+    patterns: [
+      /\bpain in (?:my )?chest\b/i,
+      /\bchest is tight\b/i,
+      /\btight chest\b/i,
+      /\bpressure in (?:my )?chest\b/i,
+    ],
+  },
+  {
+    id: "dizziness",
+    clinical: "dizziness",
+    patterns: [/\blight[ -]?headed\b/i, /\broom is spinning\b/i, /\bwoozy\b/i],
+  },
 ];
 
 export interface AppliedMapping {

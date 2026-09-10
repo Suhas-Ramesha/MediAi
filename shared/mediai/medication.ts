@@ -140,6 +140,16 @@ const DRUG_HINT = /\b(\d+\s?(mg|mcg|g|iu|ml)|tablet|capsule|syrup|injection)\b/i
 const LOOKS_LIKE_STEM =
   /(cillin|mycin|pril|sartan|statin|olol|azepam|formin|dronate|gliptin|prazole|coxib)$/i;
 
+/** Calendar / English tokens that share a stem with real INNs (april ~ -pril). */
+const NER_STOP = new Set([
+  "april", "march", "june", "july", "august", "since", "started", "taking",
+  "tablet", "tablets", "capsule", "morning", "night", "today", "yesterday",
+  "about", "after", "before", "could", "would", "should", "there", "their",
+  "have", "been", "this", "that", "with", "from", "pain", "fever", "cough",
+  "throat", "chest", "water", "blood", "pressure", "doctor", "clinic",
+  "something", "nothing", "anything", "information", "condition",
+]);
+
 /** NER over free text. Tokens without a CUI stay unmatched (incomplete). */
 export function extractDrugMentionsFromText(text: string): {
   raw: string;
@@ -151,11 +161,20 @@ export function extractDrugMentionsFromText(text: string): {
   const consider = (raw: string) => {
     const key = raw.toLowerCase();
     if (seen.has(key)) return;
+    if (/^\d+\s?(mg|mcg|g|iu|ml)$/i.test(raw)) return;
+    const parts = raw.split(/\s+/).map((p) => p.toLowerCase());
     const hit = normalizeDrugName(raw);
-    if (!hit && raw.length < 5) return;
-    if (!hit && !LOOKS_LIKE_STEM.test(raw) && !DRUG_HINT.test(raw)) return;
+    if (hit) {
+      seen.add(key);
+      mentions.push({ raw, hit });
+      return;
+    }
+    if (parts.length > 1) return;
+    if (NER_STOP.has(key)) return;
+    if (raw.length < 5) return;
+    if (!LOOKS_LIKE_STEM.test(raw) && !DRUG_HINT.test(raw)) return;
     seen.add(key);
-    mentions.push({ raw, hit });
+    mentions.push({ raw, hit: null });
   };
   for (let i = 0; i < tokens.length; i++) {
     consider(tokens[i]);

@@ -11,7 +11,13 @@ import {
   type AuditResult,
   type SafetyGraph,
 } from "./medication.ts";
-import { lookupLocal, type RxNormHit } from "./rxnorm.ts";
+import {
+  fetchRxnavInteractions,
+  lookupLocal,
+  resolveDrug,
+  type RxNormHit,
+} from "./rxnorm.ts";
+import { isRxnavLive } from "./types.ts";
 import { verifyClaims, type ClaimVerdict } from "./verifier.ts";
 
 export interface ChatEngineResult {
@@ -37,6 +43,25 @@ export function emptySafetyGraph(patientId: string, allergies: string[] = []): S
   };
 }
 
+function hitFor(
+  raw: string,
+  extractedHit: ReturnType<typeof lookupLocal>,
+  extraHits?: Record<string, RxNormHit>,
+): RxNormHit | null {
+  if (extractedHit) return extractedHit;
+  const local = lookupLocal(raw);
+  if (local) return local;
+  const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const first = raw.split(/\s+/)[0]?.toLowerCase() ?? "";
+  return (
+    extraHits?.[key] ??
+    extraHits?.[raw.toLowerCase()] ??
+    extraHits?.[first] ??
+    extraHits?.[first.replace(/[^a-z0-9]/g, "")] ??
+    null
+  );
+}
+
 export function analyzeChatTurn(input: {
   userText: string;
   assistantText: string;
@@ -45,6 +70,7 @@ export function analyzeChatTurn(input: {
   appointmentDaysOut?: number;
   doctorId?: string;
   startedOn?: string;
+  extraHits?: Record<string, RxNormHit>;
 }): ChatEngineResult {
   const evidence = (input.evidence ?? [input.userText]).filter((e) => e.trim());
   const verdicts = verifyClaims(input.assistantText, evidence);
@@ -55,11 +81,14 @@ export function analyzeChatTurn(input: {
 
   const combined = `${input.userText}\n${input.assistantText}`;
   const extracted = extractDrugMentionsFromText(combined);
-  const mentions = extracted.map((m) => ({
-    raw: m.raw,
-    rxcui: m.hit?.rxcui ?? lookupLocal(m.raw)?.rxcui ?? null,
-    generic: m.hit?.generic ?? lookupLocal(m.raw)?.generic ?? null,
-  }));
+  const mentions = extracted.map((m) => {
+    const hit = hitFor(m.raw, m.hit as RxNormHit | null, input.extraHits);
+    return {
+      raw: m.raw,
+      rxcui: hit?.rxcui ?? null,
+      generic: hit?.generic ?? null,
+    };
+  });
 
   let graph = input.graph;
   let audit: AuditResult | null = null;
@@ -99,4 +128,52 @@ export function analyzeChatTurn(input: {
 
 export function hitFromMention(raw: string): RxNormHit | null {
   return lookupLocal(raw);
+}
+
+/**
+ * Same as analyzeChatTurn, then resolve leftover tokens and DDI pairs
+ * through NLM RxNav when the live flag is on.
+ */
+export async function analyzeChatTurnLive(
+  input: Parameters<typeof analyzeChatTurn>[0] & {
+    fetchImpl?: typeof fetch;
+  },
+): Promise<ChatEngineResult> {
+  const fetchImpl = input.fetchImpl ?? fetch;
+  const extraHits: Record<string, RxNormHit> = { ...(input.extraHits ?? {}) };
+
+  if (isRxnavLive()) {
+    const extracted = extractDrugMentionsFromText(
+      `${input.userText}\n${input.assistantText}`,
+    );
+    for (const m of extracted) {
+      if (m.hit || lookupLocal(m.raw) || extraHits[m.raw.toLowerCase()]) continue;
+      const live = await resolveDrug(m.raw, { fetchImpl, liveNetwork: true });
+      if (!live) continue;
+      extraHits[m.raw.toLowerCase()] = live;
+      extraHits[live.generic.replace(/[^a-z0-9]/g, "")] = live;
+    }
+  }
+
+  const result = analyzeChatTurn({ ...input, extraHits });
+
+  if (!isRxnavLive() || result.graph.medications.length < 2) return result;
+
+  const pairs = await fetchRxnavInteractions(
+    result.graph.medications.map((m) => m.rxcui),
+    fetchImpl,
+  );
+  if (!pairs.length) return result;
+
+  const findings = [
+    ...(result.audit?.findings ?? []),
+    ...pairs.map((p) => p.note),
+  ];
+  return {
+    ...result,
+    audit: {
+      status: result.audit?.status === "allergy" ? result.audit.status : "interaction",
+      findings,
+    },
+  };
 }

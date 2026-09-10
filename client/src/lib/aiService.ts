@@ -311,13 +311,13 @@ Please be thorough and precise while explaining in patient-friendly terms.`;
       
       const result = await visionModel.generateContent([prompt, imageData]);
       const response = await result.response;
-      const text = response.text();
+      const text = stripDiagnosisDisclaimer(response.text());
   
       if (!text) {
         throw new Error('Empty response from AI');
       }
   
-      return text.trim();
+      return text;
     } catch (error: any) {
       console.error('Image analysis error:', error);
       throw new Error(`Failed to analyze medical image: ${error.message}`);

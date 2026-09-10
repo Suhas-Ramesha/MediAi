@@ -66,7 +66,7 @@ const features = [
   {
     icon: FileImage,
     title: "Reports and images",
-    body: "Upload a lab report or a photo of an affected area and get a plain-language reading of what the values and visible features suggest.",
+    body: "You can attach a photo of a rash or a printed report as context for the chat. Medicine names are never guessed from pixels — type them, and they resolve to RxNorm or the check stays incomplete.",
     span: "md:col-span-4",
   },
   {

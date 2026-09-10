@@ -33,6 +33,7 @@ ml_service/models/*.pkl
 # ---- Editor / local ----
 .vscode/settings.json
 .breakpoints
+data/mediai-store.json
 
 # ---- Agent design skills ----
 # The skill content is committed so the whole team gets it, but the detector

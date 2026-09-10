@@ -12,6 +12,8 @@ import {
 import { lookupLocal, parseRxnavBody, parseRxnavInteractions, resolveDrug } from "./rxnorm.ts";
 import { applyColloquialMap, assertMappedSourcing } from "./colloquial.ts";
 import { analyzeChatTurn, emptySafetyGraph } from "./chatSafety.ts";
+import { draftEngineReply } from "./engineReply.ts";
+import { decorateText } from "./verifier.ts";
 import {
   assertTranscriptSupport,
   buildHandoffBrief,
@@ -222,6 +224,62 @@ describe("C medication graph", () => {
       graph: emptySafetyGraph("p1"),
     });
     expect(meds.audit?.status).toBe("interaction");
+  });
+
+  it("does not treat calendar words like April as unknown drugs", () => {
+    const r = analyzeChatTurn({
+      userText: "This started in April after a sore throat",
+      assistantText: "You reported a sore throat.",
+      graph: emptySafetyGraph("p1"),
+    });
+    expect(r.mentions.some((m) => /april/i.test(m.raw))).toBe(false);
+    expect(r.incomplete).toBe(false);
+  });
+
+  it("accepts live RxNav hits for unknown stems via extraHits", () => {
+    const r = analyzeChatTurn({
+      userText: "I started xyzmycin 250mg",
+      assistantText: "You started xyzmycin.",
+      graph: emptySafetyGraph("p1"),
+      extraHits: {
+        xyzmycin: {
+          rxcui: "18631",
+          generic: "azithromycin",
+          matchedName: "xyzmycin",
+          source: "rxnav",
+        },
+      },
+    });
+    expect(r.incomplete).toBe(false);
+    expect(r.mentions.some((m) => m.rxcui === "18631")).toBe(true);
+  });
+
+  it("underlines unsupported claim spans and drafts a sourced engine reply", () => {
+    const spans = decorateText(
+      "Fever is common. You definitely have leukaemia.",
+      [
+        {
+          claimId: "c2",
+          text: "You definitely have leukaemia.",
+          status: "unsupported",
+          confidence: 0.8,
+        },
+      ],
+    );
+    expect(spans.some((s) => s.status === "unsupported" && /leukaemia/i.test(s.text))).toBe(
+      true,
+    );
+    const preview = analyzeChatTurn({
+      userText: "sudden chest pain and I take warfarin with ibuprofen",
+      assistantText: "placeholder",
+      graph: emptySafetyGraph("p1"),
+    });
+    const draft = draftEngineReply(
+      "sudden chest pain and I take warfarin with ibuprofen",
+      preview,
+    );
+    expect(draft).toMatch(/chest pain/i);
+    expect(draft).not.toMatch(/This is not a medical diagnosis/i);
   });
 });
 

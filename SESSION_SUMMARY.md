@@ -22,8 +22,8 @@ Hero, trust chips, nav (`Features · How it works · Trust · Risk & simulation 
 `npx vitest run` — 50 tests across:
 
 - `shared/mediai/canvas.test.ts` (A1–A4, including verifier failure not dropping triage/consilium)
-- `shared/mediai/groups.test.ts` (C, D, B, F, E; adversarial: unknown drug, empty brief, unsourced haematuria, negated red flag, penicillin/amoxicillin, noisy OCR raster, colloquial translation)
-- `server/mediaiRoutes.test.ts` (HTTP flows into the same contracts, including OCR 409, doctor 403 until review, waiver, env lag, plan diff)
+- `shared/mediai/groups.test.ts` (C, D, B, F, E; adversarial: unknown drug, empty brief, unsourced haematuria, negated red flag, penicillin/amoxicillin, typed RxNorm ingest, colloquial translation)
+- `server/mediaiRoutes.test.ts` (HTTP flows into the same contracts, including photo-ingest 409, doctor 403 until review, waiver, env lag, plan diff)
 
 `npm run build` is run in this session for the Vite client. Pre-existing `tsc` errors outside `shared/mediai` were not used as a reason to weaken new checks.
 
@@ -32,10 +32,10 @@ Hero, trust chips, nav (`Features · How it works · Trust · Risk & simulation 
 - **Live Gradio/HF risk models on the slider** — not used. Local monotonic surface, labeled as such.
 - **Python DiCE, DoWhy, EconML** — not in this stack. Constrained TS search and TS propensity matching instead.
 - **Live Open-Meteo in the marketing demo** — synthetic lagged series so the demo is reproducible offline.
-- **NLM RxNav network** — client implemented and stub-tested; `liveRxnormNetwork` is false until a human allows egress.
+- **NLM RxNav network** — `liveRxnormNetwork` is on outside Vitest. Chat analyze uses `analyzeChatTurnLive`.
 - **Arbitrary camera JPEG/PDF OCR** — photo ingest was removed. Typed drug names resolve through RxNorm / live RxNav; unknown still incomplete.
 - **Visual regression + Lighthouse CI** — not part of the repo toolchain.
-- **Persistent store** — graphs, briefs, and the outcomes cohort are in-process maps/fixtures.
+- **Persistent store** — signed-in chat uses Firestore `users/{uid}/mediai*` plus localStorage; Express maps dump to `data/mediai-store.json`.
 
 ## Manual demo script (text)
 
@@ -56,7 +56,7 @@ Hero, trust chips, nav (`Features · How it works · Trust · Risk & simulation 
 
 ## Disclaimer vs copy
 
-Footer now states: not a diagnostic device; claim checks, consilium, curves, audits, escalation, and outcome numbers are decision-support prototypes; they do not verify clinical truth; prescription photos are lexicon-constrained OCR that refuse unreadables; colloquial translation is map-sourced; cross-doctor checks cover the local graph plus optional RxNav CUIs; causal numbers are adjusted estimates on sample data; emergencies go to local emergency services.
+Footer now states: not a diagnostic device; claim checks, consilium, curves, audits, escalation, and outcome numbers are decision-support prototypes; they do not verify clinical truth; medicine names are typed RxNorm / RxNav (photos are not guessed into CUIs); colloquial translation is map-sourced; cross-doctor checks cover the local graph plus live RxNav CUIs when available; causal numbers are adjusted estimates on sample data; emergencies go to local emergency services.
 
 ## Human review required before real patient data
 
@@ -64,7 +64,7 @@ Footer now states: not a diagnostic device; claim checks, consilium, curves, aud
 2. Replace lexical entailment with a reviewed NLI stack, or keep it and never present “supported” as clinical truth (current disclaimer).
 3. Independent safety review of D4 (negation handling can hide a real red flag in odd phrasing) and D5 (doctors must not treat the organised brief as complete history).
 4. Wire engines to authenticated persistence, audit logs, and the real chat transcript — not in-memory maps.
-5. Keep OCR's incomplete-on-failure contract if a camera/Tesseract engine is swapped in; measure error rates on a real prescription photo corpus before calling it production-ready. Review `COLLOQUIAL_LEXICON` with a clinician.
+5. Do not re-enable photo→RxCUI without a reviewed corpus and a named clinician. Review `COLLOQUIAL_LEXICON` with a clinician.
 6. Do not attach the local risk surface to treatment decisions; if the Gradio models return, prove monotonicity and latency before swapping them into the slider.
 7. Privacy, consent, and key rotation (see `docs/SECURITY-KEY-ROTATION.md`) before any production patient traffic.
 8. Accessibility and Lighthouse on the new sections in the project's own CI, not only this session's browser pass.

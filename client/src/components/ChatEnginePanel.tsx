@@ -1,6 +1,7 @@
 import type { ChatEngineResult } from "@shared/mediai/chatSafety";
 
 export function ChatEnginePanel({ result }: { result: ChatEngineResult }) {
+  const flagged = result.verdicts.filter((v) => v.status !== "supported");
   return (
     <div className="mt-3 space-y-2 border-t border-border pt-3 text-xs">
       {result.escalation.escalate && (
@@ -19,27 +20,10 @@ export function ChatEnginePanel({ result }: { result: ChatEngineResult }) {
           Medication check: {result.audit.status}. {result.audit.findings[0]}
         </p>
       )}
-      {result.verdicts.length > 0 && (
-        <ul className="space-y-1 text-muted-foreground">
-          {result.verdicts.map((v) => (
-            <li key={v.claimId}>
-              <span
-                className={
-                  v.status === "supported"
-                    ? "text-foreground"
-                    : v.status === "contradicted"
-                      ? "text-destructive underline decoration-wavy"
-                      : "underline decoration-dotted decoration-warning"
-                }
-              >
-                {v.text.length > 140 ? `${v.text.slice(0, 137)}…` : v.text}
-              </span>
-              <span className="ml-1 uppercase tracking-wide">
-                {v.status}
-              </span>
-            </li>
-          ))}
-        </ul>
+      {flagged.length > 0 && (
+        <p className="text-muted-foreground">
+          Dotted underline = not supported by your words. Wavy = contradicted.
+        </p>
       )}
     </div>
   );
