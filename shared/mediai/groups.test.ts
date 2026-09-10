@@ -18,6 +18,7 @@ import {
   assertTranscriptSupport,
   buildHandoffBrief,
   comePrepared,
+  collapseRepeatedSpeech,
   correctBrief,
   doctorMayView,
   markReviewed,
@@ -435,6 +436,42 @@ describe("D intake", () => {
     expect(specialtyGuard("itchy spots on both arms", "dermatology").mismatch).toBe(
       false,
     );
+    expect(specialtyGuard("sudden chest pain and palpitations", "family medicine").mismatch).toBe(
+      true,
+    );
+    expect(specialtyGuard("sudden chest pain", "Cardiologist").mismatch).toBe(false);
+  });
+
+  it("phrases a brief instead of dumping repeated chat and ranks from the transcript", () => {
+    const fever = buildHandoffBrief({
+      fragments: [
+        "I think I have a fever. What do you think about it?",
+        "I think I have a fever. What do you think about it?",
+        "i have a fever ig",
+      ],
+      medications: [],
+    });
+    expect(fever.patientWords.length).toBeLessThan(3);
+    expect(fever.synthesis).toMatch(/patient reports: fever/i);
+    expect(fever.synthesis).not.toMatch(/what do you think about it/i);
+    expect(fever.triageSnapshot).not.toMatch(/Ranking, not a diagnosis/);
+    expect(fever.differential[0].condition).not.toBe("migraine");
+    const headache = buildHandoffBrief({
+      fragments: ["I have a pounding headache and light hurts"],
+      medications: [],
+    });
+    expect(headache.differential[0].condition).toMatch(/migraine|tension_headache/);
+    expect(headache.differential[0].probability).not.toEqual(
+      fever.differential[0].probability,
+    );
+    expect(comePrepared("sudden chest pain this morning").guideline).toMatch(/chest pain/i);
+  });
+
+  it("collapses doubled speech transcripts", () => {
+    const once =
+      "So I visited a doctor for headache. He prescribed me ibuprofen. I think I also have a chest pain.";
+    const twice = `${once} ${once}`;
+    expect(collapseRepeatedSpeech(twice)).toBe(once);
   });
 });
 

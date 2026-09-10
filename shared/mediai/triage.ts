@@ -282,6 +282,42 @@ export function asDistribution(
   })).sort((a, b) => b.probability - a.probability);
 }
 
+const TRANSCRIPT_CUES: { id: string; yes: RegExp; no?: RegExp }[] = [
+  { id: "fever", yes: /\bfever\b|\btemp(?:erature)?\b|\bchills?\b|\bburning up\b|\bfeverish\b/i },
+  { id: "sore_throat", yes: /\bsore throat\b|\bthroat(?:'s| is) killing\b|\braw throat\b|\bscratchy throat\b/i },
+  { id: "cough", yes: /\bcough(?:ing)?\b|\bhacking\b/i },
+  { id: "dyspnea", yes: /\bshort of breath\b|\btrouble breathing\b|\bcan't breathe\b|\bdyspnea\b|\bwinded\b/i },
+  { id: "headache", yes: /\bheadache\b|\bhead(?:'s| is) pounding\b|\bmigraine\b/i },
+  { id: "photophobia", yes: /\bphotophobia\b|\blight (?:hurt|hurts|makes)\b|\bcan't look at lights\b/i },
+  { id: "dysuria", yes: /\bdysuria\b|\bburning when (?:i )?(?:pee|pass)\b|\bburn(?:ing)? (?:on )?(?:urination|urine)\b/i },
+  { id: "reflux", yes: /\bheartburn\b|\breflux\b|\bburning in the chest after\b|\bgerd\b/i },
+  { id: "vomiting", yes: /\bvomit(?:ing)?\b|\bthrowing up\b|\bpuking\b/i },
+  { id: "diarrhea", yes: /\bdiarrhea\b|\bthe runs\b|\bloose stools?\b/i },
+  { id: "rash", yes: /\brash\b|\bitchy spots?\b/i },
+  { id: "neck_stiffness", yes: /\bstiff neck\b|\bneck stiffness\b/i },
+];
+
+function negatedCue(text: string, matchIndex: number): boolean {
+  const window = text.slice(Math.max(0, matchIndex - 28), matchIndex);
+  return /\bno\b|\bnot\b|\bdenies\b|\bwithout\b|\bn't\b|\bnever\b/.test(window);
+}
+
+/** Map free-text chat onto the Bayes question set. Unknown stays unknown. */
+export function answersFromTranscript(text: string): Record<string, AnswerValue> {
+  const answers: Record<string, AnswerValue> = {};
+  for (const cue of TRANSCRIPT_CUES) {
+    const m = cue.yes.exec(text);
+    if (!m || m.index == null) continue;
+    answers[cue.id] = negatedCue(text, m.index) ? "no" : "yes";
+  }
+  return answers;
+}
+
+export function inferTriageFromTranscript(text: string): ConditionProbability[] {
+  const answers = answersFromTranscript(text);
+  return asDistribution(posterior(uniformPrior(), answers));
+}
+
 export interface RankedQuestion {
   question: Question;
   informationGain: number;

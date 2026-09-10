@@ -22,6 +22,8 @@ export interface Message {
   translatedContent?: string;
   showEnglish?: boolean;
   engine?: import("@shared/mediai/chatSafety").ChatEngineResult;
+  /** Ask whether to create a visit brief before slots. */
+  briefPrompt?: boolean;
 }
 
 export interface Consultation {

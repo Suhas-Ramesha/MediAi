@@ -8,6 +8,7 @@ import { addDoc, collection, doc, getDoc, setDoc } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import type { HandoffBrief } from "@shared/mediai/intake";
+import { dedupePatientFragments } from "@shared/mediai/intake";
 import type { ChatEngineResult } from "@shared/mediai/chatSafety";
 import { emptySafetyGraph } from "@shared/mediai/chatSafety";
 import type { SafetyGraph } from "@shared/mediai/medication";
@@ -17,6 +18,7 @@ const LS_AUDITS = "mediai.engineAudits";
 const LS_BRIEFS = "mediai.briefs";
 export const HANDOFF_FRAGMENTS_KEY = "mediai.handoff.fragments";
 export const HANDOFF_MEDS_KEY = "mediai.handoff.medications";
+export const PENDING_BOOK_KEY = "mediai.pendingSlotBook";
 
 function readLs<T>(key: string, fallback: T): T {
   try {
@@ -104,7 +106,7 @@ export async function saveBrief(uid: string | null, brief: HandoffBrief): Promis
 }
 
 export function stashHandoffFromChat(userLines: string[], medications: string[]): void {
-  writeLs(HANDOFF_FRAGMENTS_KEY, userLines);
+  writeLs(HANDOFF_FRAGMENTS_KEY, dedupePatientFragments(userLines));
   writeLs(HANDOFF_MEDS_KEY, medications);
 }
 
@@ -114,6 +116,39 @@ export function takeStashedHandoff(): { fragments: string[]; medications: string
   if (!fragments?.length) return null;
   localStorage.removeItem(HANDOFF_FRAGMENTS_KEY);
   return { fragments, medications };
+}
+
+export function loadBriefsLocal(): HandoffBrief[] {
+  return readLs<HandoffBrief[]>(LS_BRIEFS, []);
+}
+
+export function loadAuditsLocal(): Array<{
+  userText?: string;
+  assistantText?: string;
+  result?: ChatEngineResult;
+  at?: string;
+}> {
+  return readLs(LS_AUDITS, []);
+}
+
+export type PendingSlotBook = {
+  doctor: unknown;
+  afterBrief: boolean;
+};
+
+export function stashPendingSlotBook(payload: PendingSlotBook): void {
+  writeLs(PENDING_BOOK_KEY, payload);
+}
+
+export function takePendingSlotBook(): PendingSlotBook | null {
+  const v = readLs<PendingSlotBook | null>(PENDING_BOOK_KEY, null);
+  if (!v) return null;
+  localStorage.removeItem(PENDING_BOOK_KEY);
+  return v;
+}
+
+export function peekPendingSlotBook(): PendingSlotBook | null {
+  return readLs<PendingSlotBook | null>(PENDING_BOOK_KEY, null);
 }
 
 const LS_CHAT = "mediai.chatSession";

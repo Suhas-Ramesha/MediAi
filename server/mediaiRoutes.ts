@@ -15,6 +15,8 @@ import {
   type HandoffBrief,
 } from "../shared/mediai/intake.ts";
 import { isRxnavLive } from "../shared/mediai/types.ts";
+import { generateBriefPhrase } from "./gemini.ts";
+import { applyColloquialMap, assertMappedSourcing } from "../shared/mediai/colloquial.ts";
 import { analyzeChatTurnLive } from "../shared/mediai/chatSafety.ts";
 import { fetchRxnavInteractions, resolveDrug } from "../shared/mediai/rxnorm.ts";
 import {
@@ -202,6 +204,28 @@ export function registerMediaiRoutes(app: Express): void {
     );
   });
 
+  app.post("/api/mediai/handoff/phrase", async (req: Request, res: Response) => {
+    const words = (req.body?.patientWords ?? []) as string[];
+    const draft = String(req.body?.engineDraft ?? "");
+    const mappings = (req.body?.mappings ?? []) as string[];
+    if (!words.length || !draft) {
+      return res.status(400).json({ error: "missing_source" });
+    }
+    try {
+      const text = await generateBriefPhrase({
+        patientWords: words,
+        engineDraft: draft,
+        mappings,
+      });
+      const applied = words.flatMap((w) => applyColloquialMap(w).mappings);
+      assertMappedSourcing(text, words, applied);
+      res.json({ synthesis: text, source: "gemini" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "phrase_failed";
+      res.status(422).json({ error: message, synthesis: draft, source: "engine" });
+    }
+  });
+
   app.post("/api/mediai/handoff", (req: Request, res: Response) => {
     try {
       const brief = buildHandoffBrief({
@@ -283,7 +307,12 @@ export function registerMediaiRoutes(app: Express): void {
     const doctorId = req.query.doctorId ? String(req.query.doctorId) : undefined;
     const rate = day7Rate(DEMO_COHORT, doctorId);
     const effect = matchedEffect(DEMO_COHORT, "drugA");
-    res.json({ day7: rate, effect });
+    res.json({
+      day7: rate,
+      effect,
+      synthetic: true,
+      note: "Warehouse cohort is a published matching demo, not this patient's chart.",
+    });
   });
 
   app.post("/api/mediai/outcomes/diff", (req: Request, res: Response) => {

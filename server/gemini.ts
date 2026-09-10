@@ -143,6 +143,34 @@ Keep it concise but complete and easy to scan.`;
     .trim();
 }
 
+const BRIEF_PHRASE_INSTRUCTIONS = `You rewrite a patient visit brief. Rules:
+- Use ONLY facts present in the patient's words or the provided mapping list.
+- Do not diagnose. Do not add symptoms, medicines, or times that are not in the source.
+- Deduplicate repeated sentences. Do not paste the chat verbatim.
+- Write 3-6 short clinical sentences: timeline, named medicines, red-flag phrases if present.
+- Prefer the mapped clinical terms (fever, vomiting) over slang, but do not invent extra terms.
+- If something is unclear, omit it rather than guess.`;
+
+export async function generateBriefPhrase(input: {
+  patientWords: string[];
+  engineDraft: string;
+  mappings: string[];
+}): Promise<string> {
+  const prompt = `${BRIEF_PHRASE_INSTRUCTIONS}
+
+Patient words:
+${input.patientWords.map((w, i) => `${i + 1}. ${w}`).join("\n")}
+
+Engine draft (may be used as a scaffold, not copied blindly):
+${input.engineDraft}
+
+Allowed mapped terms:
+${input.mappings.join(", ") || "(none)"}
+
+Write the synthesis now.`;
+  return generateContent([{ text: prompt }], BRIEF_PHRASE_INSTRUCTIONS);
+}
+
 export async function generateImageAnalysis(
   userPrompt: string,
   mimeType: string,

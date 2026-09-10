@@ -25,11 +25,10 @@ export const isAuthenticated = (): boolean => {
   return !!getAuthToken();
 };
 
-/** Result of {@link fetchDoctors}; includes fallback metadata when the specialty filter matched nobody. */
+/** Result of {@link fetchDoctors}. Empty list with specialtyMiss means do not book a different specialty. */
 export interface FetchDoctorsResult {
   doctors: any[];
-  /** True when a specialty was requested, the filtered list was empty, and the unfiltered list was used instead. */
-  specialtyFallback?: boolean;
+  specialtyMiss?: boolean;
   attemptedSpecialty?: string;
 }
 
@@ -68,24 +67,28 @@ async function fetchDoctorsOnce(specialty?: string): Promise<any[]> {
 }
 
 /**
- * Fetches doctors. If a specialty hint is set but the directory has no matching doctors
- * (common after risk flow: e.g. "Hepatologist" while only "Cardiologist" exists), retries
- * without the filter so the first booking attempt still shows a list.
+ * Fetches doctors for a specialty. Does not silently substitute an unrelated list
+ * when the directory has nobody in that specialty.
  */
-export const fetchDoctors = async (specialty?: string): Promise<FetchDoctorsResult> => {
-  const spec = specialty?.trim() || undefined;
-  console.log(`Fetching REAL doctors... Specialty: ${spec ?? "(none)"}`);
+export const fetchDoctors = async (
+  specialty?: string | string[],
+): Promise<FetchDoctorsResult> => {
+  const queries = (Array.isArray(specialty) ? specialty : [specialty])
+    .map((s) => s?.trim())
+    .filter((s): s is string => Boolean(s));
+  console.log(`Fetching REAL doctors... Specialty: ${queries.join(" | ") || "(none)"}`);
   try {
-    if (spec) {
-      const filtered = await fetchDoctorsOnce(spec);
-      if (filtered.length > 0) {
-        return { doctors: filtered };
+    if (queries.length) {
+      for (const spec of queries) {
+        const filtered = await fetchDoctorsOnce(spec);
+        if (filtered.length > 0) {
+          return { doctors: filtered, attemptedSpecialty: spec };
+        }
       }
-      const all = await fetchDoctorsOnce(undefined);
       return {
-        doctors: all,
-        specialtyFallback: all.length > 0,
-        attemptedSpecialty: spec,
+        doctors: [],
+        specialtyMiss: true,
+        attemptedSpecialty: queries[0],
       };
     }
     const all = await fetchDoctorsOnce(undefined);
