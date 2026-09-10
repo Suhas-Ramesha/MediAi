@@ -9,7 +9,8 @@ export type ConditionId =
   | "tension_headache"
   | "gerd"
   | "uti"
-  | "covid";
+  | "covid"
+  | "gastroenteritis";
 
 export type AnswerValue = "yes" | "no" | "unknown";
 
@@ -60,16 +61,19 @@ export type CanvasEvent =
     };
 
 export const FEATURE_FLAGS = {
-  /**
-   * Reviewed OCR pipeline is on. Unreadable pixels and tokens that do not
-   * resolve to RxNorm still return incomplete; they are never guessed.
-   */
-  liveOcr: true,
-  /** NLM RxNav network lookup. Off in unit tests; ingest may enable it. */
-  liveRxnormNetwork: false,
+  /** Photo-to-drug OCR is removed. Typed names still resolve through RxNorm. */
+  liveOcr: false,
+  /** NLM RxNav network lookup. Unit tests stub fetch and skip live egress. */
+  liveRxnormNetwork: true,
   /** Live Gradio models are not used for the slider projection. */
   liveMlForSimulator: false,
 } as const;
+
+/** Vitest sets VITEST=true; live NIH calls would flake the suite. */
+export function isRxnavLive(): boolean {
+  if (typeof process !== "undefined" && process.env?.VITEST) return false;
+  return FEATURE_FLAGS.liveRxnormNetwork;
+}
 
 export function entropy(probs: number[]): number {
   return probs.reduce((h, p) => {

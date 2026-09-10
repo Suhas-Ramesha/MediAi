@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { stripDiagnosisDisclaimer } from './disclaimer';
 
 function getGenAI(): GoogleGenerativeAI {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -127,10 +128,7 @@ Structured triage format (use ONLY for symptom or guidance replies):
 - 1-2 focused triage questions
 
 **When to seek urgent care**
-- 2-4 red-flag bullets
-
-Always end your reply with this exact sentence on its own line:
-"This is not a medical diagnosis. Please consult a certified doctor for professional advice."`;
+- 2-4 red-flag bullets`;
 
 const buildHealthPrompt = (message: string): string => `${HEALTH_CHAT_INSTRUCTIONS}
 
@@ -171,7 +169,9 @@ export const medicalChatService = {
         throw new Error('Empty response from AI');
       }
 
-      const finalText = await maybeExpandShortSymptomReply(model, message, text.trim());
+      const finalText = stripDiagnosisDisclaimer(
+        await maybeExpandShortSymptomReply(model, message, text.trim()),
+      );
 
       return {
         id: Date.now().toString(),
@@ -226,7 +226,9 @@ export const medicalChatService = {
         if (!fallbackText) {
           throw new Error('Empty response from AI');
         }
-        const finalFallback = await maybeExpandShortSymptomReply(model, message, fallbackText);
+        const finalFallback = stripDiagnosisDisclaimer(
+          await maybeExpandShortSymptomReply(model, message, fallbackText),
+        );
         return {
           id: Date.now().toString(),
           role: 'assistant',
@@ -235,7 +237,9 @@ export const medicalChatService = {
         };
       }
 
-      const finalStreamed = await maybeExpandShortSymptomReply(model, message, fullText.trim());
+      const finalStreamed = stripDiagnosisDisclaimer(
+        await maybeExpandShortSymptomReply(model, message, fullText.trim()),
+      );
 
       return {
         id: Date.now().toString(),

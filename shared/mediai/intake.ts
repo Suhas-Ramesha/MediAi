@@ -127,27 +127,47 @@ export const RED_FLAGS = [
   "short of breath",
   "chest pain",
   "crushing chest",
+  "pain radiating to the arm",
+  "pain in the jaw",
   "anaphyla",
   "tongue swelling",
+  "throat closing",
   "stiff neck",
+  "neck stiffness",
+  "photophobia",
+  "can't look at lights",
   "worst headache",
+  "sudden worst headache",
   "suicidal",
   "kill myself",
+  "want to die",
   "stroke",
   "face droop",
   "arm weakness",
+  "one-sided weakness",
+  "slurred speech",
   "uncontrolled bleeding",
   "coughing blood",
   "vomiting blood",
+  "black stools",
+  "blood in stool",
   "seizure",
   "blue lips",
+  "unresponsive",
+  "passed out",
+  "fainted",
+  "confused",
+  "purple rash",
+  "non-blanching rash",
 ];
 
 export const ESCALATION_DAYS = 3;
 
 function isNegatedAt(text: string, index: number): boolean {
-  const window = text.slice(Math.max(0, index - 18), index);
-  return /\bno\b|\bnot\b|\bdenies\b|\bwithout\b|\bn't\b/.test(window);
+  const window = text.slice(Math.max(0, index - 28), index);
+  return /\bno\b|\bnot\b|\bdenies\b|\bwithout\b|\bn't\b|\bnever\b|\babsent\b/.test(
+    window,
+  );
 }
 
 export function waitingWindowEscalation(input: {

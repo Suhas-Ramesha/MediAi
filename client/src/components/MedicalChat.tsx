@@ -24,6 +24,17 @@ import {
   arrayUnion
 } from 'firebase/firestore';
 import { medicalChatService, medicalAnalysisService } from "@/lib/aiService";
+import { stripDiagnosisDisclaimer } from "@/lib/disclaimer";
+import {
+  appendAudit,
+  loadGraph,
+  saveGraph,
+  stashHandoffFromChat,
+} from "@/lib/engineStore";
+import { analyzeChatTurn, emptySafetyGraph } from "@shared/mediai/chatSafety";
+import type { SafetyGraph } from "@shared/mediai/medication";
+import { ChatEnginePanel } from "@/components/ChatEnginePanel";
+import { useLocation } from "wouter";
 import * as AppointmentService from '@/lib/appointmentService';
 import AppointmentLoginModal from './AppointmentLoginModal';
 import { RiskAssessmentModal } from "./RiskAssessmentModal";
@@ -136,7 +147,11 @@ interface MedicalChatProps {
 
 export default function MedicalChat({ selectedConsultation }: MedicalChatProps) {
   const { toast } = useToast();
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
+  const [, setLocation] = useLocation();
+  const [safetyGraph, setSafetyGraph] = useState<SafetyGraph>(() =>
+    emptySafetyGraph("anon"),
+  );
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -174,6 +189,15 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    const allergies = String(userProfile?.allergies ?? "")
+      .split(/[,;/]/)
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    const pid = currentUser?.uid ?? "anon";
+    void loadGraph(currentUser?.uid ?? null, pid, allergies).then(setSafetyGraph);
+  }, [currentUser?.uid, userProfile?.allergies]);
 
   // Update messages when selectedConsultation changes
   useEffect(() => {
@@ -555,10 +579,9 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       });
       
       // Keep structure markers (**bold**, bullets, line breaks) for easier reading in UI.
-      let cleanContent = response.content
-        .replace(/\r\n/g, '\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
+      let cleanContent = stripDiagnosisDisclaimer(
+        response.content.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim(),
+      );
 
       // Avoid repetitive greeting on every turn; keep greeting mostly for first assistant turn.
       if (priorUserMessageCount > 0) {
@@ -596,13 +619,31 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       
       console.log("[Text Response] AI Content:", cleanContent, "| Suggests Booking:", suggestsBooking);
 
+      const engine = analyzeChatTurn({
+        userText: text,
+        assistantText: cleanContent,
+        graph: safetyGraph,
+        evidence: [text],
+        doctorId: "chat",
+      });
+      setSafetyGraph(engine.graph);
+      void saveGraph(currentUser?.uid ?? null, engine.graph);
+      void appendAudit(currentUser?.uid ?? null, {
+        consultationId: consultationId,
+        userText: text,
+        assistantText: cleanContent,
+        result: engine,
+        at: new Date().toISOString(),
+      });
+
       const aiMessage: Message = {
         ...response,
         id: aiMessageId,
         content: cleanContent,
         timestamp: new Date(),
         isLoading: false,
-        suggestsBooking: suggestsBooking
+        suggestsBooking: suggestsBooking,
+        engine,
       };
 
       // Add AI message to consultation
@@ -1301,7 +1342,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       id: `a-gen-prompt-${Date.now()}`,
       role: "assistant",
       content:
-        "Please describe your problem or symptoms.\n\nThis is not a medical diagnosis. Please consult a certified doctor for professional advice.",
+        "Please describe your problem or symptoms.",
       timestamp: new Date(),
       suggestsBooking: false,
     };
@@ -1347,7 +1388,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     const spec = DISEASE_SPECIALIST[disease];
     const summaryBlock = (riskSummary && riskSummary.trim()) || band;
 
-    return `Your estimated risk for ${title} is ${percent}%.\n\nWhat this means (in plain terms):\n${summaryBlock}\n\nKey contributing factors:\n${factorLines}\n\nGeneral ideas that support wellness:\n${prev}\n\nWould you like to consult a specialist? A ${spec} can review your situation in person.\n\nThis is not a medical diagnosis. Please consult a certified doctor for professional advice.`;
+    return `Your estimated risk for ${title} is ${percent}%.\n\nWhat this means (in plain terms):\n${summaryBlock}\n\nKey contributing factors:\n${factorLines}\n\nGeneral ideas that support wellness:\n${prev}\n\nWould you like to consult a specialist? A ${spec} can review your situation in person.`;
   };
 
   const handleRiskFormSubmit = async (payload: Record<string, number | string>) => {
@@ -1365,7 +1406,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           role: "assistant",
           content: `Kidney risk scoring is not connected yet, so we cannot show a percentage. Your entries were noted for when the model is ready.\n\n${preventionTips(
             "kidney",
-          )}\n\nWould you like to consult a specialist? A ${DISEASE_SPECIALIST.kidney} can help with kidney-related questions.\n\nThis is not a medical diagnosis. Please consult a certified doctor for professional advice.`,
+          )}\n\nWould you like to consult a specialist? A ${DISEASE_SPECIALIST.kidney} can help with kidney-related questions.`,
           timestamp: new Date(),
           suggestsBooking: true,
         };
@@ -1444,15 +1485,50 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         <h2 className="text-base font-semibold tracking-tight">
           Medical assistant
         </h2>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleNewChat}
-          className="flex items-center gap-2"
-        >
-          <PlusCircle className="h-4 w-4" />
-          New session
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const lines = messages
+                .filter((m) => m.role === "user")
+                .map((m) => m.content.trim())
+                .filter(Boolean);
+              if (!lines.length) {
+                toast({
+                  title: "No patient words yet",
+                  description: "Send a symptom message first.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              const meds = [
+                ...new Set(
+                  messages.flatMap((m) =>
+                    (m.engine?.mentions ?? [])
+                      .filter((x) => x.generic)
+                      .map((x) => x.generic as string),
+                  ),
+                ),
+              ];
+              stashHandoffFromChat(lines, meds);
+              setLocation("/handoff-review");
+            }}
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Send to doctor brief
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleNewChat}
+            className="flex items-center gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            New session
+          </Button>
+        </div>
       </div>
       <div className="relative flex-1 overflow-hidden bg-muted/20">
         {/* Chat Messages */}
@@ -1510,7 +1586,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                         {msg.imagePrompt || 'Please analyze this medical image.'}
                       </p>
                     ) : msg.role === "assistant" ? (
-                      renderAssistantText(msg.content)
+                      <>
+                        {renderAssistantText(msg.content)}
+                        {msg.engine && <ChatEnginePanel result={msg.engine} />}
+                      </>
                     ) : (
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     )}

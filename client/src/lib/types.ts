@@ -18,9 +18,10 @@ export interface Message {
   suggestsBooking?: boolean;
   appointmentId?: string; // ID of the appointment if this message is related to an appointment
   isAppointmentUpdate?: boolean; // Flag to indicate if this message is an appointment status update
-  englishContent?: string; // Original English content from AI
-  translatedContent?: string; // Translated content from AI
-  showEnglish?: boolean; // Flag to determine which language to display for AI messages
+  englishContent?: string;
+  translatedContent?: string;
+  showEnglish?: boolean;
+  engine?: import("@shared/mediai/chatSafety").ChatEngineResult;
 }
 
 export interface Consultation {

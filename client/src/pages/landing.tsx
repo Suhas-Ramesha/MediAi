@@ -575,13 +575,11 @@ export default function Landing() {
             Your medication history, actually complete.
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Photograph a prescription from any doctor and MediAI adds it to one
-            reconciled record, checked against your full history, allergies, and
-            organ function, not just what one clinic prescribed. OCR plus medical
-            NER only keeps names that resolve to a RxNorm CUI. An unreadable photo
-            is refused, not guessed into a medication list. When a new symptom
-            shows up, it checks whether something you started recently could be
-            the cause, even weeks later.
+            Tell MediAI the medicines from each doctor, by name. It reconciles
+            brand and generic onto one RxNorm ID, then checks the full list
+            against allergies and known interactions. Unknown names return
+            incomplete, not a silent all-clear. When a new symptom shows up, it
+            checks whether something you started recently could be the cause.
           </p>
         </Reveal>
         <RevealGroup className="mt-10 grid gap-4 md:grid-cols-2">
@@ -769,15 +767,12 @@ export default function Landing() {
               escalation flags, and outcome estimates are decision-support
               prototypes. They do not verify clinical truth, do not replace a
               qualified clinician, and must not be used as the sole basis for
-              starting, stopping, or combining medicines. Prescription photos
-              are read by a lexicon-constrained OCR pipeline: unresolved or
-              unreadable images return incomplete, never a guessed drug.
-              Colloquial wording is translated only through a sourced phrase
-              map. Cross-doctor safety checks only cover drugs in the local
-              graph plus optional RxNav CUIs. Causal outcome numbers are
-              adjusted estimates on sample data, not proof that a treatment
-              works. In an emergency, contact your local emergency number
-              immediately.
+              starting, stopping, or combining medicines. Colloquial wording is
+              translated only through a sourced phrase map. Cross-doctor safety
+              checks cover the local graph plus live RxNav CUIs when available.
+              Causal outcome numbers are adjusted estimates on sample data, not
+              proof that a treatment works. In an emergency, contact your local
+              emergency number immediately.
             </p>
           </Reveal>
 

@@ -9,8 +9,8 @@ Deterministic engines live in `shared/mediai/` and are served from `server/media
 | Group | What shipped | Frontend surface |
 | --- | --- | --- |
 | A Reasoning Canvas | Information-gain triage, claim verifier (empty evidence flags all), four-persona consilium with mandatory skeptic objection, unified event stream with partial-failure isolation | Section 2 live canvas (claim underlines, probability bars, Show reasoning with all four personas). Section 4 consilium convergence diagram |
-| C Medication graph | RxNorm CUIs, brand/generic merge, cross-doctor interaction audit, SIDER-window side-effect watch, penicillin-class allergy, unknown-drug `incomplete`, reviewed OCR+NER (unreadables → incomplete) | Section 5 connected copy + cross-doctor audit + photographed-label OCR demo |
-| D Intake | Timeline reconstruction, specialty guard, come-prepared, red-flag escalation, sourced handoff brief with colloquial→clinical map and patient review/waiver gate | Section 3 card copy; `/handoff-review` patient gate |
+| C Medication graph | RxNorm CUIs, brand/generic merge, cross-doctor interaction audit (ONC high-priority subset + live RxNav), SIDER-window side-effect watch, allergy classes, unknown-drug `incomplete` | Section 5 connected copy + cross-doctor audit |
+| D Intake | Timeline reconstruction, specialty guard, come-prepared, red-flag escalation, sourced handoff brief with colloquial→clinical map, chat→brief one-click, patient review/waiver gate | Section 3 card copy; `/handoff-review`; Dashboard **Send to doctor brief** |
 | B Risk simulator | Monotonic local projection, &lt;200ms slider budget, 11 bounded counterfactuals ranked by combined risk drop | Section 7 existing risk card + BMI slider curves |
 | F Environment | Lagged Pearson; shuffle/null does not invent a signal | Section 5 environmental demo (synthetic series) |
 | E Outcomes | Confounded synthetic cohort, propensity matching, day-7 PRO with insufficient-data state, non-editorial plan diff | Section 4 plan-diff demo; `/clinician/outcomes` |
@@ -19,7 +19,7 @@ Hero, trust chips, nav (`Features · How it works · Trust · Risk & simulation 
 
 ## Tests
 
-`npx vitest run` — 47 tests across:
+`npx vitest run` — 50 tests across:
 
 - `shared/mediai/canvas.test.ts` (A1–A4, including verifier failure not dropping triage/consilium)
 - `shared/mediai/groups.test.ts` (C, D, B, F, E; adversarial: unknown drug, empty brief, unsourced haematuria, negated red flag, penicillin/amoxicillin, noisy OCR raster, colloquial translation)
@@ -33,7 +33,7 @@ Hero, trust chips, nav (`Features · How it works · Trust · Risk & simulation 
 - **Python DiCE, DoWhy, EconML** — not in this stack. Constrained TS search and TS propensity matching instead.
 - **Live Open-Meteo in the marketing demo** — synthetic lagged series so the demo is reproducible offline.
 - **NLM RxNav network** — client implemented and stub-tested; `liveRxnormNetwork` is false until a human allows egress.
-- **Arbitrary camera JPEG/PDF fonts** — the reviewed OCR is template-matching on high-contrast Latin rasters plus lexicon NER. Unreadable real-world photos still return incomplete rather than a guessed drug. A measured Tesseract/vision engine can be swapped behind the same incomplete-on-failure contract.
+- **Arbitrary camera JPEG/PDF OCR** — photo ingest was removed. Typed drug names resolve through RxNorm / live RxNav; unknown still incomplete.
 - **Visual regression + Lighthouse CI** — not part of the repo toolchain.
 - **Persistent store** — graphs, briefs, and the outcomes cohort are in-process maps/fixtures.
 

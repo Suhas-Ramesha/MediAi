@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { saveBrief, takeStashedHandoff } from "@/lib/engineStore";
 import {
   buildHandoffBrief,
   correctBrief,
@@ -11,12 +13,34 @@ import {
 } from "@shared/mediai/intake";
 
 export default function HandoffReview() {
+  const { currentUser } = useAuth();
   const [fragments, setFragments] = useState(
     "Been running a temp since yesterday\nmy throat is killing me\nthen I started throwing up",
   );
+  const [meds, setMeds] = useState<string[]>([]);
+  const [fromChat, setFromChat] = useState(false);
   const [brief, setBrief] = useState<HandoffBrief | null>(null);
   const [doctorPayload, setDoctorPayload] = useState<string>("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const stashed = takeStashedHandoff();
+    if (!stashed) return;
+    setFragments(stashed.fragments.join("\n"));
+    setMeds(stashed.medications);
+    setFromChat(true);
+    try {
+      const next = buildHandoffBrief({
+        fragments: stashed.fragments,
+        medications: stashed.medications,
+        differential: [{ condition: "viral_uri", probability: 0.48 }],
+      });
+      setBrief(next);
+      void saveBrief(currentUser?.uid ?? null, next);
+    } catch {
+      setError("Could not build a brief with fully sourced statements.");
+    }
+  }, [currentUser?.uid]);
 
   const create = () => {
     setError("");
@@ -24,10 +48,11 @@ export default function HandoffReview() {
     try {
       const next = buildHandoffBrief({
         fragments: fragments.split("\n").map((s) => s.trim()).filter(Boolean),
-        medications: [],
+        medications: meds,
         differential: [{ condition: "viral_uri", probability: 0.48 }],
       });
       setBrief(next);
+      void saveBrief(currentUser?.uid ?? null, next);
     } catch {
       setError("Could not build a brief with fully sourced statements.");
     }
@@ -91,6 +116,12 @@ export default function HandoffReview() {
         phrases are translated only when a sourced map matches them. Nothing is
         sent to a doctor until you approve it, or explicitly waive review.
       </p>
+      {fromChat && (
+        <p className="mt-3 text-sm text-primary">
+          Loaded from your chat. Review the synthesis, then approve before a
+          doctor can see it.
+        </p>
+      )}
 
       <textarea
         className="mt-6 min-h-32 w-full rounded-xl border border-input bg-background p-3 text-sm"

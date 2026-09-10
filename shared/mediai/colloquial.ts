@@ -73,6 +73,46 @@ export const COLLOQUIAL_LEXICON: ColloquialMapping[] = [
     clinical: "rash",
     patterns: [/\bitchy spots?\b/i, /\bcrop of spots\b/i],
   },
+  {
+    id: "nausea",
+    clinical: "nausea",
+    patterns: [/\bqueasy\b/i, /\bsick to my stomach\b/i, /\boff my food\b/i],
+  },
+  {
+    id: "constipation",
+    clinical: "constipation",
+    patterns: [/\bbunged up\b/i, /\bcan't poo\b/i, /\bhaven't gone in days\b/i],
+  },
+  {
+    id: "palpitations",
+    clinical: "palpitations",
+    patterns: [/\bheart(?:'s| is) racing\b/i, /\bthumping heart\b/i, /\bheart skipping\b/i],
+  },
+  {
+    id: "edema",
+    clinical: "swelling of the legs",
+    patterns: [/\bpuffy (?:ankles|legs)\b/i, /\bcan(?:not|'t) get my shoes on\b/i],
+  },
+  {
+    id: "hematuria",
+    clinical: "blood in the urine",
+    patterns: [/\bblood in (?:my )?pee\b/i, /\bpink wee\b/i],
+  },
+  {
+    id: "photophobia",
+    clinical: "photophobia",
+    patterns: [/\blight (?:hurts|is killing) (?:my )?eyes\b/i, /\bcan't look at lights\b/i],
+  },
+  {
+    id: "myalgia",
+    clinical: "myalgia",
+    patterns: [/\bbody aches?\b/i, /\baching all over\b/i],
+  },
+  {
+    id: "anorexia",
+    clinical: "loss of appetite",
+    patterns: [/\bno appetite\b/i, /\bcan(?:not|'t) eat\b/i],
+  },
 ];
 
 export interface AppliedMapping {
