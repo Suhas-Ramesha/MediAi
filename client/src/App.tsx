@@ -31,7 +31,7 @@ function Router() {
 // Main App component
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="mediai-theme">
+    <ThemeProvider defaultTheme="system" storageKey="mediai-theme">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <Router />

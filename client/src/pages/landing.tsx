@@ -4,6 +4,7 @@ import {
   AnimatePresence,
   motion,
   useMotionValueEvent,
+  useReducedMotion,
   useScroll,
 } from "framer-motion";
 import {
@@ -43,37 +44,37 @@ const features = [
     icon: MessageSquareText,
     title: "Structured triage",
     body: "Describe how you feel in your own words. You get back what it could mean, what to do now, and the signs that mean you should not wait.",
-    span: "lg:col-span-4",
+    span: "md:col-span-4",
   },
   {
     icon: LineChart,
     title: "Explained risk scores",
-    body: "Four assessments return a percentage next to the inputs that moved it.",
-    span: "lg:col-span-2",
+    body: "Diabetes, heart, liver and kidney assessments return a percentage next to the inputs that moved it, so the number is never a black box.",
+    span: "md:col-span-2",
   },
   {
     icon: Mic,
     title: "Voice when typing is hard",
-    body: "Speak your symptoms instead of typing them.",
-    span: "lg:col-span-2",
+    body: "Speak your symptoms instead of typing them. Useful when you are unwell, and when English is not the language you think in.",
+    span: "md:col-span-2",
   },
   {
     icon: FileImage,
     title: "Reports and images",
     body: "Upload a lab report or a photo of an affected area and get a plain-language reading of what the values and visible features suggest.",
-    span: "lg:col-span-4",
+    span: "md:col-span-4",
   },
   {
     icon: ClipboardList,
     title: "A diary that spots trends",
     body: "Log symptoms over days and weeks. Patterns across time are what a single consultation cannot see.",
-    span: "lg:col-span-3",
+    span: "md:col-span-3",
   },
   {
     icon: CalendarCheck,
     title: "Straight through to a doctor",
     body: "When the conversation suggests you should be seen, book a real appointment without starting again somewhere else.",
-    span: "lg:col-span-3",
+    span: "md:col-span-3",
   },
 ];
 
@@ -183,6 +184,40 @@ const riskFactors = [
   { label: "Age", value: "46", weight: 21 },
 ];
 
+function RiskBar({
+  percent,
+  delay,
+  size,
+}: {
+  percent: number;
+  delay: number;
+  size: "lg" | "sm";
+}) {
+  const reduceMotion = useReducedMotion();
+  const scale = Math.max(0, Math.min(percent, 100)) / 100;
+
+  return (
+    <div
+      className={`overflow-hidden rounded-full bg-muted ${
+        size === "lg" ? "h-1.5" : "h-1"
+      }`}
+    >
+      <motion.div
+        initial={reduceMotion ? false : { scaleX: 0 }}
+        animate={{ scaleX: scale }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : { duration: 0.6, ease: [0.22, 1, 0.36, 1], delay }
+        }
+        className={`h-full origin-left rounded-full ${
+          size === "lg" ? "bg-primary" : "bg-primary/45"
+        }`}
+      />
+    </div>
+  );
+}
+
 function RiskPreview() {
   return (
     <div className="surface-raised rounded-2xl p-5 sm:p-6">
@@ -197,16 +232,8 @@ function RiskPreview() {
         </span>
       </div>
 
-      {/* Bars scale on the X axis rather than animating width, which would
-          force layout on every frame. */}
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-        <motion.div
-          initial={{ scaleX: 0 }}
-          whileInView={{ scaleX: 0.38 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-          className="h-full origin-left rounded-full bg-primary"
-        />
+      <div className="mt-3">
+        <RiskBar percent={38} delay={0.15} size="lg" />
       </div>
 
       <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -222,19 +249,7 @@ function RiskPreview() {
                 {f.value}
               </span>
             </div>
-            <div className="h-1 overflow-hidden rounded-full bg-muted">
-              <motion.div
-                initial={{ scaleX: 0 }}
-                whileInView={{ scaleX: f.weight / 100 }}
-                viewport={{ once: true }}
-                transition={{
-                  duration: 0.6,
-                  ease: [0.22, 1, 0.36, 1],
-                  delay: 0.25 + i * 0.08,
-                }}
-                className="h-full origin-left rounded-full bg-primary/45"
-              />
-            </div>
+            <RiskBar percent={f.weight} delay={0.25 + i * 0.08} size="sm" />
           </li>
         ))}
       </ul>
@@ -435,10 +450,10 @@ export default function Landing() {
           </p>
         </Reveal>
 
-        <RevealGroup className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        <RevealGroup className="mt-12 grid items-start gap-4 md:grid-cols-6">
           {features.map((f) => (
             <RevealItem key={f.title} className={f.span}>
-              <article className="surface lift group h-full p-6">
+              <article className="surface lift group p-6">
                 <span className="grid h-10 w-10 place-items-center rounded-lg border border-primary/20 bg-primary/8 text-primary transition-colors duration-base group-hover:bg-primary/15">
                   <f.icon className="h-5 w-5" />
                 </span>
@@ -455,38 +470,32 @@ export default function Landing() {
       {/* ---------------- How it works ---------------- */}
       <section id="how" className="border-y border-border bg-muted/25">
         <div className="container-page py-20 lg:py-28">
-          {/* Heading on the left, steps stacked on the right. Three equal
-              columns with numbered badges would read as filler. */}
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,22rem)_1fr] lg:gap-20">
-            <Reveal>
-              <p className="eyebrow">How it works</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-                Three steps, about two minutes.
-              </h2>
-              <p className="mt-4 text-muted-foreground">
-                No forms to fill in before you get anything back.
-              </p>
-            </Reveal>
+          <Reveal className="mx-auto max-w-2xl">
+            <p className="eyebrow">How it works</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+              Three steps, about two minutes.
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              No forms to fill in before you get anything back.
+            </p>
+          </Reveal>
 
-            <RevealGroup className="lg:pt-2" stagger={0.09}>
-              {steps.map((s, i) => (
-                <RevealItem key={s.title}>
-                  <div
-                    className={
-                      i === 0
-                        ? "pb-7"
-                        : "border-t border-border py-7 last:pb-0"
-                    }
-                  >
-                    <h3 className="text-lg font-semibold">{s.title}</h3>
-                    <p className="mt-2 max-w-xl leading-relaxed text-muted-foreground">
-                      {s.body}
-                    </p>
-                  </div>
-                </RevealItem>
-              ))}
-            </RevealGroup>
-          </div>
+          <RevealGroup className="mx-auto mt-10 max-w-2xl" stagger={0.09}>
+            {steps.map((s, i) => (
+              <RevealItem key={s.title}>
+                <div
+                  className={
+                    i === 0 ? "pb-7" : "border-t border-border py-7 last:pb-0"
+                  }
+                >
+                  <h3 className="text-lg font-semibold">{s.title}</h3>
+                  <p className="mt-2 leading-relaxed text-muted-foreground">
+                    {s.body}
+                  </p>
+                </div>
+              </RevealItem>
+            ))}
+          </RevealGroup>
         </div>
       </section>
 

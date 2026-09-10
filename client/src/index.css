@@ -80,7 +80,7 @@
     --secondary-foreground: 210 20% 96%;
 
     --muted: 217 25% 15%;
-    --muted-foreground: 215 18% 65%;
+    --muted-foreground: 214 16% 76%;
 
     --accent: 217 25% 18%;
     --accent-foreground: 210 20% 96%;
@@ -94,8 +94,8 @@
     --warning: 38 92% 55%;
     --warning-foreground: 35 100% 10%;
 
-    --border: 217 25% 18%;
-    --input: 217 25% 20%;
+    --border: 217 18% 26%;
+    --input: 217 18% 28%;
     --ring: 190 90% 50%;
 
     --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
