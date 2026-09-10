@@ -230,8 +230,8 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     };
   }, []);
 
-  // Handle voice recording
-  const handleVoiceRecord = () => {
+  // Handle voice recording (mic records locally, then Deepgram transcribes)
+  const handleVoiceRecord = async () => {
     if (!speechService.current) {
       toast({
         title: "Error",
@@ -242,27 +242,26 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     }
 
     if (isRecording) {
-      // Stop recording
-      speechService.current.stopRecording();
       setIsRecording(false);
       toast({
-        title: "Stopped",
-        description: "Voice recording stopped.",
+        title: "Transcribing",
+        description: "Converting your speech to text...",
       });
+      const text = await speechService.current.stopRecording();
+      if (text) {
+        setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+        toast({
+          title: "Ready",
+          description: "Transcript added. Review it, then send.",
+        });
+      }
     } else {
-      // Start recording
-      if (speechService.current.startRecording()) {
+      const started = await speechService.current.startRecording();
+      if (started) {
         setIsRecording(true);
-        setInput(''); // Clear existing input
         toast({
           title: "Recording",
           description: "Speak clearly... Click the mic again to stop.",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Could not start recording. Please try again.",
-          variant: "destructive"
         });
       }
     }
