@@ -115,6 +115,11 @@ const steps = [
 /* ------------------------------------------------------------------ */
 
 function ChatPreview() {
+  const reduceMotion = useReducedMotion();
+  const enter = reduceMotion
+    ? { opacity: 1, y: 0 }
+    : { opacity: 0, y: 8 };
+
   return (
     <div className="surface-raised overflow-hidden rounded-2xl">
       <div className="border-b border-border bg-muted/40 px-5 py-3">
@@ -126,9 +131,11 @@ function ChatPreview() {
       <div className="space-y-4 p-5 sm:p-6">
         {/* Patient message */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={enter}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ ...transition.slow, delay: 0.25 }}
+          transition={
+            reduceMotion ? { duration: 0 } : { ...transition.slow, delay: 0.25 }
+          }
           className="flex justify-end"
         >
           <p className="max-w-[78%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground">
@@ -138,9 +145,11 @@ function ChatPreview() {
 
         {/* Assistant reply */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={enter}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ ...transition.slow, delay: 0.45 }}
+          transition={
+            reduceMotion ? { duration: 0 } : { ...transition.slow, delay: 0.45 }
+          }
           className="flex justify-start"
         >
           <div className="max-w-[88%] space-y-3 rounded-2xl rounded-bl-md border border-border bg-muted/40 px-4 py-3">
@@ -175,9 +184,11 @@ function ChatPreview() {
 
         {/* Suggested action */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={enter}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ ...transition.slow, delay: 0.65 }}
+          transition={
+            reduceMotion ? { duration: 0 } : { ...transition.slow, delay: 0.65 }
+          }
           className="flex justify-start pl-1"
         >
           <span className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">
