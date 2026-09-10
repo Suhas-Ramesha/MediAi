@@ -1,130 +1,142 @@
 export class SpeechService {
-  private recognition: any = null;
-  private isListening: boolean = false;
-  private currentLanguage: string = 'en-US';
+  private mediaRecorder: MediaRecorder | null = null;
+  private stream: MediaStream | null = null;
+  private chunks: Blob[] = [];
+  private isListening = false;
+  private mimeType = "audio/webm";
+  private onTranscript: ((text: string) => void) | null = null;
+  private onError: ((error: string) => void) | null = null;
 
-  // List of supported languages
   static readonly SUPPORTED_LANGUAGES = [
-    { code: 'en-US', name: 'English (US)' },
-    { code: 'es-ES', name: 'Spanish' },
-    { code: 'fr-FR', name: 'French' },
-    { code: 'de-DE', name: 'German' },
-    { code: 'it-IT', name: 'Italian' },
-    { code: 'pt-BR', name: 'Portuguese' },
-    { code: 'ru-RU', name: 'Russian' },
-    { code: 'ja-JP', name: 'Japanese' },
-    { code: 'ko-KR', name: 'Korean' },
-    { code: 'zh-CN', name: 'Chinese' },
-    { code: 'hi-IN', name: 'Hindi' },
-    { code: 'ar-SA', name: 'Arabic' }
+    { code: "en-US", name: "English (US)" },
+    { code: "en-IN", name: "English (India)" },
+    { code: "hi-IN", name: "Hindi" },
   ];
 
   initialize(onTranscript: (text: string) => void, onError: (error: string) => void) {
-    try {
-      // @ts-ignore
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        throw new Error('Speech recognition not supported');
+    this.onTranscript = onTranscript;
+    this.onError = onError;
+    return true;
+  }
+
+  setLanguage(_languageCode: string) {
+    // Language is applied server-side by Deepgram; kept for API compatibility.
+  }
+
+  getCurrentLanguage(): string {
+    return "en";
+  }
+
+  private pickMimeType(): string {
+    const candidates = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/mp4",
+    ];
+    for (const type of candidates) {
+      if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type)) {
+        return type;
       }
+    }
+    return "audio/webm";
+  }
 
-      this.recognition = new SpeechRecognition();
-      this.recognition.continuous = true;
-      this.recognition.interimResults = true;
-      this.recognition.lang = this.currentLanguage;
-      this.recognition.maxAlternatives = 1;
+  async startRecording(): Promise<boolean> {
+    if (this.isListening) return false;
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      this.onError?.("Microphone is not supported in this browser");
+      return false;
+    }
 
-      this.recognition.onresult = (event: any) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-
-        // Send the combined transcript
-        onTranscript(finalTranscript + interimTranscript);
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      this.chunks = [];
+      this.mimeType = this.pickMimeType();
+      this.mediaRecorder = new MediaRecorder(this.stream, { mimeType: this.mimeType });
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) this.chunks.push(event.data);
       };
-
-      this.recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        let message = 'Failed to recognize speech';
-        
-        switch (event.error) {
-          case 'not-allowed':
-            message = 'Microphone access denied';
-            break;
-          case 'no-speech':
-            message = 'No speech detected';
-            break;
-          case 'network':
-            message = 'Network error occurred';
-            break;
-          case 'language-not-supported':
-            message = 'Selected language is not supported';
-            break;
-        }
-        
-        onError(message);
-        this.stopRecording();
-      };
-
-      this.recognition.onend = () => {
-        if (this.isListening) {
-          // Restart if we're still supposed to be listening
-          this.recognition.start();
-        }
-      };
-
+      this.mediaRecorder.start(250);
+      this.isListening = true;
       return true;
-    } catch (error) {
-      console.error('Error initializing speech recognition:', error);
-      onError('Speech recognition not supported in this browser');
+    } catch (error: any) {
+      console.error("Error starting microphone:", error);
+      const denied = error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError";
+      this.onError?.(denied ? "Microphone access denied" : "Could not start recording");
+      this.cleanupStream();
       return false;
     }
   }
 
-  setLanguage(languageCode: string) {
-    this.currentLanguage = languageCode;
-    if (this.recognition) {
-      this.recognition.lang = languageCode;
-    }
-  }
-
-  getCurrentLanguage(): string {
-    return this.currentLanguage;
-  }
-
-  startRecording() {
-    if (this.recognition && !this.isListening) {
-      try {
-        this.recognition.start();
-        this.isListening = true;
-        return true;
-      } catch (error) {
-        console.error('Error starting recognition:', error);
-        return false;
-      }
-    }
-    return false;
-  }
-
-  stopRecording() {
-    if (this.recognition) {
+  async stopRecording(): Promise<string> {
+    if (!this.mediaRecorder || !this.isListening) {
+      this.cleanupStream();
       this.isListening = false;
-      try {
-        this.recognition.stop();
-      } catch (error) {
-        console.error('Error stopping recognition:', error);
+      return "";
+    }
+
+    const blob = await new Promise<Blob>((resolve) => {
+      const recorder = this.mediaRecorder!;
+      recorder.onstop = () => {
+        resolve(new Blob(this.chunks, { type: this.mimeType.split(";")[0] || "audio/webm" }));
+      };
+      if (recorder.state !== "inactive") {
+        recorder.stop();
+      } else {
+        resolve(new Blob(this.chunks, { type: "audio/webm" }));
       }
+    });
+
+    this.cleanupStream();
+    this.isListening = false;
+
+    if (blob.size < 800) {
+      this.onError?.("No speech detected");
+      return "";
+    }
+
+    try {
+      const form = new FormData();
+      form.append("audio", blob, "speech.webm");
+      const response = await fetch("/api/speech-to-text", {
+        method: "POST",
+        body: form,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        this.onError?.(data.message || "Failed to recognize speech");
+        return "";
+      }
+      const text = String(data.text || "").trim();
+      if (!text) {
+        this.onError?.("No speech detected");
+        return "";
+      }
+      this.onTranscript?.(text);
+      return text;
+    } catch (error) {
+      console.error("Speech transcription error:", error);
+      this.onError?.("Network error occurred while transcribing");
+      return "";
     }
   }
 
   isRecording() {
     return this.isListening;
   }
-} 
+
+  private cleanupStream() {
+    this.mediaRecorder = null;
+    this.chunks = [];
+    if (this.stream) {
+      this.stream.getTracks().forEach((track) => track.stop());
+      this.stream = null;
+    }
+  }
+}

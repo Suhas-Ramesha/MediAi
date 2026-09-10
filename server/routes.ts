@@ -6,6 +6,8 @@ import path from "path";
 import { z } from "zod";
 import { insertMessageSchema } from "@shared/schema";
 import fs from "fs";
+import { nanoid } from "nanoid";
+import { generateHealthChat, generateImageAnalysis } from "./gemini";
 import { registerMediaiRoutes } from "./mediaiRoutes";
 
 // Configure multer for file storage
@@ -17,13 +19,24 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = [
-      "image/jpeg", 
-      "image/png", 
-      "image/gif", 
-      "application/pdf"
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "application/pdf",
+      "audio/webm",
+      "audio/wav",
+      "audio/mpeg",
+      "audio/mp4",
+      "audio/ogg",
+      "video/webm",
     ];
     
-    if (allowedMimeTypes.includes(file.mimetype)) {
+    const mime = (file.mimetype || "").split(";")[0];
+    const isAudio =
+      mime.startsWith("audio/") ||
+      mime === "video/webm" ||
+      mime === "application/octet-stream";
+    if (allowedMimeTypes.includes(mime) || (file.fieldname === "audio" && isAudio)) {
       cb(null, true);
     } else {
       cb(new Error(`Unsupported file type: ${file.mimetype}`));
@@ -168,6 +181,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   registerMediaiRoutes(app);
 
+  app.post(apiRouter("/chat"), async (req: Request, res: Response) => {
+    try {
+      const message = String(req.body?.message || "").trim();
+      if (!message) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      const text = await generateHealthChat(message);
+      return res.status(200).json({ text });
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      return res.status(502).json({
+        message: error?.message || "Failed to get AI response",
+      });
+    }
+  });
+
+  app.post(apiRouter("/vision"), async (req: Request, res: Response) => {
+    try {
+      const prompt = String(req.body?.prompt || "").trim();
+      const mimeType = String(req.body?.mimeType || "image/jpeg");
+      const data = String(req.body?.data || "");
+      if (!prompt || !data) {
+        return res.status(400).json({ message: "Image and prompt are required" });
+      }
+      const text = await generateImageAnalysis(prompt, mimeType, data);
+      return res.status(200).json({ text });
+    } catch (error: any) {
+      console.error("Vision error:", error);
+      return res.status(502).json({
+        message: error?.message || "Failed to analyze image",
+      });
+    }
+  });
+
   app.post(apiRouter("/risk/predict"), async (req: Request, res: Response) => {
     try {
       const r = await fetch(`${ML_SERVICE_URL}/predict`, {
@@ -228,29 +275,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Speech-to-text endpoint
+  // Speech-to-text endpoint (Deepgram). Chrome's Web Speech API often fails with
+  // a "network" error when Google speech endpoints are blocked.
   app.post(apiRouter("/speech-to-text"), upload.single("audio"), async (req: Request, res: Response) => {
     try {
-      // Check if file was uploaded
       if (!req.file) {
         return res.status(400).json({ message: "No audio file provided" });
       }
-      
-      // In a real app, you would use an actual speech-to-text API here
-      // For the demo, we'll just return a mock response based on the file size
-      
-      // Mock different responses based on file size to simulate different recordings
-      const fileSizeKB = req.file.size / 1024;
-      let transcribedText = "";
-      
-      if (fileSizeKB < 50) {
-        transcribedText = "Hello, I'm not feeling well.";
-      } else if (fileSizeKB < 100) {
-        transcribedText = "I've been having a persistent cough and fever for the past three days.";
-      } else {
-        transcribedText = "I've been experiencing headaches and dizziness, especially in the morning. It's been going on for about a week now.";
+
+      const deepgramKey = process.env.DEEPGRAM_API_KEY || process.env.VITE_DEEPGRAM_API_KEY;
+      if (!deepgramKey) {
+        return res.status(500).json({ message: "Speech-to-text is not configured (missing DEEPGRAM_API_KEY)" });
       }
-      
+
+      const dgRes = await fetch(
+        "https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&punctuate=true",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Token ${deepgramKey}`,
+            "Content-Type": req.file.mimetype || "audio/webm",
+          },
+          body: req.file.buffer,
+        },
+      );
+
+      if (!dgRes.ok) {
+        const errText = await dgRes.text();
+        console.error("Deepgram error:", dgRes.status, errText.slice(0, 400));
+        return res.status(502).json({ message: "Could not transcribe audio. Please try again." });
+      }
+
+      const payload = (await dgRes.json()) as {
+        results?: { channels?: { alternatives?: { transcript?: string }[] }[] };
+      };
+      const transcribedText =
+        payload.results?.channels?.[0]?.alternatives?.[0]?.transcript?.trim() || "";
+
+      if (!transcribedText) {
+        return res.status(200).json({ text: "", message: "No speech detected" });
+      }
+
       return res.status(200).json({ text: transcribedText });
     } catch (error) {
       console.error("Error in speech-to-text:", error);
