@@ -82,6 +82,12 @@ const features = [
     span: "md:col-span-3",
   },
   {
+    icon: ShieldCheck,
+    title: "One medicine list across doctors",
+    body: "A clinic EMR keeps the file inside that practice. Here the list is yours: tag who prescribed what, add an outside Rx by name, and see clashes (and RxCUIs) before the next visit. Unknown names stay incomplete.",
+    span: "md:col-span-3",
+  },
+  {
     icon: ClipboardList,
     title: "Come prepared",
     body: "Before you go in, it tells you which labs you will likely need and whether to arrive fasting, so a visit does not turn into two.",

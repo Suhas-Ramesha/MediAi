@@ -13,6 +13,7 @@ import SymptomDiaryPage from "@/app/symptom-diary/page";
 import Appointments from "@/pages/appointments";
 import ClinicianOutcomes from "@/pages/clinician-outcomes";
 import HandoffReview from "@/pages/handoff-review";
+import SafetyGraphPage from "@/pages/safety-graph";
 import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/appointments" component={Appointments} />
       <Route path="/clinician/outcomes" component={ClinicianOutcomes} />
       <Route path="/handoff-review" component={HandoffReview} />
+      <Route path="/my-medicines" component={SafetyGraphPage} />
       <Route component={NotFound} />
     </Switch>
   );

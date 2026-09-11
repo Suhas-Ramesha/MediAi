@@ -9,6 +9,7 @@ import { Calendar, Clock, User, FileText, ExternalLink } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
+import { waitingWindowEscalation } from "@shared/mediai/intake";
 
 interface Appointment {
   id: string;
@@ -27,6 +28,7 @@ export default function Appointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
   const [showDebugView, setShowDebugView] = useState(false);
+  const [waitText, setWaitText] = useState("");
 
   // Redirect to landing page if not logged in
   useEffect(() => {
@@ -384,6 +386,51 @@ export default function Appointments() {
             </Button>
           </div>
         </div>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Something new while you wait?</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Clinic apps remind you of the slot. This check uses the days until
+              that slot plus what you type now. A red flag is never held back
+              because the booking is soon.
+            </p>
+            <textarea
+              className="min-h-20 w-full rounded-xl border border-input bg-background p-3 text-sm"
+              value={waitText}
+              onChange={(e) => setWaitText(e.target.value)}
+              placeholder="e.g. sudden chest pain this morning"
+            />
+            {waitText.trim() && (() => {
+              const upcoming = appointments
+                .map((a) => Date.parse(a.date))
+                .filter((n) => Number.isFinite(n) && n > Date.now());
+              const daysOut = upcoming.length
+                ? Math.max(
+                    0,
+                    Math.round((Math.min(...upcoming) - Date.now()) / 86400000),
+                  )
+                : 12;
+              const esc = waitingWindowEscalation({
+                newText: waitText,
+                appointmentDaysOut: daysOut,
+              });
+              return esc.escalate ? (
+                <p className="text-sm text-destructive">
+                  Red flag: {esc.flags.join(", ")}. Do not wait for the booked
+                  slot ({daysOut} days out). Seek urgent care.
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No listed red flag in that text. Slot used for the window:{" "}
+                  {daysOut} days. This is not a diagnosis.
+                </p>
+              );
+            })()}
+          </CardContent>
+        </Card>
         
         {isLoadingAppointments ? (
           <Card>

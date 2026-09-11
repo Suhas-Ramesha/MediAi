@@ -10,8 +10,15 @@ export interface MedicationEntry {
   brandName?: string;
   dose?: string;
   sourceDoctorId: string;
+  /** Every clinic/doctor that named this CUI. Always includes sourceDoctorId. */
+  sourceDoctorIds?: string[];
   startedOn: string;
   rawText: string;
+}
+
+export function doctorsFor(med: MedicationEntry): string[] {
+  const ids = [med.sourceDoctorId, ...(med.sourceDoctorIds ?? [])].filter(Boolean);
+  return [...new Set(ids)];
 }
 
 export interface SafetyGraph {
@@ -196,9 +203,17 @@ export function mergeIntoGraph(
     if (existing) {
       merged += 1;
       if (!existing.brandName && item.brandName) existing.brandName = item.brandName;
+      existing.sourceDoctorIds = doctorsFor({
+        ...existing,
+        sourceDoctorIds: [...doctorsFor(existing), ...doctorsFor(item as MedicationEntry)],
+      });
     } else {
       added += 1;
-      meds.push({ ...item, id: `${item.rxcui}-${meds.length}` });
+      meds.push({
+        ...item,
+        id: `${item.rxcui}-${meds.length}`,
+        sourceDoctorIds: doctorsFor(item as MedicationEntry),
+      });
     }
   }
   return { graph: { ...graph, medications: meds }, merged, added };
@@ -246,6 +261,58 @@ export function forwardAudit(
   }
   if (findings.length) return { status: "interaction", findings };
   return { status: "clear", findings: [] };
+}
+
+/**
+ * Audit the whole list (not only the next add). Cross-doctor pairs are labeled
+ * so a clash from two clinics is visible without a Healthplix-style silo.
+ */
+export function auditGraph(graph: SafetyGraph): AuditResult {
+  const findings: string[] = [];
+  let status: AuditResult["status"] = "clear";
+
+  for (const m of graph.medications) {
+    if (allergyConflict(graph.allergies, m.genericName)) {
+      findings.push(`Allergy overlap with ${m.genericName}`);
+      status = "allergy";
+    }
+    if (m.genericName === "metformin" && graph.organFlags.kidneyImpairment) {
+      findings.push("Metformin with kidney impairment needs clinician review");
+      if (status === "clear") status = "organ";
+    }
+  }
+
+  for (let i = 0; i < graph.medications.length; i++) {
+    for (let j = i + 1; j < graph.medications.length; j++) {
+      const a = graph.medications[i];
+      const b = graph.medications[j];
+      const pair = INTERACTIONS.find(
+        (p) =>
+          (p.a === a.rxcui && p.b === b.rxcui) ||
+          (p.b === a.rxcui && p.a === b.rxcui),
+      );
+      if (!pair) continue;
+      const aDocs = doctorsFor(a).join(", ");
+      const bDocs = doctorsFor(b).join(", ");
+      const cross = doctorsFor(a).some((d) => !doctorsFor(b).includes(d)) ||
+        doctorsFor(b).some((d) => !doctorsFor(a).includes(d));
+      const where = cross
+        ? `cross-doctor (${a.genericName} from ${aDocs}; ${b.genericName} from ${bDocs})`
+        : `same list (${aDocs || bDocs})`;
+      findings.push(`${pair.note} — ${where}`);
+      if (status === "clear" || status === "organ") status = "interaction";
+    }
+  }
+
+  if (!findings.length) return { status: "clear", findings: [] };
+  return { status, findings };
+}
+
+export function removeFromGraph(graph: SafetyGraph, rxcui: string): SafetyGraph {
+  return {
+    ...graph,
+    medications: graph.medications.filter((m) => m.rxcui !== rxcui),
+  };
 }
 
 export function sideEffectWatch(

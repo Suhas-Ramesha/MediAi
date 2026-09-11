@@ -3,6 +3,7 @@ import {
   FEATURE_FLAGS,
 } from "./types.ts";
 import {
+  auditGraph,
   forwardAudit,
   mergeIntoGraph,
   parsePrescriptionText,
@@ -74,6 +75,9 @@ describe("C medication graph", () => {
     ]);
     expect(twice.merged).toBe(1);
     expect(twice.graph.medications.filter((m) => m.rxcui === "6809")).toHaveLength(1);
+    expect(twice.graph.medications[0].sourceDoctorIds).toEqual(
+      expect.arrayContaining(["doc1", "doc2"]),
+    );
     const withAmox = mergeIntoGraph(twice.graph, parsed.entries.filter((e) => e.rxcui === "723"));
     expect(withAmox.graph.medications.map((m) => m.rxcui).sort()).toEqual(["6809", "723"]);
   });
@@ -93,6 +97,32 @@ describe("C medication graph", () => {
     expect(audit.status).toBe("interaction");
     expect(audit.findings[0]).toMatch(/doc1/);
     expect(audit.findings[0]).toMatch(/doc2/);
+  });
+
+  it("audits the full list for a clash that already sits across two doctors", () => {
+    const g = emptyGraph([
+      {
+        id: "1",
+        rxcui: "11289",
+        genericName: "warfarin",
+        sourceDoctorId: "cardiologist",
+        startedOn: "2026-07-01",
+        rawText: "warfarin",
+      },
+      {
+        id: "2",
+        rxcui: "5640",
+        genericName: "ibuprofen",
+        sourceDoctorId: "gp",
+        startedOn: "2026-09-10",
+        rawText: "ibuprofen",
+      },
+    ]);
+    const full = auditGraph(g);
+    expect(full.status).toBe("interaction");
+    expect(full.findings.join(" ")).toMatch(/cross-doctor/);
+    expect(full.findings.join(" ")).toMatch(/cardiologist/);
+    expect(full.findings.join(" ")).toMatch(/gp/);
   });
 
   it("flags penicillin-class allergy against amoxicillin from another doctor", () => {

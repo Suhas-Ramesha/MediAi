@@ -129,6 +129,37 @@ describe("mediai HTTP integration", () => {
     );
   });
 
+  it("previews a second-clinic Rx against a patient-owned graph without using the silo store", async () => {
+    const r = await fetch(`${base}/api/mediai/medication/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        doctorId: "gp",
+        startedOn: "2026-09-10",
+        text: "ibuprofen 400mg",
+        graph: {
+          patientId: "p-cross",
+          allergies: [],
+          organFlags: { kidneyImpairment: false, liverImpairment: false },
+          medications: [
+            {
+              id: "1",
+              rxcui: "11289",
+              genericName: "warfarin",
+              sourceDoctorId: "cardiologist",
+              startedOn: "2026-07-01",
+              rawText: "warfarin",
+            },
+          ],
+        },
+      }),
+    });
+    expect(r.status).toBe(200);
+    const data = await r.json();
+    expect(data.audit.status).toBe("interaction");
+    expect(data.audit.findings.join(" ")).toMatch(/cross-doctor/);
+  });
+
   it("B: projection stays under the slider latency budget", async () => {
     const r = await fetch(`${base}/api/mediai/risk/project`, {
       method: "POST",
