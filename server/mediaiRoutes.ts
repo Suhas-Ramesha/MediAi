@@ -20,6 +20,7 @@ import { applyColloquialMap, assertMappedSourcing } from "../shared/mediai/collo
 import { analyzeChatTurnLive } from "../shared/mediai/chatSafety.ts";
 import { fetchRxnavInteractions, resolveDrug } from "../shared/mediai/rxnorm.ts";
 import {
+  auditGraph,
   forwardAudit,
   mergeIntoGraph,
   parsePrescriptionText,
@@ -157,6 +158,42 @@ export function registerMediaiRoutes(app: Express): void {
       added: merged.added,
       unknownTokens: parsed.unknownTokens,
       rxnavInteractions: livePairs,
+      audit: auditGraph(merged.graph),
+    });
+  });
+
+  /** Preview an outside-clinic Rx against a client-owned graph. Does not persist the server demo store. */
+  app.post("/api/mediai/medication/preview", async (req: Request, res: Response) => {
+    const incoming = (req.body?.graph ?? {
+      patientId: "demo",
+      allergies: [],
+      organFlags: { kidneyImpairment: false, liverImpairment: false },
+      medications: [],
+    }) as SafetyGraph;
+    const doctorId = String(req.body?.doctorId ?? "unknown");
+    const startedOn = String(req.body?.startedOn ?? new Date().toISOString().slice(0, 10));
+    let parsed = parsePrescriptionText(String(req.body?.text ?? ""), doctorId, startedOn);
+    if (isRxnavLive()) {
+      for (const token of [...parsed.unknownTokens]) {
+        const live = await resolveDrug(token, { fetchImpl: fetch, liveNetwork: true });
+        if (!live) continue;
+        parsed = parsePrescriptionText(
+          `${req.body?.text ?? ""}\n${live.generic}`,
+          doctorId,
+          startedOn,
+        );
+      }
+    }
+    const merged = mergeIntoGraph(incoming, parsed.entries);
+    const proposed = forwardAudit(incoming, parsed.entries[0]?.genericName ?? "", doctorId);
+    res.json({
+      graph: merged.graph,
+      added: merged.added,
+      merged: merged.merged,
+      unknownTokens: parsed.unknownTokens,
+      entries: parsed.entries,
+      audit: auditGraph(merged.graph),
+      nextDrugAudit: parsed.entries.length ? proposed : { status: "incomplete", findings: [] },
     });
   });
 

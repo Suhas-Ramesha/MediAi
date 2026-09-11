@@ -26,6 +26,17 @@ export function ChatEnginePanel({ result }: { result: ChatEngineResult }) {
           ))}
         </ul>
       )}
+      {result.mentions.filter((m) => m.rxcui).length > 0 && (
+        <ul className="rounded-md border border-border bg-muted/40 px-2 py-1.5">
+          {result.mentions
+            .filter((m) => m.rxcui)
+            .map((m) => (
+              <li key={`${m.raw}-${m.rxcui}`}>
+                {m.generic || m.raw} · RxCUI {m.rxcui}
+              </li>
+            ))}
+        </ul>
+      )}
       {lead && (
         <p className="text-muted-foreground">
           Engine ranking: {lead.condition.replace(/_/g, " ")}{" "}

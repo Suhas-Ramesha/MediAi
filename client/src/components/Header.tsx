@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  Pill,
   Settings,
   Shield,
   User,
@@ -47,6 +48,7 @@ interface HeaderProps {
 
 const navLinks = [
   { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+  { label: "My medicines", path: "/my-medicines", icon: Pill },
   { label: "Appointments", path: "/appointments", icon: CalendarCheck },
   { label: "Symptom Diary", path: "/symptom-diary", icon: BookHeart },
   { label: "History", path: "/medical-history", icon: History },

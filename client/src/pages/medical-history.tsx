@@ -71,6 +71,9 @@ export default function MedicalHistory() {
               consultations={formattedConsultations}
               onSelectChat={handleSelectChat}
             />
+            <a href="/my-medicines" className="mt-4 inline-block text-sm text-primary">
+              Open cross-doctor medicine list
+            </a>
           </CardContent>
         </Card>
       </main>
