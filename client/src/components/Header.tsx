@@ -49,6 +49,7 @@ interface HeaderProps {
 const navLinks = [
   { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { label: "My medicines", path: "/my-medicines", icon: Pill },
+  { label: "Where it sits", path: "/body-map", icon: User },
   { label: "Appointments", path: "/appointments", icon: CalendarCheck },
   { label: "Symptom Diary", path: "/symptom-diary", icon: BookHeart },
   { label: "History", path: "/medical-history", icon: History },

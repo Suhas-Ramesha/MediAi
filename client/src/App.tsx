@@ -14,6 +14,7 @@ import Appointments from "@/pages/appointments";
 import ClinicianOutcomes from "@/pages/clinician-outcomes";
 import HandoffReview from "@/pages/handoff-review";
 import SafetyGraphPage from "@/pages/safety-graph";
+import BodyMapPage from "@/pages/body-map";
 import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/clinician/outcomes" component={ClinicianOutcomes} />
       <Route path="/handoff-review" component={HandoffReview} />
       <Route path="/my-medicines" component={SafetyGraphPage} />
+      <Route path="/body-map" component={BodyMapPage} />
       <Route component={NotFound} />
     </Switch>
   );

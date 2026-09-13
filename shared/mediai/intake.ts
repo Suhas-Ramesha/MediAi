@@ -119,59 +119,147 @@ export function specialtyGuard(
 }
 
 export interface PrepResult {
+  /** Existing items only. Never a shopping list of new labs. */
+  bring: string[];
+  /** What to say in the first 30 seconds. */
+  tell: string[];
+  /** Questions for the doctor, not self-ordered tests. */
+  ask: string[];
+  doNot: string[];
+  urgent?: string;
+  guideline: string;
+  /** Always empty. Kept so older callers do not read leftover lab advice. */
   labs: string[];
+  /** True only if the treating doctor already asked the patient to fast. */
   fasting: boolean;
   state: "prep_needed" | "no_prep_needed";
-  guideline: string;
 }
 
-const GUIDELINES: { match: RegExp; labs: string[]; fasting: boolean; guideline: string }[] = [
+type PrepRule = {
+  match: RegExp;
+  bring: string[];
+  tell: string[];
+  ask: string[];
+  doNot: string[];
+  urgent?: string;
+  guideline: string;
+  state: PrepResult["state"];
+};
+
+const VISIT_SCRIPTS: PrepRule[] = [
   {
     match: /chest pain|crushing chest|pain radiating to the arm/,
-    labs: ["12-lead ECG at presentation (do not delay the visit)"],
-    fasting: false,
+    bring: [
+      "The bottles or a photo of medicines you already take",
+      "Any ECG or discharge paper you already have from an earlier visit",
+    ],
+    tell: [
+      "When the pain started, and whether it is still going",
+      "Where it sits and whether it moves to an arm, jaw, or back",
+      "What you were doing when it began",
+    ],
+    ask: [
+      "Should I go to emergency care now, or is this slot still appropriate?",
+      "Which of my current medicines should I keep taking today?",
+    ],
+    doNot: [
+      "Do not book a private ECG or blood test on the way. If this is an emergency, go in now; the doctor orders tests after they see you.",
+    ],
+    urgent:
+      "New chest pain, crushing pain, or pain into an arm or jaw is a reason not to wait for a routine slot.",
     guideline:
-      "Chest pain: come prepared to describe onset, radiation, and current medicines. Do not skip or delay care for fasting labs.",
-  },
-  {
-    match: /chest pain|palpitation/,
-    labs: ["ECG", "troponin if acute"],
-    fasting: false,
-    guideline: "Chest-pain workup: ECG; troponin if ongoing pain.",
+      "For chest pain, the useful prep is a clear story and your current medicines — not a lab you ordered yourself.",
+    state: "prep_needed",
   },
   {
     match: /polyuria|polydipsia|diabetes|glucose/,
-    labs: ["fasting glucose", "HbA1c"],
-    fasting: true,
-    guideline: "Suspected diabetes: fasting glucose and HbA1c.",
+    bring: [
+      "Home sugar readings only if you already keep them",
+      "Diabetes or blood-pressure medicines you already take",
+    ],
+    tell: [
+      "How often you are thirsty or passing urine, and since when",
+      "Any home sugar numbers you already wrote down",
+    ],
+    ask: [
+      "Do I need any blood work after you examine me, or is this visit enough to decide?",
+      "What should I track at home until then?",
+    ],
+    doNot: [
+      "Do not fast or pay for HbA1c / fasting glucose before the visit unless this doctor already asked you to.",
+    ],
+    guideline:
+      "Bring the log you already have and the story. Let the doctor decide if a test is worth another trip.",
+    state: "prep_needed",
   },
   {
-    match: /sore throat|fever/,
-    labs: [],
-    fasting: false,
-    guideline: "Uncomplicated pharyngitis: no routine labs before first visit.",
+    match: /headache|head(?:'s| is) pounding|migraine|photophobia/,
+    bring: ["A list of pain medicines you already tried, with whether they helped"],
+    tell: [
+      "Where the pain sits (one side, both, behind the eyes)",
+      "When it started and the worst it has been",
+      "Whether light, sound, or neck stiffness is present",
+    ],
+    ask: ["What would make this urgent enough not to wait for the booked slot?"],
+    doNot: ["Do not get a scan or blood test on your own before this visit."],
+    guideline:
+      "A headache visit is won by location, timing, and what you already tried — not a pre-ordered scan.",
+    state: "prep_needed",
+  },
+  {
+    match: /sore throat|fever|cough|vomiting|diarrhea/,
+    bring: ["Any temperature numbers you already measured at home"],
+    tell: [
+      "First day of illness and what showed up in what order",
+      "Whether you can swallow, keep fluids down, or breathe comfortably",
+    ],
+    ask: ["If this gets worse tonight, when should I skip the slot and go in?"],
+    doNot: ["Do not buy a panel of blood tests before the first look."],
+    guideline:
+      "Write the timeline and what you can still do (drink, swallow, breathe). Skip self-ordered labs.",
+    state: "no_prep_needed",
   },
 ];
 
 export function comePrepared(presentation: string): PrepResult {
   const text = `${presentation} ${toClinicalText(presentation)}`;
-  for (const g of GUIDELINES) {
+  for (const g of VISIT_SCRIPTS) {
     if (g.match.test(text)) {
-      const prep = g.labs.length > 0 || g.fasting;
       return {
-        labs: g.labs,
-        fasting: g.fasting,
-        state: prep ? "prep_needed" : "no_prep_needed",
+        bring: g.bring,
+        tell: g.tell,
+        ask: g.ask,
+        doNot: g.doNot,
+        urgent: g.urgent,
         guideline: g.guideline,
+        labs: [],
+        fasting: false,
+        state: g.state,
       };
     }
   }
   return {
+    bring: ["A written list of medicines and allergies you already have"],
+    tell: ["What started, when, and what changed since"],
+    ask: ["What should I watch for after I leave?"],
+    doNot: ["Do not get lab tests on your own unless this doctor already ordered them."],
+    guideline:
+      "Walk in able to tell the story. Do not spend on tests the doctor may never use.",
     labs: [],
     fasting: false,
     state: "no_prep_needed",
-    guideline: "No guideline-indicated labs for this presentation.",
   };
+}
+
+export function formatVisitPrep(prep: PrepResult): string {
+  const parts = [prep.guideline];
+  if (prep.urgent) parts.push(prep.urgent);
+  if (prep.tell.length) parts.push(`Be ready to say: ${prep.tell.join("; ")}.`);
+  if (prep.bring.length) {
+    parts.push(`Bring only what you already have: ${prep.bring.join("; ")}.`);
+  }
+  if (prep.doNot.length) parts.push(prep.doNot.join(" "));
+  return parts.join(" ");
 }
 
 export const RED_FLAGS = [

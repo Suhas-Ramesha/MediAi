@@ -20,6 +20,7 @@ import {
   buildHandoffBrief,
   comePrepared,
   collapseRepeatedSpeech,
+  formatVisitPrep,
   correctBrief,
   doctorMayView,
   markReviewed,
@@ -35,6 +36,7 @@ import {
   type RiskInputs,
 } from "./risk.ts";
 import { inferTrigger, shuffle } from "./environment.ts";
+import { mapTranscriptToBody } from "./bodyMap.ts";
 import {
   day7Rate,
   diffPlans,
@@ -339,13 +341,17 @@ describe("D intake", () => {
     expect(good.mismatch).toBe(false);
   });
 
-  it("returns guideline labs or an explicit no-prep state", () => {
+  it("prepares a visit script instead of self-ordered labs", () => {
     const dm = comePrepared("polyuria and polydipsia, possible diabetes");
     expect(dm.state).toBe("prep_needed");
-    expect(dm.labs).toContain("fasting glucose");
+    expect(dm.labs).toHaveLength(0);
+    expect(dm.fasting).toBe(false);
+    expect(dm.doNot.join(" ")).toMatch(/HbA1c|fasting glucose/i);
+    expect(dm.bring.join(" ")).toMatch(/already/i);
     const pharyngitis = comePrepared("sore throat and fever for two days");
     expect(pharyngitis.state).toBe("no_prep_needed");
     expect(pharyngitis.labs).toHaveLength(0);
+    expect(formatVisitPrep(pharyngitis)).not.toMatch(/fasting glucose|HbA1c/i);
   });
 
   it("escalates red flags even on a near appointment; skips negated and mild text", () => {
@@ -494,7 +500,20 @@ describe("D intake", () => {
     expect(headache.differential[0].probability).not.toEqual(
       fever.differential[0].probability,
     );
-    expect(comePrepared("sudden chest pain this morning").guideline).toMatch(/chest pain/i);
+    expect(comePrepared("sudden chest pain this morning").labs).toHaveLength(0);
+    expect(comePrepared("sudden chest pain this morning").urgent).toMatch(/chest pain/i);
+    const head = mapTranscriptToBody(
+      "I have a headache since yesterday. Light hurts.",
+      { when: "Friday 10:00", doctorName: "Dr Rao" },
+    );
+    expect(head.hits.some((h) => h.regionId === "head")).toBe(true);
+    expect(head.onsetSummary).toMatch(/yesterday/i);
+    expect(head.visit?.doctorName).toBe("Dr Rao");
+    const chest = mapTranscriptToBody("sudden chest pain into my left arm");
+    expect(chest.hits.map((h) => h.regionId)).toEqual(
+      expect.arrayContaining(["chest", "left_arm"]),
+    );
+    expect(chest.redFlags.length).toBeGreaterThan(0);
   });
 
   it("collapses doubled speech transcripts", () => {

@@ -50,6 +50,7 @@ import { predictRisk, type RiskContributingFactor, type RiskDisease } from "@/li
 import {
   collapseRepeatedSpeech,
   comePrepared,
+  formatVisitPrep,
   inferSpecialtyHint,
   specialtyGuard,
 } from "@shared/mediai/intake";
@@ -1013,9 +1014,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     const loadingSlotsMessage: Message = {
       id: slotsMessageId,
       role: "assistant",
-      content: `Come prepared: ${prep.guideline}${
-        prep.labs.length ? ` Labs: ${prep.labs.join(", ")}.` : ""
-      } Fetching available slots for ${
+      content: `${formatVisitPrep(prep)} Fetching available slots for ${
         doctor.name ||
         (doctor.firstName ? doctor.firstName + " " + doctor.lastName : "the doctor")
       }...`,
@@ -1099,9 +1098,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       {
         id: briefId,
         role: "assistant",
-        content: `Before a slot is booked: do you want to create a visit brief for the doctor?\n\nCome prepared: ${prep.guideline}${
-          prep.labs.length ? `\nLabs: ${prep.labs.join(", ")}` : ""
-        }\nFasting: ${prep.fasting ? "yes" : "no"}.`,
+        content: `Before a slot is booked: do you want to create a visit brief for the doctor?\n\n${formatVisitPrep(prep)}`,
         timestamp: new Date(),
         suggestsBooking: false,
         briefPrompt: true,
@@ -1756,6 +1753,14 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           >
             <FileText className="h-4 w-4" />
             Send to doctor brief
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLocation("/body-map")}
+            className="flex items-center gap-2"
+          >
+            Where it sits
           </Button>
           <Button
             variant="outline"

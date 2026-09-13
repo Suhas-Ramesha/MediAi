@@ -89,8 +89,8 @@ const features = [
   },
   {
     icon: ClipboardList,
-    title: "Come prepared",
-    body: "Before you go in, it tells you which labs you will likely need and whether to arrive fasting, so a visit does not turn into two.",
+    title: "Walk in ready to talk",
+    body: "Not a shopping list of labs the doctor may never order. A short script of what to say, what to bring if you already have it, and a body map of the sites you named.",
     span: "md:col-span-3",
   },
   {

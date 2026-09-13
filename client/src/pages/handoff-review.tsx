@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 
+import { SymptomBodyMap } from "@/components/SymptomBodyMap";
+import { VisitPrepCard } from "@/components/VisitPrepCard";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { saveBrief, takeStashedHandoff } from "@/lib/engineStore";
+import { nextBookedVisit } from "@/lib/nextVisit";
+import { mapTranscriptToBody } from "@shared/mediai/bodyMap";
 import {
   buildHandoffBrief,
   comePrepared,
@@ -30,9 +34,14 @@ export default function HandoffReview() {
   const [doctorPayload, setDoctorPayload] = useState<string>("");
   const [error, setError] = useState("");
   const [phrasing, setPhrasing] = useState(false);
+  const [bodyRegion, setBodyRegion] = useState<string | undefined>();
 
   const prep = useMemo(
     () => comePrepared(fragments.replace(/\n/g, " ")),
+    [fragments],
+  );
+  const bodyMap = useMemo(
+    () => mapTranscriptToBody(fragments.replace(/\n/g, " "), nextBookedVisit()),
     [fragments],
   );
 
@@ -198,20 +207,23 @@ export default function HandoffReview() {
       </div>
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
-      <article className="mt-6 surface p-5">
-        <h2 className="text-sm font-semibold">Come prepared</h2>
-        <p className="mt-2 text-sm">{prep.guideline}</p>
-        {prep.labs.length > 0 && (
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-            {prep.labs.map((lab) => (
-              <li key={lab}>{lab}</li>
-            ))}
-          </ul>
-        )}
+      <div className="mt-6 surface p-5">
+        <h2 className="text-sm font-semibold">Where it sits</h2>
         <p className="mt-2 text-xs text-muted-foreground">
-          Fasting required: {prep.fasting ? "yes" : "no"}. Status: {prep.state.replace(/_/g, " ")}.
+          Sites taken from your words, with the next booked slot if one is stored.
         </p>
-      </article>
+        <div className="mt-4">
+          <SymptomBodyMap
+            map={bodyMap}
+            selectedId={bodyRegion}
+            onSelect={setBodyRegion}
+          />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <VisitPrepCard prep={prep} />
+      </div>
 
       {brief && (
         <div className="mt-8 grid gap-4 md:grid-cols-2">
