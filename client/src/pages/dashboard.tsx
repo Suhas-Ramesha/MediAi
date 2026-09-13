@@ -57,6 +57,10 @@ function DashboardContent({
               My medicines
             </a>
             {" · "}
+            <a href="/body-map" className="text-primary hover:underline">
+              Where it sits
+            </a>
+            {" · "}
             <a href="/clinician/outcomes" className="text-primary hover:underline">
               Clinician outcomes
             </a>
