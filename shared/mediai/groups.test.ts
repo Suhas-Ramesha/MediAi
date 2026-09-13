@@ -27,6 +27,7 @@ import {
   specialtyGuard,
   waitingWindowEscalation,
 } from "./intake.ts";
+import { inferTriageFromTranscript } from "./triage.ts";
 import {
   SLIDER_LATENCY_BUDGET_MS,
   counterfactuals,
@@ -182,7 +183,7 @@ describe("C medication graph", () => {
     );
   });
 
-  it("RxNav responses must be numeric CUIs; local lookup is preferred", async () => {
+  it("RxNav responses must be numeric CUIs; live lookup is preferred", async () => {
     expect(lookupLocal("glucophage")?.rxcui).toBe("6809");
     expect(parseRxnavBody({ idGroup: { rxnormId: ["6809"] } })).toBe("6809");
     expect(parseRxnavBody({ idGroup: { rxnormId: ["not-a-cui"] } })).toBeNull();
@@ -486,6 +487,9 @@ describe("D intake", () => {
     expect(fever.synthesis).not.toMatch(/what do you think about it/i);
     expect(fever.triageSnapshot).not.toMatch(/Ranking, not a diagnosis/);
     expect(fever.differential[0].condition).not.toBe("migraine");
+    const headacheOnly = inferTriageFromTranscript("I have a headache");
+    expect(headacheOnly[0].condition).toMatch(/migraine|tension_headache/);
+    expect(headacheOnly[0].probability).toBeGreaterThanOrEqual(0.4);
     const headache = buildHandoffBrief({
       fragments: ["I have a pounding headache and light hurts"],
       medications: [],

@@ -1,10 +1,10 @@
 const GEMINI_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest"];
 
 const HEALTH_CHAT_INSTRUCTIONS = `You are an AI Health Assistant in a healthcare app. Rules you must follow:
-- Do NOT give a medical diagnosis or label a condition as certain.
-- You may offer general education, possible non-alarming explanations, and self-care ideas that are widely considered safe.
+- Offer possible explanations and practical self-care. You may name likely conditions as working impressions.
 - Do NOT recommend specific prescription medicines, doses, or stopping/changing prescribed drugs.
 - If symptoms could be serious, calmly suggest seeking urgent or in-person care without fear-mongering.
+- Never add a disclaimer footer such as "this is not a diagnosis" or "consult a certified doctor for professional advice".
 
 Length & format rules (IMPORTANT):
 - For casual questions, small talk, thanks, or simple factual asks: reply in 1-3 short sentences. No sections, no bullets, no headings.
@@ -139,13 +139,14 @@ Keep it concise but complete and easy to scan.`;
       /This is not a medical diagnosis\. Please consult a certified doctor for professional advice\.?/gi,
       "",
     )
+    .replace(/\bThis is (?:a ranking, )?not a(?: medical)? diagnosis\.?/gi, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
 const BRIEF_PHRASE_INSTRUCTIONS = `You rewrite a patient visit brief. Rules:
 - Use ONLY facts present in the patient's words or the provided mapping list.
-- Do not diagnose. Do not add symptoms, medicines, or times that are not in the source.
+- Do not add symptoms, medicines, or times that are not in the source.
 - Deduplicate repeated sentences. Do not paste the chat verbatim.
 - Write 3-6 short clinical sentences: timeline, named medicines, red-flag phrases if present.
 - Prefer the mapped clinical terms (fever, vomiting) over slang, but do not invent extra terms.

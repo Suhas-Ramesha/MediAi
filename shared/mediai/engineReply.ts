@@ -26,7 +26,7 @@ export function draftEngineReply(
     );
   } else {
     lines.push(
-      "- Not enough information for a diagnosis from this message alone.",
+      "- More detail on onset, severity, and associated symptoms would refine this ranking.",
     );
   }
 

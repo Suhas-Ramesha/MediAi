@@ -249,6 +249,51 @@ export function uniformPrior(): Record<ConditionId, number> {
   >;
 }
 
+/** Boost conditions that match yes-answers so a lone "headache" is not ~15%. */
+const COMPLAINT_BOOST: Record<string, Partial<Record<ConditionId, number>>> = {
+  headache: { migraine: 12, tension_headache: 10 },
+  photophobia: { migraine: 16 },
+  fever: { influenza: 5, covid: 4, viral_uri: 3, pneumonia_suspect: 2 },
+  sore_throat: { strep_pharyngitis: 8, viral_uri: 4 },
+  cough: { pneumonia_suspect: 5, covid: 4, influenza: 3, viral_uri: 3 },
+  dyspnea: { pneumonia_suspect: 12, covid: 4 },
+  dysuria: { uti: 18 },
+  reflux: { gerd: 18 },
+  vomiting: { gastroenteritis: 6, migraine: 3 },
+  diarrhea: { gastroenteritis: 16 },
+  unilateral_throat: { strep_pharyngitis: 8 },
+  neck_stiffness: { tension_headache: 4, migraine: 3 },
+};
+
+function normalize(
+  weights: Record<ConditionId, number>,
+): Record<ConditionId, number> {
+  const total = CONDITIONS.reduce((s, c) => s + weights[c], 0);
+  const out = {} as Record<ConditionId, number>;
+  for (const c of CONDITIONS) {
+    out[c] = total > 0 ? weights[c] / total : 1 / CONDITIONS.length;
+  }
+  return out;
+}
+
+export function complaintPrior(
+  answers: Record<string, AnswerValue>,
+): Record<ConditionId, number> {
+  const w = Object.fromEntries(CONDITIONS.map((c) => [c, 1])) as Record<
+    ConditionId,
+    number
+  >;
+  for (const [qid, a] of Object.entries(answers)) {
+    if (a !== "yes") continue;
+    const boost = COMPLAINT_BOOST[qid];
+    if (!boost) continue;
+    for (const c of CONDITIONS) {
+      w[c] *= boost[c] ?? 1;
+    }
+  }
+  return normalize(w);
+}
+
 export function posterior(
   prior: Record<ConditionId, number>,
   answers: Record<string, AnswerValue>,
@@ -315,7 +360,7 @@ export function answersFromTranscript(text: string): Record<string, AnswerValue>
 
 export function inferTriageFromTranscript(text: string): ConditionProbability[] {
   const answers = answersFromTranscript(text);
-  return asDistribution(posterior(uniformPrior(), answers));
+  return asDistribution(posterior(complaintPrior(answers), answers));
 }
 
 export interface RankedQuestion {
@@ -379,7 +424,7 @@ export function nextTriageTurn(state: TriageState): {
   stop: StopReason;
   ranking: RankedQuestion[];
 } {
-  const post = posterior(uniformPrior(), state.answers);
+  const post = posterior(complaintPrior(state.answers), state.answers);
   const asked = new Set(Object.keys(state.answers));
   const ranking = rankQuestions(post, asked);
   const stop = shouldStop(state, post);

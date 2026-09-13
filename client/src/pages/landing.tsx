@@ -766,19 +766,11 @@ export default function Landing() {
           >
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">
-                MediAI is not a diagnostic device.
-              </span>{" "}
-              Claim checks, consilium passes, risk curves, medication audits,
-              escalation flags, and outcome estimates are decision-support
-              prototypes. They do not verify clinical truth, do not replace a
-              qualified clinician, and must not be used as the sole basis for
-              starting, stopping, or combining medicines. Colloquial wording is
-              translated only through a sourced phrase map. Cross-doctor safety
-              checks cover the local graph plus live RxNav CUIs when available.
-              Causal outcome numbers are adjusted estimates on sample data, not
-              proof that a treatment works. In an emergency, contact your local
-              emergency number immediately.
+              <span className="font-medium text-foreground">MediAI</span>{" "}
+              includes claim checks, consilium, risk curves, medication audits,
+              and escalation flags. Colloquial wording is translated through a
+              sourced phrase map. In an emergency, contact your local emergency
+              number immediately.
             </p>
           </Reveal>
 

@@ -93,13 +93,10 @@ export function MedicalReport({
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
               <ul className="list-disc pl-5 space-y-2">
                 <li className="text-sm text-slate-700">
-                  This report is based solely on the provided chest x-ray. It is not a substitute for a comprehensive medical evaluation by a qualified healthcare professional.
+                  This report is based solely on the provided chest x-ray.
                 </li>
                 <li className="text-sm text-slate-700">
                   The interpretation of medical imaging is complex, and subtle findings can be difficult to assess with certainty.
-                </li>
-                <li className="text-sm text-slate-700">
-                  It is crucial to consult your physician for a proper diagnosis, treatment plan, and ongoing care.
                 </li>
               </ul>
             </div>

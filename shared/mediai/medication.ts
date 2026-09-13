@@ -1,6 +1,12 @@
-import { lookupLocal, RXNORM, type RxNormHit } from "./rxnorm.ts";
+import {
+  allergyConflictLive,
+  fetchRxnavInteractions,
+  lookupLocal,
+  resolveDrug,
+  type RxNormHit,
+} from "./rxnorm.ts";
+import { isRxnavLive } from "./types.ts";
 
-export { RXNORM };
 export type { RxNormHit };
 
 export interface MedicationEntry {
@@ -191,6 +197,60 @@ export function extractDrugMentionsFromText(text: string): {
   return mentions;
 }
 
+/** Tokens to send to live RxNav even if the local lexicon missed them. */
+export function extractDrugCandidateTokens(text: string): string[] {
+  const tokens = text.split(/[^a-zA-Z0-9+/]+/).filter((t) => t.length >= 4);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const push = (raw: string) => {
+    const key = raw.toLowerCase();
+    if (seen.has(key) || NER_STOP.has(key)) return;
+    if (/^\d+\s?(mg|mcg|g|iu|ml)$/i.test(raw)) return;
+    seen.add(key);
+    out.push(raw);
+  };
+  for (let i = 0; i < tokens.length; i++) {
+    push(tokens[i]);
+    if (i + 1 < tokens.length) push(`${tokens[i]} ${tokens[i + 1]}`);
+  }
+  return out;
+}
+
+export async function parsePrescriptionTextLive(
+  text: string,
+  sourceDoctorId: string,
+  startedOn: string,
+  fetchImpl: typeof fetch,
+): Promise<{ entries: Omit<MedicationEntry, "id">[]; unknownTokens: string[] }> {
+  const parts = text.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean);
+  const entries: Omit<MedicationEntry, "id">[] = [];
+  const unknownTokens: string[] = [];
+  for (const part of parts) {
+    const tokens = [part, ...part.split(/\s+/)];
+    let hit: RxNormHit | null = null;
+    for (const tok of tokens) {
+      if (tok.length < 4) continue;
+      hit = await resolveDrug(tok, { fetchImpl, liveNetwork: isRxnavLive() });
+      if (hit) break;
+    }
+    if (!hit) {
+      if (/[a-z]{4,}/i.test(part)) unknownTokens.push(part);
+      continue;
+    }
+    const dose = part.match(/\d+\s?(mg|mcg|iu)/i)?.[0];
+    entries.push({
+      rxcui: hit.rxcui,
+      genericName: hit.generic,
+      brandName: part,
+      dose,
+      sourceDoctorId,
+      startedOn,
+      rawText: part,
+    });
+  }
+  return { entries, unknownTokens };
+}
+
 export function mergeIntoGraph(
   graph: SafetyGraph,
   incoming: Omit<MedicationEntry, "id">[],
@@ -228,8 +288,9 @@ export function forwardAudit(
   graph: SafetyGraph,
   newDrugRaw: string,
   newDoctorId: string,
+  resolved?: { rxcui: string; generic: string } | null,
 ): AuditResult {
-  const hit = normalizeDrugName(newDrugRaw);
+  const hit = resolved ?? normalizeDrugName(newDrugRaw);
   if (!hit) {
     return {
       status: "incomplete",
@@ -313,6 +374,47 @@ export function removeFromGraph(graph: SafetyGraph, rxcui: string): SafetyGraph 
     ...graph,
     medications: graph.medications.filter((m) => m.rxcui !== rxcui),
   };
+}
+
+export async function forwardAuditLive(
+  graph: SafetyGraph,
+  newDrugRaw: string,
+  newDoctorId: string,
+  fetchImpl: typeof fetch,
+): Promise<AuditResult> {
+  const hit = await resolveDrug(newDrugRaw, { fetchImpl, liveNetwork: true });
+  if (!hit) {
+    return {
+      status: "incomplete",
+      findings: [
+        `Unknown drug token "${newDrugRaw}". Cannot certify an all-clear.`,
+      ],
+    };
+  }
+  if (await allergyConflictLive(graph.allergies, hit, fetchImpl)) {
+    return { status: "allergy", findings: [`Allergy overlap with ${hit.generic}`] };
+  }
+  if (
+    /metformin/i.test(hit.generic) &&
+    graph.organFlags.kidneyImpairment
+  ) {
+    return {
+      status: "organ",
+      findings: ["Metformin with kidney impairment needs clinician review"],
+    };
+  }
+  const cuis = [hit.rxcui, ...graph.medications.map((m) => m.rxcui)];
+  const pairs = await fetchRxnavInteractions(cuis, fetchImpl);
+  if (pairs.length) {
+    return {
+      status: "interaction",
+      findings: pairs.map(
+        (pair) =>
+          `${pair.note} (existing from graph, new from ${newDoctorId})`,
+      ),
+    };
+  }
+  return { status: "clear", findings: [] };
 }
 
 export function sideEffectWatch(

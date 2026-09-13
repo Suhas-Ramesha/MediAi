@@ -192,7 +192,7 @@ async function runChatEngines(
     });
     if (r.ok) return (await r.json()) as ChatEngineResult;
   } catch {
-    /* Express / RxNav down: keep the in-browser engines */
+    /* Express / NLM RxNav down: in-browser engines skip the name lexicon */
   }
   return local;
 }
@@ -1614,7 +1614,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     const factorLines = (
       factors?.length
         ? factors.slice(0, 4)
-        : [{ name: "Overall pattern", explanation: "The tool combined your answers into one score; details below are general hints, not a diagnosis." }]
+        : [{ name: "Overall pattern", explanation: "The tool combined your answers into one score." }]
     )
       .map((f) => {
         const why = f.explanation?.trim();

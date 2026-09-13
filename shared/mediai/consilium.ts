@@ -39,7 +39,7 @@ export function runConsilium(
 
   const generalist = `Working impression is ${label(lead.condition)} (${(
     lead.probability * 100
-  ).toFixed(0)}%). Findings so far: ${findingText}. This is a ranking, not a diagnosis.`;
+  ).toFixed(0)}%). Findings so far: ${findingText}.`;
 
   const specialist = `As the ${label(lead.condition)} pass: the pattern of findings is more consistent with ${label(
     lead.condition,
@@ -58,7 +58,7 @@ export function runConsilium(
   const dissent = skeptic;
   const resolution = `Resolved working label: ${label(lead.condition)}, with preserved dissent that ${label(
     second?.condition ?? "another condition",
-  )} is not excluded. Escalate if breathing, chest pain, or a stiff neck appears. Not a diagnosis.`;
+  )} is not excluded. Escalate if breathing, chest pain, or a stiff neck appears.`;
 
   return {
     personas: [

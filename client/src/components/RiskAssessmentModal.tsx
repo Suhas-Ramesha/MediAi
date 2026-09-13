@@ -244,8 +244,7 @@ export function RiskAssessmentModal({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Match the fields to your recent readings or best estimate. This is not a
-            diagnosis.
+            Match the fields to your recent readings or best estimate.
           </DialogDescription>
         </DialogHeader>
 

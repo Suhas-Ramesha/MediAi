@@ -3,33 +3,49 @@ import { useMemo } from "react";
 import { inferTrigger } from "@shared/mediai/environment";
 import {
   forwardAudit,
-  mergeIntoGraph,
-  parsePrescriptionText,
   sideEffectWatch,
   type SafetyGraph,
 } from "@shared/mediai/medication";
 
+/** Published RxNorm CUIs (https://rxnav.nlm.nih.gov/) for the landing illustration. */
 function demoGraph(): SafetyGraph {
-  const parsed = parsePrescriptionText("warfarin 5mg", "doc1", "2026-07-01");
-  const metformin = parsePrescriptionText(
-    "Glucophage 500 mg",
-    "doc1",
-    "2026-09-01",
-  );
-  const empty: SafetyGraph = {
+  return {
     patientId: "demo",
     allergies: ["penicillin"],
     organFlags: { kidneyImpairment: false, liverImpairment: false },
-    medications: [],
+    medications: [
+      {
+        id: "11289-0",
+        rxcui: "11289",
+        genericName: "warfarin",
+        brandName: "warfarin 5mg",
+        dose: "5mg",
+        sourceDoctorId: "doc1",
+        startedOn: "2026-07-01",
+        rawText: "warfarin 5mg",
+      },
+      {
+        id: "6809-1",
+        rxcui: "6809",
+        genericName: "metformin",
+        brandName: "Glucophage 500 mg",
+        dose: "500 mg",
+        sourceDoctorId: "doc1",
+        startedOn: "2026-09-01",
+        rawText: "Glucophage 500 mg",
+      },
+    ],
   };
-  const once = mergeIntoGraph(empty, parsed.entries);
-  return mergeIntoGraph(once.graph, metformin.entries).graph;
 }
 
 export function ConnectedSafetyDemo() {
   const graph = useMemo(() => demoGraph(), []);
   const audit = useMemo(
-    () => forwardAudit(graph, "ibuprofen 400mg", "doc2"),
+    () =>
+      forwardAudit(graph, "ibuprofen 400mg", "doc2", {
+        rxcui: "5640",
+        generic: "ibuprofen",
+      }),
     [graph],
   );
   const unknown = useMemo(

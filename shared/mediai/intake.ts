@@ -497,8 +497,8 @@ export function buildHandoffBrief(input: {
     .map((d) => `${d.condition.replace(/_/g, " ")} ${Math.round(d.probability * 100)}%`)
     .join("; ");
   const triageSnapshot = differential[0]
-    ? `Triage ranking (engine, not a patient statement): ${ranked}.`
-    : "Triage ranking (engine, not a patient statement): undetermined.";
+    ? `Engine ranking: ${ranked}.`
+    : "Engine ranking: undetermined.";
 
   return {
     id: newBriefId(),

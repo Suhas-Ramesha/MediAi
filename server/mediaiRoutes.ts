@@ -18,12 +18,14 @@ import { isRxnavLive } from "../shared/mediai/types.ts";
 import { generateBriefPhrase } from "./gemini.ts";
 import { applyColloquialMap, assertMappedSourcing } from "../shared/mediai/colloquial.ts";
 import { analyzeChatTurnLive } from "../shared/mediai/chatSafety.ts";
-import { fetchRxnavInteractions, resolveDrug } from "../shared/mediai/rxnorm.ts";
+import { fetchRxnavInteractions } from "../shared/mediai/rxnorm.ts";
 import {
   auditGraph,
   forwardAudit,
+  forwardAuditLive,
   mergeIntoGraph,
   parsePrescriptionText,
+  parsePrescriptionTextLive,
   sideEffectWatch,
   type SafetyGraph,
 } from "../shared/mediai/medication.ts";
@@ -116,25 +118,18 @@ export function registerMediaiRoutes(app: Express): void {
       });
     }
 
-    let parsed = parsePrescriptionText(
-      String(req.body?.text ?? ""),
-      doctorId,
-      startedOn,
-    );
-    if (isRxnavLive()) {
-      for (const token of [...parsed.unknownTokens]) {
-        const live = await resolveDrug(token, {
-          fetchImpl: fetch,
-          liveNetwork: true,
-        });
-        if (!live) continue;
-        parsed = parsePrescriptionText(
-          `${req.body?.text ?? ""}\n${live.generic}`,
+    let parsed = isRxnavLive()
+      ? await parsePrescriptionTextLive(
+          String(req.body?.text ?? ""),
+          doctorId,
+          startedOn,
+          fetch,
+        )
+      : parsePrescriptionText(
+          String(req.body?.text ?? ""),
           doctorId,
           startedOn,
         );
-      }
-    }
     if (!parsed.entries.length && String(req.body?.text ?? "").trim()) {
       return res.status(409).json({
         status: "incomplete",
@@ -197,13 +192,20 @@ export function registerMediaiRoutes(app: Express): void {
     });
   });
 
-  app.post("/api/mediai/medication/audit", (req: Request, res: Response) => {
+  app.post("/api/mediai/medication/audit", async (req: Request, res: Response) => {
     const g = graphFor(String(req.body?.patientId ?? "demo"));
-    const audit = forwardAudit(
-      g,
-      String(req.body?.newDrug ?? ""),
-      String(req.body?.doctorId ?? "unknown"),
-    );
+    const audit = isRxnavLive()
+      ? await forwardAuditLive(
+          g,
+          String(req.body?.newDrug ?? ""),
+          String(req.body?.doctorId ?? "unknown"),
+          fetch,
+        )
+      : forwardAudit(
+          g,
+          String(req.body?.newDrug ?? ""),
+          String(req.body?.doctorId ?? "unknown"),
+        );
     res.json(audit);
   });
 
