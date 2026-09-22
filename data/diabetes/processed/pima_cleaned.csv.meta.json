@@ -1,0 +1,36 @@
+{
+  "source": "data/diabetes/raw/openml_37_pima_diabetes.csv",
+  "fix": "zeros in glucose/bp/skin/insulin/bmi recoded to NA; pregnancies=0 kept; class mapped to disease",
+  "zeros_recoded_to_na": {
+    "plas": 5,
+    "pres": 35,
+    "skin": 227,
+    "insu": 374,
+    "mass": 11
+  },
+  "class_balance": {
+    "0": 500,
+    "1": 268
+  },
+  "note": "Trees/TabPFN consume NA natively. Any median impute happens inside train-only pipelines, never here.",
+  "n": 768,
+  "columns": [
+    "pregnancies",
+    "glucose",
+    "bp",
+    "skin",
+    "insulin",
+    "bmi",
+    "pedigree",
+    "age",
+    "disease"
+  ],
+  "missing_after": {
+    "glucose": 5,
+    "bp": 35,
+    "skin": 227,
+    "insulin": 374,
+    "bmi": 11
+  },
+  "written_utc": "2026-09-22T10:46:51Z"
+}
