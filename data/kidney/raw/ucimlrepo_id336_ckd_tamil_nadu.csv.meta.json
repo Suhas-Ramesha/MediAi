@@ -1,0 +1,13 @@
+{
+  "title": "UCI Chronic Kidney Disease",
+  "source_url": "https://archive.ics.uci.edu/dataset/336/chronic+kidney+disease",
+  "doi": "10.24432/C5G020",
+  "license": "CC BY 4.0",
+  "geography": "Apollo Hospitals, Karaikudi, Tamil Nadu, India",
+  "india": true,
+  "role": "India primary CKD table. MediAI form is a 4-lab subset (creatinine, urea, hemoglobin, BP).",
+  "bytes": 48295,
+  "sha256": "b2a110ee4fe787629ab726d427fc91783f6e42857bf75a646810bceb5989ee10",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/kidney/raw/ucimlrepo_id336_ckd_tamil_nadu.csv"
+}

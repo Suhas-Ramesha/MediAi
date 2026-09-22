@@ -1,0 +1,13 @@
+{
+  "title": "ILPD Indian Liver Patient Dataset",
+  "source_url": "https://archive.ics.uci.edu/dataset/225/ilpd+indian+liver+patient+dataset",
+  "doi": "10.24432/C5D02C",
+  "license": "CC BY 4.0",
+  "geography": "North-East Andhra Pradesh, India",
+  "india": true,
+  "role": "India primary liver table; matches the MediAI liver form",
+  "bytes": 24013,
+  "sha256": "9a59315bee30d451f43ea7f46a7e9b68bb2d6900ab56b8c996695d58edf93fe7",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/liver/raw/ucimlrepo_id225_ilpd.csv"
+}

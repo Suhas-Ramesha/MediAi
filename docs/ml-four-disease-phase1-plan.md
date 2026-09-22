@@ -1,7 +1,22 @@
 # Phase 1 plan — four independent tabular disease classifiers
 
-**Status:** PLAN ONLY. No datasets have been downloaded. No models have been trained.  
-**Stop-gate:** Do not start Phase 2 until this plan is explicitly approved.
+**Status:** PHASE 1 LOCKED (product-fit defaults). Phase 2 may download data.  
+**Stop-gate:** Phase 2 still stops for a data-audit confirmation before any training.
+
+### Locked decisions (chosen for MediAI prediction, not for a detached Kaggle bake-off)
+
+The app already collects Cleveland heart fields, ILPD liver fields, Pima-style diabetes labs, and a 4-lab kidney subset. Models that cannot take those inputs cannot replace the Hugging Face Gradio risk calls.
+
+| # | Decision | Lock |
+|---|---|---|
+| 1 | Dataset matrix | **India first, then pool every compatible extra table** so each disease model is trained on multiple sources (still one model per disease, not one model across diseases). Heart: Indian hospital (Mendeley 10.17632/dzz48mvjht.1) + UCI Cleveland/Hungary/Switzerland/VA. Liver: ILPD (Andhra Pradesh) + HCV labs with ILPD-only fields left missing. Kidney: Tamil Nadu UCI 336 + Bangladesh UCI 857 (parse bins to midpoints; drop leakage cols `stage`/`grf`/`affected`). Diabetes: no public Indian *8-lab* table; Pima for the product form + Sylhet Bangladesh as a separate symptom-schema check (not pooled). NMB-2017 (7496 Indians) is the right India diabetes study but uses HbA1c/waist, not the app form, and the Mendeley file was not downloadable without a browser session. |
+| 2 | Pima | **Train it**, with the ethics limitation written into the notebook (women ≥21, one named community, zeros-as-missing). |
+| 3 | Labels | Binary for all four. |
+| 4 | Phase 4 API schema | **Match the existing MediAI risk modal** so `/predict` can replace Gradio. Kidney trains on the full UCI 24-column table; serving accepts the 4 UI labs and treats the rest as missing (median/mode + missing indicators). |
+| 5 | TabPFN | TabPFNv2. All four primaries are small (n ≤ 768), so no 8k subset rule is needed. |
+| 6 | Optuna | 40 / 40 / 40 / 8 trials. |
+| 7 | NHANES kidney | Skip. |
+| 8 | Claims | Screening-style probability, not a diagnosis. |
 
 This document is the Phase 1 deliverable: the shared algorithm-comparison protocol, plus three citable dataset options per disease with a primary and a secondary recommendation.
 

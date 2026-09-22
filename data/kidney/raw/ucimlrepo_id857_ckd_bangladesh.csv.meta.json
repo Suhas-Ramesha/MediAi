@@ -1,0 +1,14 @@
+{
+  "title": "UCI Risk Factor Prediction of Chronic Kidney Disease",
+  "source_url": "https://archive.ics.uci.edu/dataset/857/risk+factor+prediction+of+chronic+kidney+disease",
+  "doi": "10.24432/C5WP64",
+  "license": "CC BY 4.0",
+  "geography": "Enam Medical College, Savar, Dhaka, Bangladesh",
+  "india": false,
+  "south_asia": true,
+  "role": "Second CKD source, overlapping labs. Pool on intersecting columns with the Tamil Nadu table.",
+  "bytes": 33851,
+  "sha256": "bbc5265624da2df64745e109c66585ed06deaf1b28270aee946c3cc77d90cb3d",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/kidney/raw/ucimlrepo_id857_ckd_bangladesh.csv"
+}

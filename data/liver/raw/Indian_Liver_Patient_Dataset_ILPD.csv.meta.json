@@ -1,0 +1,11 @@
+{
+  "title": "ILPD original UCI CSV (no header row)",
+  "source_url": "https://archive.ics.uci.edu/ml/machine-learning-databases/00225/Indian%20Liver%20Patient%20Dataset%20(ILPD).csv",
+  "doi": "10.24432/C5D02C",
+  "license": "CC BY 4.0",
+  "india": true,
+  "bytes": 23755,
+  "sha256": "84feac16488de5cf89bd22bd802c77f25841fe93e9ddd32355683e94d46c3425",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/liver/raw/Indian_Liver_Patient_Dataset_ILPD.csv"
+}

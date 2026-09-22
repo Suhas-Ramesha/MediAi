@@ -1,0 +1,13 @@
+{
+  "title": "UCI HCV data",
+  "source_url": "https://archive.ics.uci.edu/dataset/571/hcv+data",
+  "doi": "10.24432/C5D612",
+  "license": "CC BY 4.0",
+  "geography": "Germany (Hannover / Trillium labs)",
+  "india": false,
+  "role": "Second liver source. Not India. Same-task (disease vs donor) with overlapping labs; pool with missing ILPD-only columns, or hold out as external validation.",
+  "bytes": 41892,
+  "sha256": "5df221c426fe184ab72724f305dc69808a3b72284abcee47a56c387d250575ff",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/liver/raw/ucimlrepo_id571_hcv.csv"
+}

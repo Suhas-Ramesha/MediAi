@@ -1,0 +1,16 @@
+{
+  "title": "Cardiovascular_Disease_Dataset (Indian multispecialty hospital)",
+  "source_url": "https://raw.githubusercontent.com/Ravi8548/Cardiovascular-diseases-CVDs-analysis/main/Cardiovascular_Disease_Dataset.csv",
+  "original_page": "https://data.mendeley.com/datasets/dzz48mvjht/1",
+  "doi": "10.17632/dzz48mvjht.1",
+  "license": "CC BY 4.0",
+  "authors": "Doppala, Bhanu Prakash; Bhattacharyya, Debnath",
+  "geography": "India (unspecified multispecialty hospital)",
+  "india": true,
+  "role": "India primary heart table; Cleveland-like features (no thal). Retrieval path is GitHub; cite the Mendeley DOI.",
+  "note": "Inspect for duplication vs UCI Cleveland before pooling.",
+  "bytes": 43633,
+  "sha256": "9376367dde41e79e432d6402ea5d9e44223fc318ff54ed09966d721923947d1e",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/heart/raw/india_mendeley_dzz48mvjht_Cardiovascular_Disease_Dataset.csv"
+}

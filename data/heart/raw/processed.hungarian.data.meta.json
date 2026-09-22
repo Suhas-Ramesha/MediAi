@@ -1,0 +1,13 @@
+{
+  "title": "UCI Heart Disease processed hungarian",
+  "source_url": "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.hungarian.data",
+  "doi": "10.24432/C52P4X",
+  "license": "CC BY 4.0",
+  "geography": "hungarian",
+  "india": false,
+  "role": "cleveland=core US cath-lab table; others=same-schema extra sites for pooled training",
+  "bytes": 10263,
+  "sha256": "d1ad108f785768cd3d7e82dc522e6f5a61eea93cccfb3a46ee8076f73fc3d796",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/heart/raw/processed.hungarian.data"
+}

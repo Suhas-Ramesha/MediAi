@@ -1,0 +1,12 @@
+{
+  "title": "ucimlrepo fetch id=45 (Cleveland 14-col subset)",
+  "source_url": "https://archive.ics.uci.edu/dataset/45/heart+disease",
+  "doi": "10.24432/C52P4X",
+  "license": "CC BY 4.0",
+  "india": false,
+  "role": "same as processed.cleveland via the official Python client",
+  "bytes": 12472,
+  "sha256": "c3855e7c0a818f03a1e90e4f23e0ad5d058dfbd1f276f1aab15d1f02693c1d0d",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/heart/raw/ucimlrepo_id45_cleveland.csv"
+}
