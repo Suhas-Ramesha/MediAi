@@ -4,6 +4,12 @@ Generated (UTC): `2026-09-22T10:41:05Z`
 
 No training has been run. Raw files are unmodified.
 
+**The three data defects called out in Phase 2 are fixed in `processed/`** (see `data/CLEANING.md`). Raw files are still the originals.
+
+- ILPD: 4 missing A/G Ratio filled from ALB/(TP−ALB) → 0 missing. 416 / 167 unchanged.
+- Pima: zeros in glucose/BP/skin/insulin/BMI recoded to NA. 268 / 500 unchanged. `pregnancies=0` kept.
+- Tamil Nadu CKD: `ckd\\t` stripped (250 / 150); class-blind impute with **no missingness flags**, so lab-ordering cannot leak the label. 0 missing cells after.
+
 ## Training plan these files support
 
 Each disease still gets **one** deployed model. That model is trained on **all compatible rows**
@@ -214,6 +220,6 @@ MediAI currently collects sc, bu, hemo, bp (+ sex/lifestyle). Other columns are 
 3. Indian heart vs Cleveland: **0 overlapping rows** on age+BP+cholesterol+max HR (checked). Not a Cleveland clone.
 4. Pima is **not** an Indian dataset. NMB-2017 (7496 Indians, DOI 10.17632/twp8xw6p25.1) exists but uses HbA1c/waist/self-report, not the 8 form labs, and Mendeley did not yield a file without a browser session.
 5. Pabna Bangladesh (DOI 10.17632/vxnyysk9vc.2) is Pima-like and would be a valid extra pool if a raw file becomes available; it was not downloaded this run.
-6. UCI CKD missingness may itself leak the label — Phase 3 must report complete-case vs missing-indicator.
+6. UCI CKD missingness-as-label is **blocked in processed data** (class-blind impute, no missing flags). Do not reintroduce `_was_missing` columns in training.
 7. These classifiers are not diagnoses.
 
