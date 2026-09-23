@@ -37,7 +37,8 @@ notebooks/catboost_info/
 # ---- Editor / local ----
 .vscode/settings.json
 .breakpoints
-data/mediai-store.json
+data/shared/raw/nhanes_full.csv
+data/**/nhanes_full.csv
 
 # ---- Agent design skills ----
 # The skill content is committed so the whole team gets it, but the detector

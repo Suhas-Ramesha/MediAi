@@ -14,9 +14,9 @@ same-schema tables are stored for **pooled training** (not a single combined mul
 | Disease | India / South Asia | Extra same-schema sources | Product form |
 |---|---|---|---|
 | Heart | Mendeley Indian hospital (DOI 10.17632/dzz48mvjht.1, n≈1000) | UCI Cleveland + Hungary + Switzerland + VA Long Beach | Cleveland 13 features |
-| Liver | UCI ILPD, Andhra Pradesh (DOI 10.24432/C5D02C) | UCI HCV (Germany) — overlapping labs | ILPD panel |
-| Diabetes | No public Indian 8-lab table found | Pima (US, form match) + Sylhet Bangladesh (symptoms, not poolable) | Pima 8 labs |
-| Kidney | UCI CKD, Karaikudi, Tamil Nadu (DOI 10.24432/C5G020) | UCI 857 Bangladesh | 4 labs ⊂ 24 UCI columns |
+| Liver | UCI ILPD, Andhra Pradesh (DOI 10.24432/C5D02C) | UCI HCV (Germany) + Mayo PBC (UCI 878) | ILPD panel |
+| Diabetes | No public Indian 8-lab table found | Pima (US, form match) + NHANES 2011–2023 overlapping labs; Sylhet Bangladesh (symptoms, not poolable) | Pima 8 labs |
+| Kidney | UCI CKD, Karaikudi, Tamil Nadu (DOI 10.24432/C5G020) | UCI 857 Bangladesh (pooled; BP left missing) | 4 labs ⊂ 24 UCI columns |
 
 ## Files
 
@@ -65,6 +65,10 @@ same-schema tables are stored for **pooled training** (not a single combined mul
   source: https://archive.ics.uci.edu/dataset/571/hcv+data  
   license: CC BY 4.0 · DOI: 10.24432/C5D612  
   sha256: `5df221c426fe184ab72724f305dc69808a3b72284abcee47a56c387d250575ff` · bytes: 41892 · 2026-09-22T10:41:05Z
+- `liver/raw/ucimlrepo_id878_cirrhosis_mayo_pbc.csv` — Mayo PBC / cirrhosis labs (UCI 878)  
+  source: https://archive.ics.uci.edu/dataset/878/cirrhosis+patient+survival+prediction+dataset-1  
+  license: CC BY 4.0 · DOI: 10.24432/C5R02G  
+  role: extra confirmed liver-disease rows; Status/Stage/Drug are not features
 
 ### diabetes
 
@@ -76,6 +80,10 @@ same-schema tables are stored for **pooled training** (not a single combined mul
   source: https://archive.ics.uci.edu/dataset/529/early+stage+diabetes+risk+prediction+dataset  
   license: CC BY 4.0 (UCI) · DOI: —  
   sha256: `aedb4c29fa697086c957ede846c5487f52e70eb93f7899d5e15d70bb68f8a397` · bytes: 34161 · 2026-09-22T10:41:05Z
+- `diabetes/raw/nhanes_2011_2023_diabetes_labs.csv` — NHANES 2011–2023 overlapping labs (column subset, not the 57MB dump)  
+  source: CDC/NCHS NHANES packaged at https://zenodo.org/records/21051814  
+  license: NCHS public-use · DOI: 10.5281/zenodo.20299025  
+  role: second diabetes source; DIQ010 0 vs 2; subsample negatives 1.8× in `ml/data_prep.py`
 
 ### kidney
 
@@ -88,7 +96,14 @@ same-schema tables are stored for **pooled training** (not a single combined mul
   license: CC BY 4.0 · DOI: 10.24432/C5WP64  
   sha256: `bbc5265624da2df64745e109c66585ed06deaf1b28270aee946c3cc77d90cb3d` · bytes: 33851 · 2026-09-22T10:41:05Z
 
-## Audit snapshot
+## Accuracy / pooling notes (mentor)
 
-See `data/AUDIT.md` for row counts, columns, class balance, missingness, and dictionaries.
+Holdout accuracy target is **≥ 85%**, and it must beat the majority-class dummy:
+
+- Heart: India + UCI 4 sites (already ≥ 85% on the 13-field form).
+- Liver: ILPD + HCV + Mayo PBC. ILPD-only is harder — quote pooled **and** ILPD-by-source.
+- Diabetes: Pima cannot hit 85% on a proper holdout (~74%). NHANES adults are pooled on glucose/BMI/age/BP; negatives subsampled so dummy ≈ 65%.
+- Kidney: Tamil Nadu + Bangladesh. UCI CKD is nearly separable; near-1.0 is a property of the table.
+
+Do not commit `nhanes_full.csv` (≈57MB). Rebuild the column subset with `python -m ml.persist_extra_sources`.
 

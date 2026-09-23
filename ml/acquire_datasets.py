@@ -303,6 +303,38 @@ def acquire_liver() -> list[dict[str, Any]]:
             "geography": "Germany",
         }
     )
+
+    mayo, _ = try_ucimlrepo(878)
+    mb = mayo.to_csv(index=False).encode("utf-8")
+    write_raw(
+        raw / "ucimlrepo_id878_cirrhosis_mayo_pbc.csv",
+        mb,
+        {
+            "title": "Cirrhosis Patient Survival (Mayo PBC trial labs)",
+            "source_url": "https://archive.ics.uci.edu/dataset/878/cirrhosis+patient+survival+prediction+dataset-1",
+            "doi": "10.24432/C5R02G",
+            "license": "CC BY 4.0",
+            "geography": "Mayo Clinic PBC trial, USA",
+            "india": False,
+            "role": (
+                "Third liver source. All rows are confirmed PBC. Pooled as disease=1 on "
+                "Age/Sex/Bilirubin/Alk_Phos/SGOT/Albumin; Status/Stage/Drug are never features."
+            ),
+        },
+    )
+    records.append(
+        {
+            "disease": "liver",
+            "file": "ucimlrepo_id878_cirrhosis_mayo_pbc.csv",
+            "n": int(len(mayo)),
+            "columns": list(map(str, mayo.columns)),
+            "target": "all rows = liver disease (PBC); Status is survival and is not used",
+            "class_balance_raw": {"pbc_disease": int(len(mayo))},
+            "missing": missing_report(mayo),
+            "india": False,
+            "geography": "Mayo Clinic, USA",
+        }
+    )
     return records
 
 

@@ -43,18 +43,9 @@ def train_diabetes() -> dict:
 
 
 def train_kidney() -> dict:
-    primary, secondary = load_kidney()
-    X, y = feature_target(primary)
-    Xs, ys = feature_target(secondary)
-    common = [c for c in X.columns if c in Xs.columns and c != "bp"]
-    return run_disease(
-        "kidney",
-        X,
-        y,
-        secondary=(Xs[common], ys) if common else None,
-        sources=primary["source"],
-        log=_log,
-    )
+    pool, _bangladesh = load_kidney()
+    X, y = feature_target(pool)
+    return run_disease("kidney", X, y, sources=pool["source"], log=_log)
 
 
 def main() -> None:
@@ -77,9 +68,9 @@ def main() -> None:
                 "roc_auc": hold["roc_auc"],
                 "dataset": {
                     "heart": "India hospital + UCI Cleveland/Hungary/Switzerland/VA",
-                    "liver": "ILPD (Andhra Pradesh) + UCI HCV",
-                    "diabetes": "Pima (8-lab form; zeros recoded to NA)",
-                    "kidney": "UCI CKD Tamil Nadu (leak-blocked) + Bangladesh secondary",
+                    "liver": "ILPD (Andhra Pradesh) + UCI HCV + Mayo PBC",
+                    "diabetes": "Pima 8-lab + NHANES 2011–2023 (negatives subsampled 1.8×)",
+                    "kidney": "UCI CKD Tamil Nadu (leak-blocked) + Bangladesh UCI 857",
                 }[disease],
             }
         )

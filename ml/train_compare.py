@@ -55,6 +55,11 @@ TREE_TRIALS = 25
 TABPFN_TRIALS = 4
 TREE_FOLDS = 5
 TABPFN_FOLDS = 3
+TABPFN_MAX_ROWS = 4000
+ACCURACY_GATE = 0.85
+# Unweighted trees: class weights lift recall at the cost of accuracy, and the
+# mentor quote is holdout accuracy ≥ 85%.
+USE_CLASS_WEIGHTS = False
 
 warnings.filterwarnings("ignore", category=UserWarning)
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -142,42 +147,48 @@ class EncodedModel:
         self.feature_names_: list[str] | None = None
 
     def _make(self):
-        spw = self.n_neg / max(self.n_pos, 1)
+        spw = self.n_neg / max(self.n_pos, 1) if USE_CLASS_WEIGHTS else 1.0
         if self.kind == "xgboost":
             from xgboost import XGBClassifier
 
-            return XGBClassifier(
+            xgb_kwargs = dict(
                 objective="binary:logistic",
                 eval_metric="auc",
                 tree_method="hist",
                 n_jobs=2,
                 random_state=RANDOM_STATE,
-                scale_pos_weight=spw,
                 **self.params,
             )
+            if USE_CLASS_WEIGHTS:
+                xgb_kwargs["scale_pos_weight"] = spw
+            return XGBClassifier(**xgb_kwargs)
         if self.kind == "lightgbm":
             from lightgbm import LGBMClassifier
 
-            return LGBMClassifier(
+            lgb_kwargs = dict(
                 objective="binary",
                 n_jobs=2,
                 random_state=RANDOM_STATE,
                 verbose=-1,
-                scale_pos_weight=spw,
                 **self.params,
             )
+            if USE_CLASS_WEIGHTS:
+                lgb_kwargs["scale_pos_weight"] = spw
+            return LGBMClassifier(**lgb_kwargs)
         if self.kind == "catboost":
             from catboost import CatBoostClassifier
 
-            return CatBoostClassifier(
+            cb_kwargs = dict(
                 loss_function="Logloss",
                 eval_metric="AUC",
                 random_seed=RANDOM_STATE,
                 verbose=False,
                 thread_count=2,
-                auto_class_weights="Balanced",
                 **self.params,
             )
+            if USE_CLASS_WEIGHTS:
+                cb_kwargs["auto_class_weights"] = "Balanced"
+            return CatBoostClassifier(**cb_kwargs)
         if self.kind == "tabpfn":
             from tabpfn import TabPFNClassifier
 
@@ -376,11 +387,23 @@ def shap_plots(model: EncodedModel, X: pd.DataFrame, out_dir: Path, log) -> list
 
 
 def pick_winner(results: list[dict[str, Any]]) -> dict[str, Any]:
+    """Prefer algorithms whose CV accuracy already clears 85%, then rank by ROC-AUC."""
+
     def key(r):
         cv = r["cv"]
-        return (cv["roc_auc"], cv["f1"], cv["recall"])
+        return (cv["roc_auc"], cv["accuracy"], cv["f1"])
 
-    return max(results, key=key)
+    gated = [r for r in results if r["cv"]["accuracy"] >= ACCURACY_GATE]
+    return max(gated or results, key=key)
+
+
+def _stratified_cap(X: pd.DataFrame, y: pd.Series, n: int, seed: int = RANDOM_STATE):
+    if len(X) <= n:
+        return X, y
+    from sklearn.model_selection import train_test_split as _tts
+
+    Xc, _, yc, _ = _tts(X, y, train_size=n, stratify=y, random_state=seed)
+    return Xc, yc
 
 
 def run_disease(
@@ -399,7 +422,12 @@ def run_disease(
     os.environ.setdefault("MLFLOW_TRACKING_URI", MLRUNS.as_uri())
 
     log(f"\n======== {name.upper()} ========")
-    log(f"rows={len(X)}  features={list(X.columns)}  positives={int(y.sum())}/{len(y)}")
+    pos_rate = float(y.mean())
+    dummy = max(pos_rate, 1.0 - pos_rate)
+    log(
+        f"rows={len(X)}  features={list(X.columns)}  positives={int(y.sum())}/{len(y)}  "
+        f"pos_rate={pos_rate:.3f}  majority-class dummy acc={dummy:.3f}"
+    )
     Xtr, Xho, ytr, yho = train_test_split(
         X, y, test_size=0.2, stratify=y, random_state=RANDOM_STATE
     )
@@ -430,8 +458,12 @@ def run_disease(
         for kind, trials, folds in algos:
             log(f"\n--- training {kind} ({trials} Optuna trials, {folds}-fold CV) ---")
             t0 = time.time()
+            Xfit, yfit = Xtr, ytr
+            if kind == "tabpfn" and len(Xtr) > TABPFN_MAX_ROWS:
+                Xfit, yfit = _stratified_cap(Xtr, ytr, TABPFN_MAX_ROWS)
+                log(f"  TabPFN train capped at {len(Xfit)} stratified rows (CPU limit)")
             try:
-                res = tune_algorithm(kind, Xtr, ytr, n_trials=trials, folds=folds, log=log)
+                res = tune_algorithm(kind, Xfit, yfit, n_trials=trials, folds=folds, log=log)
             except Exception as exc:
                 log(f"  {kind} FAILED: {exc!r}")
                 continue
@@ -466,9 +498,12 @@ def run_disease(
     if not fitted:
         raise RuntimeError(f"No algorithm succeeded for {name}")
     winner = pick_winner(fitted)
+    hold_acc = float(winner["holdout"]["accuracy"])
     log(
         f"\nWINNER for {name}: {winner['algorithm']}  "
-        f"CV-AUC={winner['cv']['roc_auc']:.4f}  holdout AUC={winner['holdout']['roc_auc']:.4f}"
+        f"CV-AUC={winner['cv']['roc_auc']:.4f}  holdout acc={hold_acc:.4f}  "
+        f"holdout AUC={winner['holdout']['roc_auc']:.4f}  "
+        f"{'MEETS' if hold_acc >= ACCURACY_GATE else 'BELOW'} {ACCURACY_GATE:.0%} accuracy gate"
     )
     # refit winner on full train split already done; shap on train sample
     shap_dir = REPORTS / name
@@ -527,6 +562,9 @@ def run_disease(
         "n_holdout": int(len(Xho)),
         "features": list(X.columns),
         "class_balance": {"positive": int(y.sum()), "negative": int((y == 0).sum())},
+        "majority_dummy_accuracy": dummy,
+        "accuracy_gate": ACCURACY_GATE,
+        "meets_accuracy_gate": hold_acc >= ACCURACY_GATE,
         "comparison": comparison,
         "winner": winner["algorithm"],
         "winner_cv": winner["cv"],

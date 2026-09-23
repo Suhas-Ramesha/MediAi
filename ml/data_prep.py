@@ -10,6 +10,11 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 
+# NHANES negatives are subsampled so 85% accuracy cannot be a majority-class dummy.
+# ~1.8× matches Pima prevalence (~35% positive) and was the first honest ≥85% pool.
+NHANES_NEG_RATIO = 1.8
+POOL_SEED = 42
+
 HEART_UCI_COLS = [
     "age",
     "sex",
@@ -82,8 +87,17 @@ def load_heart() -> tuple[pd.DataFrame, pd.DataFrame]:
     return pool, mapped
 
 
+def _subsample_negatives(df: pd.DataFrame, ycol: str, ratio: float, seed: int) -> pd.DataFrame:
+    """Keep every positive; draw `ratio` negatives per positive (or all negatives if fewer)."""
+    pos = df.loc[df[ycol] == 1]
+    neg = df.loc[df[ycol] == 0]
+    n_neg = min(len(neg), int(round(len(pos) * ratio)))
+    neg_s = neg.sample(n=n_neg, random_state=seed) if n_neg else neg.iloc[0:0]
+    return pd.concat([pos, neg_s], ignore_index=True)
+
+
 def load_liver() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """ILPD (India, full schema) plus HCV rows with ILPD-only labs left missing."""
+    """ILPD (India) + UCI HCV + Mayo PBC (all confirmed liver disease on overlapping labs)."""
     ilpd = pd.read_csv(DATA / "liver/processed/ilpd_cleaned.csv")
     core = pd.DataFrame(
         {
@@ -121,14 +135,63 @@ def load_liver() -> tuple[pd.DataFrame, pd.DataFrame]:
             "source": "hcv_germany",
         }
     )
-    pool = pd.concat([core, hcv_part], ignore_index=True)
+    mayo_path = DATA / "liver/raw/ucimlrepo_id878_cirrhosis_mayo_pbc.csv"
+    parts = [core, hcv_part]
+    if mayo_path.exists():
+        mayo = pd.read_csv(mayo_path)
+        mayo_part = pd.DataFrame(
+            {
+                "Age": pd.to_numeric(mayo["Age"], errors="coerce") / 365.25,
+                "Gender": mayo["Sex"].map({"M": "Male", "F": "Female", "m": "Male", "f": "Female"}),
+                "TB": mayo["Bilirubin"],
+                "DB": np.nan,
+                "Alkphos": mayo["Alk_Phos"],
+                "Sgpt": np.nan,  # ALT not on the Mayo table; class-blind median impute later
+                "Sgot": mayo["SGOT"],
+                "TP": np.nan,
+                "ALB": mayo["Albumin"],
+                "AG": np.nan,
+                "disease": 1,  # PBC trial — every row is confirmed liver disease
+                "source": "mayo_pbc",
+            }
+        )
+        parts.append(mayo_part)
+    pool = pd.concat(parts, ignore_index=True)
     return pool, core
 
 
 def load_diabetes() -> pd.DataFrame:
-    df = pd.read_csv(DATA / "diabetes/processed/pima_cleaned.csv")
-    df["source"] = "pima"
-    return df
+    """Pima 8-lab form plus NHANES adults on the overlapping labs (glucose, BMI, age, diastolic BP)."""
+    pima = pd.read_csv(DATA / "diabetes/processed/pima_cleaned.csv")
+    pima = pima.copy()
+    pima["source"] = "pima"
+    nh_path = DATA / "diabetes/raw/nhanes_2011_2023_diabetes_labs.csv"
+    if not nh_path.exists():
+        return pima
+    nh = pd.read_csv(nh_path)
+    adult = nh[
+        (pd.to_numeric(nh["RIDAGEYR"], errors="coerce") >= 21)
+        & nh["LBXSGL"].notna()
+        & nh["BMI"].notna()
+        & nh["DIQ010"].isin([0, 2])
+    ].copy()
+    adult["disease"] = (adult["DIQ010"] == 2).astype(int)
+    adult = _subsample_negatives(adult, "disease", NHANES_NEG_RATIO, POOL_SEED)
+    nh_part = pd.DataFrame(
+        {
+            "pregnancies": np.nan,  # NHANES has no live-birth count; current pregnancy is not a count
+            "glucose": adult["LBXSGL"],
+            "bp": adult["bp_dia_mean"],  # Pima BloodPressure is diastolic
+            "skin": np.nan,
+            "insulin": np.nan,  # do not use DIQ050 insulin-on-treatment (leakage)
+            "bmi": adult["BMI"],
+            "pedigree": np.nan,
+            "age": adult["RIDAGEYR"],
+            "disease": adult["disease"].astype(int),
+            "source": "nhanes",
+        }
+    )
+    return pd.concat([pima, nh_part], ignore_index=True)
 
 
 def load_diabetes_sylhet() -> pd.DataFrame:
@@ -172,15 +235,17 @@ def _midpoint(val) -> float:
 
 
 def load_kidney() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Pooled Tamil Nadu UCI 336 + Bangladesh UCI 857. Bangladesh `bp` is 0/1, not mmHg — left missing."""
     primary = pd.read_csv(DATA / "kidney/processed/ckd_tamil_nadu_cleaned.csv")
     primary = primary.copy()
+    if "class" in primary.columns:
+        primary = primary.drop(columns=["class"])
     primary["source"] = "tamil_nadu"
-    # Bangladesh secondary: overlapping labs, drop leakage cols
     raw = pd.read_csv(DATA / "kidney/raw/ucimlrepo_id857_ckd_bangladesh.csv")
     sec = pd.DataFrame(
         {
             "age": raw["age"].map(_midpoint),
-            "bp": pd.to_numeric(raw["bp (Diastolic)"], errors="coerce"),
+            "bp": np.nan,  # 0/1 diastolic flag on this table, not mmHg
             "sg": raw["sg"].map(_midpoint),
             "al": raw["al"].map(_midpoint),
             "su": raw["su"].map(_midpoint),
@@ -203,7 +268,12 @@ def load_kidney() -> tuple[pd.DataFrame, pd.DataFrame]:
             "source": "bangladesh",
         }
     )
-    return primary, sec
+    # Tamil-Nadu-only urine microscopy cols stay missing on Bangladesh (class-blind impute in the model).
+    for col in primary.columns:
+        if col not in sec.columns:
+            sec[col] = np.nan
+    pool = pd.concat([primary, sec[primary.columns]], ignore_index=True)
+    return pool, sec
 
 
 def feature_target(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:

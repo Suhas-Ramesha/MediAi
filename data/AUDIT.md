@@ -14,14 +14,14 @@ No training has been run. Raw files are unmodified.
 
 Each disease still gets **one** deployed model. That model is trained on **all compatible rows**
 (India first, then extra sites), with a site-stratified holdout and per-source metrics.
-Incompatible schemas are stored but **not concatenated**.
+Incompatible schemas are stored but **not concatenated**. Quoted holdout accuracy target: **≥ 85%**, and it must beat the majority-class dummy.
 
 | Disease | Pooled training rows (plan) | Held out / extra |
 |---|---|---|
-| Heart | Indian hospital + UCI 4 sites, aligned encodings | 20% stratified by source; also report India-only and Cleveland-only AUC |
-| Liver | ILPD (India) as the full-schema core; HCV rows appended with ILPD-only labs set missing | HCV-only external score |
-| Diabetes | Pima only for the product 8-lab model (no second India 8-lab table) | Sylhet early-stage as a separate symptom-schema check, not a pool |
-| Kidney | Tamil Nadu UCI 336 + Bangladesh UCI 857 on intersecting columns | 20% stratified by source |
+| Heart | Indian hospital + UCI 4 sites, aligned encodings | 20% stratified; also report India-only and Cleveland-only AUC |
+| Liver | ILPD (India) + UCI HCV + Mayo PBC (UCI 878, all disease=1 on overlapping labs) | 20% stratified; report ILPD-only because HCV/Mayo are easier |
+| Diabetes | Pima 8-lab + NHANES 2011–2023 adults (glucose/BMI/age/diastolic BP); NHANES negatives subsampled 1.8× so dummy ≪ 85% | Sylhet early-stage as a separate symptom-schema check, not a pool |
+| Kidney | Tamil Nadu UCI 336 + Bangladesh UCI 857 on intersecting columns (Bangladesh BP left missing) | 20% stratified by source |
 
 ## Per-file audit
 

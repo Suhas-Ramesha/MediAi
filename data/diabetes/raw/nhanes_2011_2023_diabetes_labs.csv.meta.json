@@ -1,0 +1,25 @@
+{
+  "title": "NHANES 2011\u20132023 diabetes overlapping labs (column subset)",
+  "source_url": "https://zenodo.org/records/21051814",
+  "doi": "10.5281/zenodo.20299025",
+  "citation": "CDC/NCHS NHANES 2011\u20132023 public-use files; packaged as 'NHANES Multi-Cycle Diabetes and Glycemic Status Dataset, 2011-2023' (Zenodo 10.5281/zenodo.20299025). Cite CDC/NCHS and the Zenodo DOI.",
+  "license": "NCHS public-use; free for research. Not CC.",
+  "geography": "United States (population survey)",
+  "india": false,
+  "role": "Second diabetes source, pooled with Pima on glucose/BMI/age/diastolic BP. Label is DIQ010 recoded 0=no, 2=diabetes (prediabetes=1 dropped). Do not use DIQ050 (insulin treatment) or LBXGH (HbA1c) as features \u2014 leakage. The 57MB full table is not stored in git.",
+  "columns": [
+    "DIQ010",
+    "LBXSGL",
+    "BMI",
+    "RIDAGEYR",
+    "RIAGENDR",
+    "bp_sys_mean",
+    "bp_dia_mean"
+  ],
+  "n": 55405,
+  "extracted_from": "/tmp/nhanes_full.csv",
+  "bytes": 2180995,
+  "sha256": "bd716ec1b94815d58b62a5e17401b18bd22d4e413f78c776775e58ca9f20ecb5",
+  "downloaded_utc": "2026-09-23T09:47:39Z",
+  "local_path": "data/diabetes/raw/nhanes_2011_2023_diabetes_labs.csv"
+}
