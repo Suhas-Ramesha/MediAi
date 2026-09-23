@@ -29,6 +29,10 @@ __pycache__/
 ml_service/models/*.joblib
 ml_service/models/*.pkl
 .ipynb_checkpoints/
+ml/artifacts/mlruns/
+ml/artifacts/models/*.joblib
+catboost_info/
+notebooks/catboost_info/
 
 # ---- Editor / local ----
 .vscode/settings.json

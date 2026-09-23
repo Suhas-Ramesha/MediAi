@@ -12,7 +12,6 @@ import io
 import json
 import os
 import sys
-import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -122,8 +121,8 @@ def acquire_heart() -> list[dict[str, Any]]:
             "role": "multi-site pool (same 13 clinical features as the MediAI heart form)",
         },
     )
-    with zipfile.ZipFile(io.BytesIO(zbytes)) as zf:
-        zf.extractall(raw / "uci_heart_disease_unzipped")
+    # Official zip is the archive. Site-level processed.* files are fetched next
+    # (unzipped 76-column dumps are duplicates and are not kept in git).
 
     site_files = {
         "cleveland": "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data",
