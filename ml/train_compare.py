@@ -224,6 +224,34 @@ class EncodedModel:
             proba = self.model.predict_proba(np.asarray(Xt))
         return np.asarray(proba)
 
+    def transformed_feature_names(self) -> list[str]:
+        if self.prep is None:
+            return list(self.feature_names_ or [])
+        names: list[str] = []
+        for name, _trans, cols in self.prep.transformers_:
+            if name == "remainder" or cols is None or cols == "drop":
+                continue
+            names.extend(list(cols))
+        return names
+
+    def shap_contrib(self, X: pd.DataFrame) -> tuple[list[str], np.ndarray, float]:
+        """Per-row TreeSHAP in CatBoost raw (log-odds) space.
+
+        Positive values push toward the disease class. The returned vector
+        aligns with ``transformed_feature_names()``; ``bias`` is the base value.
+        """
+        if self.kind != "catboost":
+            raise RuntimeError("TreeSHAP explanations are only wired for CatBoost")
+        from catboost import Pool
+
+        Xt = np.asarray(self.prep.transform(X))
+        names = self.transformed_feature_names()
+        sv = np.asarray(self.model.get_feature_importance(data=Pool(Xt), type="ShapValues"))
+        row = sv[0]
+        contrib = np.asarray(row[: len(names)], dtype=float)
+        bias = float(row[-1])
+        return names, contrib, bias
+
 
 def _suggest(trial: Any, kind: str) -> dict[str, Any]:
     if kind == "xgboost":

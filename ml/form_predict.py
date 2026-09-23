@@ -150,6 +150,68 @@ def liver_frame(payload: dict[str, Any]) -> pd.DataFrame:
 
 KIDNEY_COLUMNS = ["sc", "bu", "hemo", "bp"]
 
+# UI labels for TreeSHAP — ranking/sign come from CatBoost, not lab cut-offs.
+FEATURE_LABELS: dict[str, str] = {
+    "pregnancies": "Pregnancies",
+    "glucose": "Glucose",
+    "bp": "Blood pressure",
+    "skin": "Skin thickness",
+    "insulin": "Insulin",
+    "bmi": "BMI",
+    "pedigree": "Diabetes pedigree",
+    "age": "Age",
+    "sex": "Sex",
+    "cp": "Chest pain type",
+    "trestbps": "Resting blood pressure",
+    "chol": "Cholesterol",
+    "fbs": "Fasting blood sugar",
+    "restecg": "Resting ECG",
+    "thalach": "Maximum heart rate",
+    "exang": "Exercise-induced angina",
+    "oldpeak": "ST depression (oldpeak)",
+    "slope": "ST slope",
+    "ca": "Major vessels coloured",
+    "thal": "Thalassemia",
+    "Age": "Age",
+    "Gender": "Gender",
+    "TB": "Total bilirubin",
+    "DB": "Direct bilirubin",
+    "Alkphos": "Alkaline phosphatase",
+    "Sgpt": "ALT",
+    "Sgot": "AST",
+    "TP": "Total proteins",
+    "ALB": "Albumin",
+    "AG": "Albumin / globulin ratio",
+    "sc": "Creatinine",
+    "bu": "Urea",
+    "hemo": "Hemoglobin",
+}
+
+# Form payload key for the value the user actually typed (may differ from train col).
+FEATURE_PAYLOAD_KEY: dict[str, str] = {
+    "sc": "creatinine",
+    "bu": "urea",
+    "hemo": "hemoglobin",
+    "bp": "bp",
+    "TB": "Total_Bilirubin",
+    "DB": "Direct_Bilirubin",
+    "Alkphos": "Alkaline_Phosphotase",
+    "Sgpt": "Alamine_Aminotransferase",
+    "Sgot": "Aspartate_Aminotransferase",
+    "TP": "Total_Protiens",
+    "ALB": "Albumin",
+    "AG": "Albumin_and_Globulin_Ratio",
+    "Age": "Age",
+    "Gender": "Gender",
+    "sex": "sex",
+    "cp": "cp",
+    "fbs": "fbs",
+    "restecg": "restecg",
+    "exang": "exang",
+    "slope": "slope",
+    "thal": "thal",
+}
+
 
 def kidney_frame(payload: dict[str, Any]) -> pd.DataFrame:
     """Four labs from the risk form.
@@ -197,24 +259,102 @@ def load_bundle(disease: str) -> dict[str, Any]:
     return bundle
 
 
-def predict_form(disease: str, payload: dict[str, Any]) -> dict[str, Any]:
-    d = disease.lower().strip()
-    bundle = load_bundle(d)
-    model = bundle["model"]
-    X = form_to_frame(d, payload)
+def _aligned_frame(disease: str, payload: dict[str, Any], bundle: dict[str, Any]) -> pd.DataFrame:
+    X = form_to_frame(disease, payload)
     expected = list(bundle.get("columns") or X.columns)
     for col in expected:
         if col not in X.columns:
             X[col] = np.nan
-    X = X[expected]
+    return X[expected]
+
+
+def _display_value(feature: str, payload: dict[str, Any], row: dict[str, Any]) -> str:
+    key = FEATURE_PAYLOAD_KEY.get(feature, feature)
+    raw = payload.get(key, payload.get(feature, row.get(feature)))
+    if raw is None or raw == "":
+        raw = row.get(feature)
+    if isinstance(raw, (bool,)):
+        return str(raw)
+    if isinstance(raw, (int, float, np.integer, np.floating)):
+        raw_f = float(raw)
+        if raw_f == int(raw_f):
+            return str(int(raw_f))
+        return f"{raw_f:.2f}".rstrip("0").rstrip(".")
+    return str(raw)
+
+
+def _shap_factors(
+    names: list[str],
+    contrib: np.ndarray,
+    payload: dict[str, Any],
+    row: dict[str, Any],
+    *,
+    top_k: int = 4,
+) -> list[dict[str, Any]]:
+    total = float(np.abs(contrib).sum()) or 1.0
+    ranked = sorted(zip(names, contrib), key=lambda t: abs(float(t[1])), reverse=True)
+    factors: list[dict[str, Any]] = []
+    for feat, shap_val in ranked[:top_k]:
+        shap_val = float(shap_val)
+        if abs(shap_val) < 1e-12:
+            continue
+        direction = "up" if shap_val > 0 else "down"
+        verb = "pushed this estimate up" if shap_val > 0 else "pulled this estimate down"
+        label = FEATURE_LABELS.get(feat, feat)
+        shown = _display_value(feat, payload, row)
+        share = abs(shap_val) / total
+        factors.append(
+            {
+                "name": label,
+                "feature": feat,
+                "weight": round(share, 4),
+                "shap": round(shap_val, 4),
+                "direction": direction,
+                "explanation": (
+                    f"{label} (entered {shown}) {verb}. "
+                    "That contribution is this classifier's TreeSHAP attribution for your row — "
+                    "not a lab cut-off rule and not a diagnosis."
+                ),
+            }
+        )
+    return factors
+
+
+def _shap_summary(pct: float, factors: list[dict[str, Any]]) -> str:
+    ups = [f["name"] for f in factors if f.get("direction") == "up"]
+    downs = [f["name"] for f in factors if f.get("direction") == "down"]
+    bits = [f"The classifier scored {pct:.1f}% for this row."]
+    if ups:
+        bits.append(f"The strongest upward attribution was {ups[0]}.")
+    if downs:
+        bits.append(f"The strongest downward attribution was {downs[0]}.")
+    bits.append(
+        "Those reasons come from the same CatBoost model (TreeSHAP), not from Gemini "
+        "and not from if-then lab rules. This is a screen, not a diagnosis."
+    )
+    return " ".join(bits)
+
+
+def predict_form(disease: str, payload: dict[str, Any]) -> dict[str, Any]:
+    d = disease.lower().strip()
+    bundle = load_bundle(d)
+    model = bundle["model"]
+    X = _aligned_frame(d, payload, bundle)
     proba = float(np.asarray(model.predict_proba(X))[0, 1])
     pct = float(min(100.0, max(0.0, 100.0 * proba)))
+    names, contrib, bias = model.shap_contrib(X)
+    factors = _shap_factors(names, contrib, payload, X.iloc[0].to_dict())
+    shap_map = {str(n): round(float(v), 6) for n, v in zip(names, contrib)}
     return {
         "disease": d,
         "algorithm": bundle.get("algorithm"),
         "probability": proba,
         "riskPercent": round(pct, 1),
         "label": "elevated" if proba >= 0.5 else "not elevated",
-        "features": expected,
+        "features": list(X.columns),
         "row": X.iloc[0].to_dict(),
+        "shapBias": round(float(bias), 4),
+        "shap": shap_map,
+        "riskSummary": _shap_summary(pct, factors),
+        "contributingFactors": factors,
     }

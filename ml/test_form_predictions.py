@@ -159,5 +159,41 @@ class KidneyFormTests(unittest.TestCase):
         )
 
 
+class TreeShapExplanationTests(unittest.TestCase):
+    """Reasons must come from CatBoost TreeSHAP, not lab cut-off rules."""
+
+    def test_explanations_are_treeshap(self) -> None:
+        out = predict_form("diabetes", sample("diabetes", "high_glucose_only"))
+        self.assertTrue(out["contributingFactors"])
+        blob = (
+            out["riskSummary"]
+            + " ".join(f["explanation"] for f in out["contributingFactors"])
+        ).lower()
+        self.assertIn("treeshap", blob)
+        self.assertIn("not from gemini", blob)
+        self.assertNotIn("126 mg/dl", blob)
+
+    def test_diabetes_high_glucose_shap_is_positive(self) -> None:
+        out = predict_form("diabetes", sample("diabetes", "high_glucose_only"))
+        self.assertGreater(out["shap"]["glucose"], 0)
+        names = [f.get("feature") for f in out["contributingFactors"]]
+        self.assertIn("glucose", names[:2])
+
+    def test_kidney_hemoglobin_shap_sign_follows_the_model(self) -> None:
+        high = predict_form("kidney", sample("kidney", "high_hemoglobin_only"))
+        low = predict_form("kidney", sample("kidney", "low_hemoglobin_only"))
+        self.assertLess(high["shap"]["hemo"], 0)
+        self.assertGreater(low["shap"]["hemo"], 0)
+
+    def test_kidney_creatinine_shap_is_positive_when_high(self) -> None:
+        out = predict_form("kidney", sample("kidney", "high_creatinine_only"))
+        self.assertGreater(out["shap"]["sc"], 0)
+
+    def test_heart_thalach_shap_high_is_not_an_upward_push(self) -> None:
+        hi = predict_form("heart", sample("heart", "high_thalach_good"))
+        lo = predict_form("heart", sample("heart", "low_thalach_bad"))
+        self.assertLess(hi["shap"]["thalach"], lo["shap"]["thalach"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
