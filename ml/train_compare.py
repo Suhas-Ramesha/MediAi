@@ -332,17 +332,24 @@ def evaluate_model(model: EncodedModel, X: pd.DataFrame, y: pd.Series) -> dict[s
 def shap_plots(model: EncodedModel, X: pd.DataFrame, out_dir: Path, log) -> list[str]:
     out_dir.mkdir(parents=True, exist_ok=True)
     Xt = model.prep.transform(X)
-    Xt = np.asarray(Xt)
+    Xt = np.asarray(Xt, dtype=float)
     names = list(X.columns)
     sample = Xt if len(Xt) <= 200 else Xt[:200]
     paths = []
     try:
         if model.kind == "tabpfn":
-            explainer = shap.KernelExplainer(
-                lambda d: model.model.predict_proba(d)[:, 1],
-                sample[:40],
-            )
-            sv = explainer.shap_values(sample[:60], nsamples=40)
+            # KernelExplainer is tens of minutes on CPU (one predict_proba ≈ 0.4s).
+            # Ablation attributions: Δproba when the feature is replaced by its median.
+            explain = sample[:80]
+            base = np.asarray(model.model.predict_proba(explain))[:, 1]
+            sv = np.zeros_like(explain)
+            med = np.median(explain, axis=0)
+            for j in range(explain.shape[1]):
+                Xp = explain.copy()
+                Xp[:, j] = med[j]
+                sv[:, j] = base - np.asarray(model.model.predict_proba(Xp))[:, 1]
+            sample = explain
+            log("  SHAP TabPFN: median-ablation attributions on 80 rows (not KernelExplainer)")
         else:
             explainer = shap.TreeExplainer(model.model)
             sv = explainer.shap_values(sample)

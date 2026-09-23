@@ -340,6 +340,8 @@ for disease, h in RESULTS.items():
 
 If two algorithms’ CV-AUC differ by less than ~0.01, the pick is a coin flip for this sample size. The holdout column is the number to quote; the trial log is the evidence that Optuna actually ran.
 
+TabPFN has no TreeExplainer. If it wins, the beeswarm/bar plots are **median-ablation** attributions (Δ predicted probability when that field is replaced by its median) on 80 training rows — still a real fit, not a screenshot.
+
 Not for clinical use.
 """
         )
