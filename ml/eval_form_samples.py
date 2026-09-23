@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-os.environ.setdefault("TABPFN_MODEL_VERSION", "v2")
+os.environ.setdefault("OMP_NUM_THREADS", "2")
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))

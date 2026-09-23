@@ -23,14 +23,8 @@ os.environ.setdefault("MKL_NUM_THREADS", "2")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "2")
 
 import joblib
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
-import optuna
 import pandas as pd
-import shap
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
@@ -62,7 +56,6 @@ ACCURACY_GATE = 0.85
 USE_CLASS_WEIGHTS = False
 
 warnings.filterwarnings("ignore", category=UserWarning)
-optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
 def _split_cols(X: pd.DataFrame) -> tuple[list[str], list[str]]:
@@ -232,7 +225,7 @@ class EncodedModel:
         return np.asarray(proba)
 
 
-def _suggest(trial: optuna.Trial, kind: str) -> dict[str, Any]:
+def _suggest(trial: Any, kind: str) -> dict[str, Any]:
     if kind == "xgboost":
         return {
             "n_estimators": trial.suggest_int("n_estimators", 80, 400),
@@ -277,11 +270,14 @@ def tune_algorithm(
     folds: int,
     log,
 ) -> dict[str, Any]:
+    import optuna
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
     n_pos = int((y == 1).sum())
     n_neg = int((y == 0).sum())
     logs: list[str] = []
 
-    def objective(trial: optuna.Trial) -> float:
+    def objective(trial: Any) -> float:
         params = _suggest(trial, kind)
         t0 = time.time()
 
@@ -301,7 +297,7 @@ def tune_algorithm(
 
     study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE))
 
-    def objective_safe(trial: optuna.Trial) -> float:
+    def objective_safe(trial: Any) -> float:
         try:
             return objective(trial)
         except Exception as exc:  # noqa: BLE001 — log and prune, do not dump a 40-line traceback into the notebook
@@ -341,6 +337,12 @@ def evaluate_model(model: EncodedModel, X: pd.DataFrame, y: pd.Series) -> dict[s
 
 
 def shap_plots(model: EncodedModel, X: pd.DataFrame, out_dir: Path, log) -> list[str]:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import shap
+
     out_dir.mkdir(parents=True, exist_ok=True)
     Xt = model.prep.transform(X)
     Xt = np.asarray(Xt, dtype=float)

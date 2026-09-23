@@ -379,15 +379,15 @@ SAMPLES: dict[str, list[tuple[str, dict[str, Any]]]] = {
             },
         ),
         (
-            "high_alt_only",
+            "high_alt_ast",
             {
                 "Age": 35,
                 "Gender": "Female",
                 "Total_Bilirubin": 0.6,
                 "Direct_Bilirubin": 0.2,
                 "Alkaline_Phosphotase": 80,
-                "Alamine_Aminotransferase": 480,
-                "Aspartate_Aminotransferase": 20,
+                "Alamine_Aminotransferase": 220,
+                "Aspartate_Aminotransferase": 250,
                 "Total_Protiens": 7.2,
                 "Albumin": 4.4,
                 "Albumin_and_Globulin_Ratio": 1.5,

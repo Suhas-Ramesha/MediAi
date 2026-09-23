@@ -31,6 +31,9 @@ ml_service/models/*.pkl
 .ipynb_checkpoints/
 ml/artifacts/mlruns/
 ml/artifacts/models/*.joblib
+# Ship the four CatBoost files (a few hundred KB) so a 4GB laptop can run locally.
+!ml/artifacts/models/*_catboost.joblib
+ml/artifacts/models/*_tabpfn.joblib
 catboost_info/
 notebooks/catboost_info/
 

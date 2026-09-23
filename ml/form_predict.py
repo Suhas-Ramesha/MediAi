@@ -2,6 +2,10 @@
 
 The UI strings/slider names are not the same as the training columns.
 This module is the single translation layer used by eval scripts and the ML service.
+
+Serving uses CatBoost for all four diseases so a 4GB laptop can run locally
+(no PyTorch / TabPFN). Liver and kidney TabPFN won the bake-off on CV-AUC,
+but CatBoost already clears the 85% holdout gate and the joblib files are <1MB.
 """
 from __future__ import annotations
 
@@ -10,7 +14,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-os.environ.setdefault("TABPFN_MODEL_VERSION", "v2")
+os.environ.setdefault("OMP_NUM_THREADS", "2")
 
 import joblib
 import numpy as np
@@ -19,9 +23,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 MODELS = {
     "heart": ROOT / "ml/artifacts/models/heart_catboost.joblib",
-    "liver": ROOT / "ml/artifacts/models/liver_tabpfn.joblib",
+    "liver": ROOT / "ml/artifacts/models/liver_catboost.joblib",
     "diabetes": ROOT / "ml/artifacts/models/diabetes_catboost.joblib",
-    "kidney": ROOT / "ml/artifacts/models/kidney_tabpfn.joblib",
+    "kidney": ROOT / "ml/artifacts/models/kidney_catboost.joblib",
 }
 
 # UCI Cleveland encodings used in training (see data/AUDIT.md).
@@ -144,84 +148,27 @@ def liver_frame(payload: dict[str, Any]) -> pd.DataFrame:
     )
 
 
-KIDNEY_COLUMNS = [
-    "age",
-    "bp",
-    "sg",
-    "al",
-    "su",
-    "rbc",
-    "pc",
-    "pcc",
-    "ba",
-    "bgr",
-    "bu",
-    "sc",
-    "sod",
-    "pot",
-    "hemo",
-    "pcv",
-    "wbcc",
-    "rbcc",
-    "htn",
-    "dm",
-    "cad",
-    "appet",
-    "pe",
-    "ane",
-]
-
-
-KIDNEY_CAT = {"rbc", "pc", "pcc", "ba", "htn", "dm", "cad", "appet", "pe", "ane"}
-
-# Pooled UCI 336 + 857, disease==0 medians/modes. The form only collects four labs;
-# filling the rest with not-CKD typical values stops missingness from scoring everyone
-# as high risk (the old impute-NaN path sat near ~90% for every slider combo).
-KIDNEY_UNSPECIFIED = {
-    "age": 47.0,
-    "sg": 1.02,
-    "al": 0.0,
-    "su": 0.0,
-    "rbc": "normal",
-    "pc": "normal",
-    "pcc": "notpresent",
-    "ba": "notpresent",
-    "bgr": 109.0,
-    "sod": 140.5,
-    "pot": 4.9,
-    "wbcc": 7950.0,
-    "dm": "no",
-    "cad": "no",
-    "appet": "good",
-    "pe": "no",
-}
+KIDNEY_COLUMNS = ["sc", "bu", "hemo", "bp"]
 
 
 def kidney_frame(payload: dict[str, Any]) -> pd.DataFrame:
-    """Map the 4-lab kidney form onto the 24-col UCI frame.
+    """Four labs from the risk form.
 
-    Packed-cell volume, red-cell count, and the anemia flag follow hemoglobin so
-    a low hemoglobin is not contradicted by a healthy hematocrit fill. Hypertension
-    follows the systolic reading from the form.
+    UCI CKD ``bp`` is diastolic. The modal slider is labeled systolic, so we
+    convert with a ~40 mm Hg pulse-pressure offset before scoring.
     """
-    row: dict[str, Any] = {c: KIDNEY_UNSPECIFIED.get(c) for c in KIDNEY_COLUMNS}
-    sc = _num(payload.get("creatinine", payload.get("sc")))
-    bu = _num(payload.get("urea", payload.get("bu")))
-    hemo = _num(payload.get("hemoglobin", payload.get("hemo")))
     sbp = _num(payload.get("bp"))
-    row["sc"] = sc
-    row["bu"] = bu
-    row["hemo"] = hemo
-    row["bp"] = sbp
-    if sbp == sbp:
-        row["htn"] = "yes" if sbp >= 140 else "no"
-    if hemo == hemo:
-        row["pcv"] = float(np.clip(3.0 * hemo, 10.0, 60.0))
-        row["rbcc"] = float(np.clip(hemo / 3.0, 2.0, 8.0))
-        row["ane"] = "yes" if hemo < 12 else "no"
-    if payload.get("age") is not None:
-        row["age"] = _num(payload.get("age"))
-    return pd.DataFrame([row])
+    dbp = float(np.clip(sbp - 40.0, 40.0, 180.0)) if sbp == sbp else np.nan
+    return pd.DataFrame(
+        [
+            {
+                "sc": _num(payload.get("creatinine", payload.get("sc"))),
+                "bu": _num(payload.get("urea", payload.get("bu"))),
+                "hemo": _num(payload.get("hemoglobin", payload.get("hemo"))),
+                "bp": dbp,
+            }
+        ]
+    )
 
 
 def form_to_frame(disease: str, payload: dict[str, Any]) -> pd.DataFrame:

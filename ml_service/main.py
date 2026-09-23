@@ -1,5 +1,8 @@
 """
-ML risk service: four local classifiers trained in ``ml/`` (form-field payloads).
+ML risk service: four local CatBoost classifiers (form-field payloads).
+
+Fits a 4GB laptop: no PyTorch/TabPFN. Joblib files live in
+``ml/artifacts/models/*_catboost.joblib`` (~1.2MB total).
 
 Run from the ``ml_service`` directory (not the repo root), or use ``ml_service/start.bat``
 or ``run_ml_service.bat`` at the repo root::
@@ -25,7 +28,6 @@ from pydantic import BaseModel, ConfigDict, Field
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
-os.environ.setdefault("TABPFN_MODEL_VERSION", "v2")
 
 
 @asynccontextmanager
