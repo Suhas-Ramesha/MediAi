@@ -1,5 +1,5 @@
 """
-ML risk service: diabetes, heart, liver via Gradio Spaces (Suhas319/*).
+ML risk service: four local classifiers trained in ``ml/`` (form-field payloads).
 
 Run from the ``ml_service`` directory (not the repo root), or use ``ml_service/start.bat``
 or ``run_ml_service.bat`` at the repo root::
@@ -9,15 +9,36 @@ or ``run_ml_service.bat`` at the repo root::
 """
 from __future__ import annotations
 
+import os
 import re
+import sys
 import threading
+from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 
-app = FastAPI(title="MediAi Risk ML")
+# Repo root so ``ml.form_predict`` / trained EncodedModel unpickle.
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+os.environ.setdefault("TABPFN_MODEL_VERSION", "v2")
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    from ml.form_predict import MODELS, load_bundle
+
+    for disease, path in MODELS.items():
+        if path.exists():
+            load_bundle(disease)
+    yield
+
+
+app = FastAPI(title="MediAi Risk ML", lifespan=_lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -436,21 +457,32 @@ def _heart_factors_from_inputs(d: dict[str, Any]) -> list[dict[str, Any]]:
                 "name": "Max heart rate achieved",
                 "weight": 0.18,
                 "explanation": (
-                    f"A peak heart rate near {th:.0f} on a stress-style field can suggest limited cardiovascular "
-                    "reserve in some models, which may raise estimated risk."
+                    f"A peak heart rate near {th:.0f} is on the low side. This model treats a *higher* "
+                    "maximum heart rate as healthier, so dragging this slider down (not up) raises risk."
+                ),
+            }
+        )
+    elif th >= 170:
+        factors.append(
+            {
+                "name": "Max heart rate achieved",
+                "weight": 0.1,
+                "explanation": (
+                    f"A peak heart rate near {th:.0f} is in a fitter band for this screen and tends to "
+                    "pull estimated heart risk down — unlike a naive “all sliders high” rule."
                 ),
             }
         )
 
     cp = str(d.get("cp", "")).lower()
-    if "typical angina" in cp or ("typical" in cp and "atypical" not in cp):
+    if "asymptomatic" in cp:
         factors.append(
             {
                 "name": "Chest pain type",
                 "weight": 0.25,
                 "explanation": (
-                    "Typical angina-type patterns are treated as higher concern in classic heart-risk logic, "
-                    "so they often increase model output even when cholesterol looks acceptable."
+                    "“Asymptomatic (no chest pain)” maps to the UCI Cleveland code this model associates "
+                    "with higher disease probability — not the same as “no symptoms, so low risk.”"
                 ),
             }
         )
@@ -477,6 +509,7 @@ def _liver_factors_from_inputs(d: dict[str, Any]) -> list[dict[str, Any]]:
     altv = float(d.get("Alamine_Aminotransferase", 40))
     ast = float(d.get("Aspartate_Aminotransferase", 40))
     ag = float(d.get("Albumin_and_Globulin_Ratio", 1.2))
+    alb = float(d.get("Albumin", 3.5))
 
     if tb > 2.5:
         factors.append(
@@ -558,11 +591,111 @@ def _liver_factors_from_inputs(d: dict[str, Any]) -> list[dict[str, Any]]:
             }
         )
 
+    if alb < 3.0:
+        factors.append(
+            {
+                "name": "Albumin",
+                "weight": 0.22,
+                "explanation": (
+                    f"Albumin near {alb:.1f} g/dL is on the low side. This model treats higher albumin as "
+                    "healthier, so dragging this slider down can raise estimated liver risk."
+                ),
+            }
+        )
+    elif alb >= 4.5:
+        factors.append(
+            {
+                "name": "Albumin",
+                "weight": 0.1,
+                "explanation": (
+                    f"Albumin near {alb:.1f} g/dL is in a healthier band and tends to pull estimated liver "
+                    "risk down — unlike a naive “all sliders high” rule."
+                ),
+            }
+        )
+
     factors.sort(key=lambda x: -float(x["weight"]))
     return factors[:4]
 
 
-# --- Pydantic payloads (extra keys from UI ignored) ---
+def _kidney_factors_from_inputs(d: dict[str, Any]) -> list[dict[str, Any]]:
+    factors: list[dict[str, Any]] = []
+    sc = float(d.get("creatinine", 1))
+    bu = float(d.get("urea", 30))
+    hemo = float(d.get("hemoglobin", 14))
+    bp = float(d.get("bp", 120))
+
+    if sc >= 1.5:
+        factors.append(
+            {
+                "name": "Creatinine",
+                "weight": 0.34,
+                "explanation": (
+                    f"Creatinine near {sc:.1f} mg/dL is higher than a typical adult range (~0.6–1.3). "
+                    "This model treats elevated creatinine as a strong CKD-leaning signal."
+                ),
+            }
+        )
+    else:
+        factors.append(
+            {
+                "name": "Creatinine",
+                "weight": 0.1,
+                "explanation": (
+                    f"At {sc:.1f} mg/dL, creatinine is not in a high band by itself. "
+                    "If the overall score is still high, hemoglobin or urea is likely doing more of the work."
+                ),
+            }
+        )
+
+    if hemo < 11:
+        factors.append(
+            {
+                "name": "Hemoglobin",
+                "weight": 0.32,
+                "explanation": (
+                    f"Hemoglobin near {hemo:.1f} g/dL is low. In the UCI CKD tables this model learned from, "
+                    "anemia is strongly associated with CKD — so dragging this slider *down* raises risk, "
+                    "it does not lower it."
+                ),
+            }
+        )
+    elif hemo >= 14:
+        factors.append(
+            {
+                "name": "Hemoglobin",
+                "weight": 0.12,
+                "explanation": (
+                    f"Hemoglobin near {hemo:.1f} g/dL is in a healthier band. "
+                    "Higher hemoglobin here pulls estimated CKD risk *down*, unlike a naive “all sliders high” rule."
+                ),
+            }
+        )
+
+    if bu >= 50:
+        factors.append(
+            {
+                "name": "Urea",
+                "weight": 0.22,
+                "explanation": (
+                    f"Urea near {bu:.0f} mg/dL is elevated on many lab charts and often rises with reduced kidney clearance."
+                ),
+            }
+        )
+
+    if bp >= 140:
+        factors.append(
+            {
+                "name": "Blood pressure",
+                "weight": 0.16,
+                "explanation": (
+                    f"A reading around {bp:.0f} mm Hg is in a hypertensive band, which this model can treat as extra CKD-related risk."
+                ),
+            }
+        )
+
+    factors.sort(key=lambda x: -float(x["weight"]))
+    return factors[:4]
 
 
 class DiabetesPayload(BaseModel):
@@ -611,136 +744,82 @@ class LiverPayload(BaseModel):
     Albumin_and_Globulin_Ratio: float = Field(..., ge=0.3, le=4)
 
 
+class KidneyPayload(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    creatinine: float = Field(1.0, ge=0.1, le=20)
+    urea: float = Field(30, ge=1, le=400)
+    hemoglobin: float = Field(14, ge=3, le=22)
+    bp: float = Field(120, ge=50, le=250)
+    age: float | None = Field(None, ge=1, le=120)
+
+
 class PredictRequest(BaseModel):
     disease: str
     payload: dict[str, Any]
 
 
+def _factors_for(disease: str, raw: dict[str, Any]) -> list[dict[str, Any]]:
+    if disease == "diabetes":
+        return _diabetes_factors_from_inputs(raw)
+    if disease == "heart":
+        return _heart_factors_from_inputs(raw)
+    if disease == "liver":
+        return _liver_factors_from_inputs(raw)
+    if disease == "kidney":
+        return _kidney_factors_from_inputs(raw)
+    return []
+
+
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, Any]:
+    from ml.form_predict import MODELS
+
+    return {
+        "status": "ok",
+        "backend": "local_trained_models",
+        "models": {k: v.exists() for k, v in MODELS.items()},
+    }
 
 
 @app.post("/predict")
 def predict(req: PredictRequest) -> dict[str, Any]:
     disease = req.disease.lower().strip()
-    raw = req.payload or {}
-
-    if disease == "kidney":
-        raise HTTPException(
-            status_code=501,
-            detail="Kidney risk model is not connected yet. Please check back later.",
-        )
-
-    if disease == "liver":
-        lp = LiverPayload.model_validate(raw)
-        client = _get_liver_client()
-        try:
-            result = client.predict(
-                Age=float(lp.Age),
-                Gender=lp.Gender,
-                Total_Bilirubin=float(lp.Total_Bilirubin),
-                Direct_Bilirubin=float(lp.Direct_Bilirubin),
-                Alkaline_Phosphotase=float(lp.Alkaline_Phosphotase),
-                Alamine_Aminotransferase=float(lp.Alamine_Aminotransferase),
-                Aspartate_Aminotransferase=float(lp.Aspartate_Aminotransferase),
-                Total_Protiens=float(lp.Total_Protiens),
-                Albumin=float(lp.Albumin),
-                Albumin_and_Globulin_Ratio=float(lp.Albumin_and_Globulin_Ratio),
-                api_name="/predict_liver",
-            )
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Liver prediction failed: {e}") from e
-        text = result if isinstance(result, str) else str(result)
-        risk_pct = _parse_liver_gradio_label(text)
-        factors = _liver_factors_from_inputs(lp.model_dump())
-        return {
-            "disease": "liver",
-            "riskPercent": round(risk_pct, 1),
-            "label": "Liver disease risk estimate",
-            "riskSummary": _risk_summary_for_percent(risk_pct),
-            "contributingFactors": factors,
-            "gradioText": text[:800],
-        }
-
-    if disease == "heart":
-        hp = HeartPayload.model_validate(raw)
-        client = _get_heart_client()
-        try:
-            result = client.predict(
-                age=float(hp.age),
-                sex=hp.sex,
-                cp=hp.cp,
-                trestbps=float(hp.trestbps),
-                chol=float(hp.chol),
-                fbs=hp.fbs,
-                restecg=hp.restecg,
-                thalach=float(hp.thalach),
-                exang=hp.exang,
-                oldpeak=float(hp.oldpeak),
-                slope=hp.slope,
-                ca=float(hp.ca),
-                thal=hp.thal,
-                api_name="/predict_heart_disease",
-            )
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Heart prediction failed: {e}") from e
-        text = result if isinstance(result, str) else str(result)
-        risk_pct = _parse_gradio_risk_percent(
-            text,
-            pos_line_hints=(
-                "heart disease",
-                "disease present",
-                "positive",
-                "probability",
-                "chance",
-                "risk",
-            ),
-            neg_line_hints=(
-                "no heart",
-                "negative",
-                "low risk",
-                "absent",
-                "not present",
-            ),
-        )
-        factors = _heart_factors_from_inputs(hp.model_dump())
-        return {
-            "disease": "heart",
-            "riskPercent": round(risk_pct, 1),
-            "label": "Heart disease risk estimate",
-            "riskSummary": _risk_summary_for_percent(risk_pct),
-            "contributingFactors": factors,
-            "gradioText": text[:800],
-        }
+    raw = dict(req.payload or {})
 
     if disease == "diabetes":
-        dp = DiabetesPayload.model_validate(raw)
-        client = _get_diabetes_client()
-        try:
-            result = client.predict(
-                pregnancies=float(dp.pregnancies),
-                glucose=float(dp.glucose),
-                bp=float(dp.bp),
-                skin=float(dp.skin),
-                insulin=float(dp.insulin),
-                bmi=float(dp.bmi),
-                pedigree=float(dp.pedigree),
-                age=float(dp.age),
-                api_name="/predict_diabetes",
-            )
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Diabetes prediction failed: {e}") from e
-        text = result if isinstance(result, str) else str(result)
-        risk_pct = _parse_diabetes_percent(text)
-        factors = _diabetes_factors_from_inputs(dp.model_dump())
-        return {
-            "disease": "diabetes",
-            "riskPercent": round(risk_pct, 1),
-            "label": "Diabetes risk estimate",
-            "riskSummary": _risk_summary_for_percent(risk_pct),
-            "contributingFactors": factors,
-            "gradioText": text[:800],
-        }
+        DiabetesPayload.model_validate(raw)
+    elif disease == "heart":
+        HeartPayload.model_validate(raw)
+    elif disease == "liver":
+        LiverPayload.model_validate(raw)
+    elif disease == "kidney":
+        KidneyPayload.model_validate(raw)
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown disease: {req.disease}")
 
-    raise HTTPException(status_code=400, detail=f"Unknown disease: {req.disease}")
+    try:
+        from ml.form_predict import predict_form
+
+        scored = predict_form(disease, raw)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"{disease} prediction failed: {e}") from e
+
+    factors = _factors_for(disease, raw)
+    titles = {
+        "diabetes": "Diabetes risk estimate",
+        "heart": "Heart disease risk estimate",
+        "liver": "Liver disease risk estimate",
+        "kidney": "Kidney disease risk estimate",
+    }
+    return {
+        "disease": disease,
+        "riskPercent": scored["riskPercent"],
+        "label": titles[disease],
+        "riskSummary": _risk_summary_for_percent(scored["riskPercent"]),
+        "contributingFactors": factors,
+        "modelSource": f"local_{scored.get('algorithm')}",
+        "probability": round(float(scored["probability"]), 4),
+    }

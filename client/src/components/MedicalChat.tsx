@@ -1635,25 +1635,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     }
     setRiskSubmitLoading(true);
     try {
-      if (riskModalDisease === "kidney") {
-        const assistantMessage: Message = {
-          id: `a-risk-kidney-${Date.now()}`,
-          role: "assistant",
-          content: `Kidney risk scoring is not connected yet, so we cannot show a percentage. Your entries were noted for when the model is ready.\n\n${preventionTips(
-            "kidney",
-          )}\n\nWould you like to consult a specialist? A ${DISEASE_SPECIALIST.kidney} can help with kidney-related questions.`,
-          timestamp: new Date(),
-          suggestsBooking: true,
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-        await addMessageToConsultation(cid, assistantMessage);
-        setBookingSpecialtyHint(DISEASE_SPECIALIST.kidney);
-        setRiskBookingSummary(`Kidney health discussion (${DISEASE_TITLE.kidney})`);
-        riskModalCompletedRef.current = true;
-        setRiskModalOpen(false);
-        return;
-      }
-
       const data = await predictRisk(riskModalDisease, payload);
       const pct =
         typeof data.riskPercent === "number" && !Number.isNaN(data.riskPercent)
