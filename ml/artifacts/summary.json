@@ -1,0 +1,34 @@
+[
+  {
+    "disease": "heart",
+    "winning_algorithm": "catboost",
+    "accuracy": 0.9141,
+    "F1": 0.9238,
+    "ROC-AUC": 0.969,
+    "dataset_used": "India hospital + UCI 4 sites (Cleveland/Hungary/Switzerland/VA)"
+  },
+  {
+    "disease": "liver",
+    "winning_algorithm": "tabpfn",
+    "accuracy": 0.8243,
+    "F1": 0.8158,
+    "ROC-AUC": 0.9126,
+    "dataset_used": "ILPD Andhra Pradesh + UCI HCV"
+  },
+  {
+    "disease": "diabetes",
+    "winning_algorithm": "xgboost",
+    "accuracy": 0.7403,
+    "F1": 0.6825,
+    "ROC-AUC": 0.8207,
+    "dataset_used": "Pima 8-lab (zeros\u2192NA); Sylhet not pooled"
+  },
+  {
+    "disease": "kidney",
+    "winning_algorithm": "tabpfn",
+    "accuracy": 1.0,
+    "F1": 1.0,
+    "ROC-AUC": 1.0,
+    "dataset_used": "UCI CKD Tamil Nadu; Bangladesh secondary"
+  }
+]
