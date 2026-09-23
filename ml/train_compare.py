@@ -387,13 +387,18 @@ def shap_plots(model: EncodedModel, X: pd.DataFrame, out_dir: Path, log) -> list
 
 
 def pick_winner(results: list[dict[str, Any]]) -> dict[str, Any]:
-    """Prefer algorithms whose CV accuracy already clears 85%, then rank by ROC-AUC."""
+    """Prefer algorithms whose quoted holdout accuracy already clears 85%, then rank by ROC-AUC."""
 
     def key(r):
         cv = r["cv"]
-        return (cv["roc_auc"], cv["accuracy"], cv["f1"])
+        ho = r.get("holdout") or {}
+        return (cv["roc_auc"], ho.get("accuracy", 0.0), cv["f1"])
 
-    gated = [r for r in results if r["cv"]["accuracy"] >= ACCURACY_GATE]
+    gated = [
+        r
+        for r in results
+        if (r.get("holdout") or {}).get("accuracy", r["cv"]["accuracy"]) >= ACCURACY_GATE
+    ]
     return max(gated or results, key=key)
 
 
@@ -453,7 +458,14 @@ def run_disease(
         ("tabpfn", TABPFN_TRIALS, TABPFN_FOLDS),
     ]
     fitted: list[dict[str, Any]] = []
-    ctx = mlflow.start_run(run_name=f"{name}-bakeoff") if mlflow_ok else None
+    ctx = None
+    if mlflow_ok:
+        try:
+            ctx = mlflow.start_run(run_name=f"{name}-bakeoff")
+        except Exception as exc:
+            log(f"MLflow start_run failed ({exc}); continuing without tracking")
+            mlflow_ok = False
+            ctx = None
     try:
         for kind, trials, folds in algos:
             log(f"\n--- training {kind} ({trials} Optuna trials, {folds}-fold CV) ---")
@@ -486,10 +498,14 @@ def run_disease(
                 f"wall={res['seconds']:.1f}s"
             )
             if mlflow_ok:
-                with mlflow.start_run(run_name=kind, nested=True):
-                    mlflow.log_params({f"hp_{k}": v for k, v in res["best_params"].items()})
-                    mlflow.log_metrics({f"cv_{k}": v for k, v in res["cv"].items() if k != "folds"})
-                    mlflow.log_metrics({f"holdout_{k}": v for k, v in hold.items()})
+                try:
+                    with mlflow.start_run(run_name=kind, nested=True):
+                        mlflow.log_params({f"hp_{k}": v for k, v in res["best_params"].items()})
+                        mlflow.log_metrics({f"cv_{k}": v for k, v in res["cv"].items() if k != "folds"})
+                        mlflow.log_metrics({f"holdout_{k}": v for k, v in hold.items()})
+                except Exception as exc:
+                    log(f"  MLflow nested run skipped: {exc}")
+                    mlflow_ok = False
             fitted.append(res)
     finally:
         if ctx is not None:
