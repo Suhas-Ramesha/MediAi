@@ -169,9 +169,15 @@ class TreeShapExplanationTests(unittest.TestCase):
             out["riskSummary"]
             + " ".join(f["explanation"] for f in out["contributingFactors"])
         ).lower()
-        self.assertIn("treeshap", blob)
-        self.assertIn("not from gemini", blob)
+        self.assertIn("you entered", blob)
+        self.assertIn("raised the estimate", blob)
+        self.assertIn("not a diagnosis", blob)
+        self.assertNotIn("gemini", blob)
+        self.assertNotIn("treeshap", blob)
         self.assertNotIn("126 mg/dl", blob)
+        for factor in out["contributingFactors"]:
+            self.assertIn(factor["direction"], ("up", "down"))
+            self.assertIn("you entered", factor["explanation"].lower())
 
     def test_diabetes_high_glucose_shap_is_positive(self) -> None:
         out = predict_form("diabetes", sample("diabetes", "high_glucose_only"))

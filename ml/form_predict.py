@@ -158,7 +158,7 @@ FEATURE_LABELS: dict[str, str] = {
     "skin": "Skin thickness",
     "insulin": "Insulin",
     "bmi": "BMI",
-    "pedigree": "Diabetes pedigree",
+    "pedigree": "Family diabetes history",
     "age": "Age",
     "sex": "Sex",
     "cp": "Chest pain type",
@@ -168,9 +168,9 @@ FEATURE_LABELS: dict[str, str] = {
     "restecg": "Resting ECG",
     "thalach": "Maximum heart rate",
     "exang": "Exercise-induced angina",
-    "oldpeak": "ST depression (oldpeak)",
+    "oldpeak": "ST depression",
     "slope": "ST slope",
-    "ca": "Major vessels coloured",
+    "ca": "Major vessels (angiogram)",
     "thal": "Thalassemia",
     "Age": "Age",
     "Gender": "Gender",
@@ -185,6 +185,31 @@ FEATURE_LABELS: dict[str, str] = {
     "sc": "Creatinine",
     "bu": "Urea",
     "hemo": "Hemoglobin",
+}
+
+# Shown next to the value the user typed so the chat reads like a lab slip.
+FEATURE_UNITS: dict[str, str] = {
+    "glucose": "mg/dL",
+    "bp": "mm Hg",
+    "skin": "mm",
+    "insulin": "µU/mL",
+    "bmi": "kg/m²",
+    "age": "years",
+    "Age": "years",
+    "trestbps": "mm Hg",
+    "chol": "mg/dL",
+    "thalach": "bpm",
+    "oldpeak": "mm",
+    "TB": "mg/dL",
+    "DB": "mg/dL",
+    "Alkphos": "U/L",
+    "Sgpt": "U/L",
+    "Sgot": "U/L",
+    "TP": "g/dL",
+    "ALB": "g/dL",
+    "sc": "mg/dL",
+    "bu": "mg/dL",
+    "hemo": "g/dL",
 }
 
 # Form payload key for the value the user actually typed (may differ from train col).
@@ -278,8 +303,11 @@ def _display_value(feature: str, payload: dict[str, Any], row: dict[str, Any]) -
     if isinstance(raw, (int, float, np.integer, np.floating)):
         raw_f = float(raw)
         if raw_f == int(raw_f):
-            return str(int(raw_f))
-        return f"{raw_f:.2f}".rstrip("0").rstrip(".")
+            shown = str(int(raw_f))
+        else:
+            shown = f"{raw_f:.2f}".rstrip("0").rstrip(".")
+        unit = FEATURE_UNITS.get(feature)
+        return f"{shown} {unit}" if unit else shown
     return str(raw)
 
 
@@ -299,10 +327,19 @@ def _shap_factors(
         if abs(shap_val) < 1e-12:
             continue
         direction = "up" if shap_val > 0 else "down"
-        verb = "pushed this estimate up" if shap_val > 0 else "pulled this estimate down"
         label = FEATURE_LABELS.get(feat, feat)
         shown = _display_value(feat, payload, row)
         share = abs(shap_val) / total
+        if shap_val > 0:
+            why = (
+                f"You entered {shown}. This raised the estimate "
+                f"(about {share:.0%} of the reasons behind this score)."
+            )
+        else:
+            why = (
+                f"You entered {shown}. This lowered the estimate "
+                f"(about {share:.0%} of the reasons behind this score)."
+            )
         factors.append(
             {
                 "name": label,
@@ -310,28 +347,28 @@ def _shap_factors(
                 "weight": round(share, 4),
                 "shap": round(shap_val, 4),
                 "direction": direction,
-                "explanation": (
-                    f"{label} (entered {shown}) {verb}. "
-                    "That contribution is this classifier's TreeSHAP attribution for your row — "
-                    "not a lab cut-off rule and not a diagnosis."
-                ),
+                "explanation": why,
             }
         )
     return factors
 
 
 def _shap_summary(pct: float, factors: list[dict[str, Any]]) -> str:
+    # Percent is already shown as the chat headline; this block answers "why".
+    _ = pct
     ups = [f["name"] for f in factors if f.get("direction") == "up"]
     downs = [f["name"] for f in factors if f.get("direction") == "down"]
-    bits = [f"The classifier scored {pct:.1f}% for this row."]
-    if ups:
-        bits.append(f"The strongest upward attribution was {ups[0]}.")
-    if downs:
-        bits.append(f"The strongest downward attribution was {downs[0]}.")
-    bits.append(
-        "Those reasons come from the same CatBoost model (TreeSHAP), not from Gemini "
-        "and not from if-then lab rules. This is a screen, not a diagnosis."
-    )
+    bits: list[str] = []
+    if ups and downs:
+        bits.append(
+            f"For the numbers you entered, {ups[0]} raised the score the most, "
+            f"and {downs[0]} brought it down the most."
+        )
+    elif ups:
+        bits.append(f"For the numbers you entered, {ups[0]} raised the score the most.")
+    elif downs:
+        bits.append(f"For the numbers you entered, {downs[0]} brought the score down the most.")
+    bits.append("This is a screening estimate from the model, not a diagnosis.")
     return " ".join(bits)
 
 
