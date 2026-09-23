@@ -250,9 +250,10 @@ export function RiskAssessmentModal({
 
         {disease === "kidney" && (
           <p className="rounded-md bg-muted/60 p-2 text-sm text-muted-foreground">
-            This screen uses creatinine, urea, hemoglobin, and blood pressure. Higher
-            hemoglobin is treated as healthier — dragging every slider up does not
-            automatically mean higher risk.
+            This screen uses creatinine, urea, hemoglobin, and blood pressure; other
+            kidney labs are assumed typical/healthy. Higher hemoglobin is treated as
+            healthier — dragging every slider up does not automatically mean higher
+            risk.
           </p>
         )}
         {disease === "heart" && (

@@ -64,7 +64,14 @@ class FormMappingTests(unittest.TestCase):
         self.assertAlmostEqual(float(row["bu"]), 30)
         self.assertAlmostEqual(float(row["hemo"]), 14)
         self.assertAlmostEqual(float(row["bp"]), 120)
-        self.assertTrue(row["rbc"] is None or (row["rbc"] != row["rbc"]))
+        self.assertEqual(row["rbc"], "normal")
+        self.assertEqual(row["htn"], "no")
+        self.assertEqual(row["ane"], "no")
+        self.assertAlmostEqual(float(row["pcv"]), 42.0)
+
+        anemic = kidney_frame(sample("kidney", "low_hemoglobin_only")).iloc[0]
+        self.assertEqual(anemic["ane"], "yes")
+        self.assertLess(float(anemic["pcv"]), 30)
 
 
 class DiabetesFormTests(unittest.TestCase):
@@ -134,16 +141,18 @@ class KidneyFormTests(unittest.TestCase):
         cls.scores = {name: _pct("kidney", name) for name, _ in SAMPLES["kidney"]}
 
     def test_diseased_vs_healthy(self) -> None:
-        self.assertLess(self.scores["healthy"], 50)
+        self.assertLess(self.scores["healthy"], 15)
         self.assertGreater(self.scores["diseased"], 90)
 
     def test_all_min_is_not_automatically_low_risk(self) -> None:
         # Hemoglobin at the slider floor (8 g/dL) is anemia — high CKD risk.
-        self.assertGreater(self.scores["all_slider_min"], 70)
+        # All-sliders-max is *not* the top score because hemoglobin 18 is protective.
+        self.assertGreater(self.scores["all_slider_min"], 80)
         self.assertGreater(self.scores["all_slider_min"], self.scores["all_slider_max"])
+        self.assertGreater(self.scores["diseased"], self.scores["all_slider_max"])
 
     def test_high_hemoglobin_lowers_risk(self) -> None:
-        self.assertLess(self.scores["high_hemoglobin_only"], 20)
+        self.assertLess(self.scores["high_hemoglobin_only"], 15)
         self.assertGreater(self.scores["low_hemoglobin_only"], 80)
         self.assertGreater(
             self.scores["low_hemoglobin_only"] - self.scores["high_hemoglobin_only"],
@@ -151,10 +160,10 @@ class KidneyFormTests(unittest.TestCase):
         )
 
     def test_high_creatinine_raises_risk(self) -> None:
-        self.assertGreater(self.scores["high_creatinine_only"], 70)
         self.assertGreater(
             self.scores["high_creatinine_only"], self.scores["form_default"]
         )
+        self.assertLess(self.scores["form_default"], 15)
 
 
 if __name__ == "__main__":

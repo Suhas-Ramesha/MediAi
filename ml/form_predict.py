@@ -174,16 +174,51 @@ KIDNEY_COLUMNS = [
 
 KIDNEY_CAT = {"rbc", "pc", "pcc", "ba", "htn", "dm", "cad", "appet", "pe", "ane"}
 
+# Pooled UCI 336 + 857, disease==0 medians/modes. The form only collects four labs;
+# filling the rest with not-CKD typical values stops missingness from scoring everyone
+# as high risk (the old impute-NaN path sat near ~90% for every slider combo).
+KIDNEY_UNSPECIFIED = {
+    "age": 47.0,
+    "sg": 1.02,
+    "al": 0.0,
+    "su": 0.0,
+    "rbc": "normal",
+    "pc": "normal",
+    "pcc": "notpresent",
+    "ba": "notpresent",
+    "bgr": 109.0,
+    "sod": 140.5,
+    "pot": 4.9,
+    "wbcc": 7950.0,
+    "dm": "no",
+    "cad": "no",
+    "appet": "good",
+    "pe": "no",
+}
+
 
 def kidney_frame(payload: dict[str, Any]) -> pd.DataFrame:
-    """UI collects four labs; remaining UCI columns stay missing and are imputed in the model."""
-    row: dict[str, Any] = {
-        c: (None if c in KIDNEY_CAT else np.nan) for c in KIDNEY_COLUMNS
-    }
-    row["sc"] = _num(payload.get("creatinine", payload.get("sc")))
-    row["bu"] = _num(payload.get("urea", payload.get("bu")))
-    row["hemo"] = _num(payload.get("hemoglobin", payload.get("hemo")))
-    row["bp"] = _num(payload.get("bp"))
+    """Map the 4-lab kidney form onto the 24-col UCI frame.
+
+    Packed-cell volume, red-cell count, and the anemia flag follow hemoglobin so
+    a low hemoglobin is not contradicted by a healthy hematocrit fill. Hypertension
+    follows the systolic reading from the form.
+    """
+    row: dict[str, Any] = {c: KIDNEY_UNSPECIFIED.get(c) for c in KIDNEY_COLUMNS}
+    sc = _num(payload.get("creatinine", payload.get("sc")))
+    bu = _num(payload.get("urea", payload.get("bu")))
+    hemo = _num(payload.get("hemoglobin", payload.get("hemo")))
+    sbp = _num(payload.get("bp"))
+    row["sc"] = sc
+    row["bu"] = bu
+    row["hemo"] = hemo
+    row["bp"] = sbp
+    if sbp == sbp:
+        row["htn"] = "yes" if sbp >= 140 else "no"
+    if hemo == hemo:
+        row["pcv"] = float(np.clip(3.0 * hemo, 10.0, 60.0))
+        row["rbcc"] = float(np.clip(hemo / 3.0, 2.0, 8.0))
+        row["ane"] = "yes" if hemo < 12 else "no"
     if payload.get("age") is not None:
         row["age"] = _num(payload.get("age"))
     return pd.DataFrame([row])
