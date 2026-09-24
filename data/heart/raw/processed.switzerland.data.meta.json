@@ -1,0 +1,13 @@
+{
+  "title": "UCI Heart Disease processed switzerland",
+  "source_url": "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.switzerland.data",
+  "doi": "10.24432/C52P4X",
+  "license": "CC BY 4.0",
+  "geography": "switzerland",
+  "india": false,
+  "role": "cleveland=core US cath-lab table; others=same-schema extra sites for pooled training",
+  "bytes": 4109,
+  "sha256": "834a405ccf5b66ab4056bb77794adc8df0b7125186454c0a1d002d33c6c3b314",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/heart/raw/processed.switzerland.data"
+}

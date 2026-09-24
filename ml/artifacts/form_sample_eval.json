@@ -1,0 +1,42 @@
+{
+  "diabetes": {
+    "form_default": 1.8,
+    "healthy": 0.8,
+    "diseased_pima_like": 90.6,
+    "all_slider_min": 6.1,
+    "all_slider_max": 82.7,
+    "high_glucose_only": 53.7,
+    "high_bmi_normal_glucose": 7.0
+  },
+  "heart": {
+    "form_default": 13.0,
+    "healthy": 0.5,
+    "diseased": 99.3,
+    "all_slider_min": 6.8,
+    "all_slider_max": 97.0,
+    "high_thalach_good": 2.2,
+    "low_thalach_bad": 9.8,
+    "asymptomatic_cp": 15.8,
+    "typical_angina_cp": 2.4
+  },
+  "liver": {
+    "form_default": 59.8,
+    "healthy": 25.3,
+    "diseased": 98.1,
+    "all_slider_min": 26.9,
+    "all_slider_max": 97.3,
+    "high_albumin_only": 26.1,
+    "low_albumin_only": 69.4,
+    "high_alt_ast": 68.0
+  },
+  "kidney": {
+    "form_default": 42.5,
+    "healthy": 29.8,
+    "diseased": 100.0,
+    "all_slider_min": 99.7,
+    "all_slider_max": 39.7,
+    "high_hemoglobin_only": 2.2,
+    "low_hemoglobin_only": 99.9,
+    "high_creatinine_only": 99.6
+  }
+}

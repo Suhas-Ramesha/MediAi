@@ -249,9 +249,25 @@ export function RiskAssessmentModal({
         </DialogHeader>
 
         {disease === "kidney" && (
-          <p className="rounded-md bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-            The kidney model is not connected yet. You can still enter values for
-            context; we will only give general guidance until the model is available.
+          <p className="rounded-md bg-muted/60 p-2 text-sm text-muted-foreground">
+            This screen uses creatinine, urea, hemoglobin, and blood pressure. Blood
+            pressure is read as systolic here and converted to the diastolic scale the
+            model was trained on. Higher hemoglobin is treated as healthier — dragging
+            every slider up does not automatically mean higher risk.
+          </p>
+        )}
+        {disease === "heart" && (
+          <p className="rounded-md bg-muted/60 p-2 text-sm text-muted-foreground">
+            A higher maximum heart rate is treated as fitter. Asymptomatic chest-pain
+            type is a higher-risk code in this model — not every upward slider means
+            more risk.
+          </p>
+        )}
+        {disease === "liver" && (
+          <p className="rounded-md bg-muted/60 p-2 text-sm text-muted-foreground">
+            Higher albumin is treated as healthier. Raised bilirubin or ALT/AST push
+            risk up — dragging every slider to the top does not automatically mean
+            higher risk.
           </p>
         )}
 

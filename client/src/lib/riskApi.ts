@@ -3,6 +3,8 @@ export type RiskDisease = "diabetes" | "heart" | "liver" | "kidney";
 export interface RiskContributingFactor {
   name: string;
   weight?: number;
+  shap?: number;
+  direction?: "up" | "down";
   /** Plain-language tie to the user's inputs */
   explanation?: string;
 }

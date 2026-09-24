@@ -1,0 +1,80 @@
+{
+  "written_utc": "2026-09-22T10:46:51Z",
+  "ilpd": {
+    "file": "liver/processed/ilpd_cleaned.csv",
+    "n": 583,
+    "missing_ag_after": 0,
+    "class_balance": {
+      "disease": 416,
+      "not": 167
+    },
+    "derived_ag_values": [
+      1.4444,
+      0.9118,
+      1.08,
+      1.2973
+    ]
+  },
+  "pima": {
+    "file": "diabetes/processed/pima_cleaned.csv",
+    "n": 768,
+    "zeros_recoded": {
+      "plas": 5,
+      "pres": 35,
+      "skin": 227,
+      "insu": 374,
+      "mass": 11
+    },
+    "na_after": {
+      "glucose": 5,
+      "bp": 35,
+      "skin": 227,
+      "insulin": 374,
+      "bmi": 11
+    },
+    "class_balance": {
+      "disease": 268,
+      "not": 500
+    },
+    "pregnancies_zero_kept": 111
+  },
+  "ckd": {
+    "file": "kidney/processed/ckd_tamil_nadu_cleaned.csv",
+    "n": 400,
+    "missing_after": 0,
+    "class_balance": {
+      "ckd": 250,
+      "notckd": 150
+    },
+    "tabs_fixed": {
+      "class": 2,
+      "dm": 1
+    },
+    "miss_pct_before_by_class": {
+      "rbc": {
+        "ckd_pct": 57.2,
+        "notckd_pct": 6.0
+      },
+      "rbcc": {
+        "ckd_pct": 49.6,
+        "notckd_pct": 4.7
+      },
+      "wbcc": {
+        "ckd_pct": 39.6,
+        "notckd_pct": 4.7
+      },
+      "sod": {
+        "ckd_pct": 32.8,
+        "notckd_pct": 3.3
+      },
+      "pot": {
+        "ckd_pct": 33.2,
+        "notckd_pct": 3.3
+      },
+      "pcv": {
+        "ckd_pct": 26.8,
+        "notckd_pct": 2.7
+      }
+    }
+  }
+}

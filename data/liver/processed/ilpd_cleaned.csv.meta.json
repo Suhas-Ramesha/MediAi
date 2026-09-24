@@ -1,0 +1,33 @@
+{
+  "source": "data/liver/raw/ucimlrepo_id225_ilpd.csv",
+  "fix": "A/G Ratio missing (4 rows) filled with ALB/(TP-ALB); Selector 1=disease",
+  "missing_ag_rows_0based": [
+    209,
+    241,
+    253,
+    312
+  ],
+  "filled_from_albumin_globulin_formula": 4,
+  "median_fallback_rows": 0,
+  "class_balance": {
+    "1": 416,
+    "0": 167
+  },
+  "n": 583,
+  "columns": [
+    "Age",
+    "Gender",
+    "TB",
+    "DB",
+    "Alkphos",
+    "Sgpt",
+    "Sgot",
+    "TP",
+    "ALB",
+    "A/G Ratio",
+    "Selector",
+    "disease"
+  ],
+  "missing_after": {},
+  "written_utc": "2026-09-22T10:46:51Z"
+}

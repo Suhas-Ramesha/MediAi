@@ -1,0 +1,412 @@
+
+======== HEART ========
+rows=1920  features=['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal']  positives=1089/1920  pos_rate=0.567  majority-class dummy acc=0.567
+stratified split  train=1536  holdout=384
+source counts: {'india': 1000, 'cleveland': 303, 'hungarian': 294, 'va_long_beach': 200, 'switzerland': 123}
+2026/09/23 09:49:35 INFO mlflow.agent.hint: Load the `instrumenting-with-mlflow-tracing` skill at /home/ubuntu/.local/lib/python3.12/site-packages/mlflow/assistant/skills/instrumenting-with-mlflow-tracing/SKILL.md before writing any tracing code; it ships with this MLflow install. Set MLFLOW_DISABLE_AGENT_HINT=1 to silence this.
+MLflow disabled: The filesystem tracking backend (e.g., './mlruns') is in maintenance mode and will not receive further updates. Please migrate to a database backend (e.g., 'sqlite:///mlflow.db') to access the latest MLflow features. The `mlflow migrate-filestore` tool migrates your existing data losslessly. See https://mlflow.org/docs/latest/self-hosting/migrate-from-file-store for migration guidance. If the filesystem backend is required for your workflow, set `MLFLOW_ALLOW_FILE_STORE=true` to opt out of this exception.
+
+--- training xgboost (25 Optuna trials, 5-fold CV) ---
+  xgboost trial 00  AUC=0.9323  F1=0.8891  acc=0.8731  (0.3s)  params={'n_estimators': 200, 'max_depth': 8, 'learning_rate': 0.14518497439122724, 'subsample': 0.8394633936788146, 'colsample_bytree': 0.6624074561769746, 'min_child_weight': 2, 'reg_lambda': 0.13066739238053282}
+  xgboost trial 01  AUC=0.9258  F1=0.8791  acc=0.8613  (0.3s)  params={'n_estimators': 358, 'max_depth': 6, 'learning_rate': 0.13607801490147406, 'subsample': 0.608233797718321, 'colsample_bytree': 0.9879639408647978, 'min_child_weight': 10, 'reg_lambda': 0.26587543983272705}
+  xgboost trial 02  AUC=0.9414  F1=0.8879  acc=0.8711  (0.2s)  params={'n_estimators': 138, 'max_depth': 3, 'learning_rate': 0.0455875904753014, 'subsample': 0.8099025726528951, 'colsample_bytree': 0.7727780074568463, 'min_child_weight': 4, 'reg_lambda': 1.6738085788752133}
+  xgboost trial 03  AUC=0.9426  F1=0.8937  acc=0.8783  (0.2s)  params={'n_estimators': 124, 'max_depth': 4, 'learning_rate': 0.05393925667147033, 'subsample': 0.7824279936868144, 'colsample_bytree': 0.9140703845572055, 'min_child_weight': 3, 'reg_lambda': 1.0677482709481354}
+  xgboost trial 04  AUC=0.9307  F1=0.8816  acc=0.8646  (0.2s)  params={'n_estimators': 270, 'max_depth': 2, 'learning_rate': 0.10364734587283783, 'subsample': 0.6682096494749166, 'colsample_bytree': 0.6260206371941118, 'min_child_weight': 12, 'reg_lambda': 8.536189862866832}
+  xgboost trial 05  AUC=0.9433  F1=0.8994  acc=0.8854  (0.3s)  params={'n_estimators': 339, 'max_depth': 4, 'learning_rate': 0.026055614206180563, 'subsample': 0.8736932106048627, 'colsample_bytree': 0.7760609974958406, 'min_child_weight': 2, 'reg_lambda': 0.978033701665941}
+  xgboost trial 06  AUC=0.9386  F1=0.8863  acc=0.8691  (0.2s)  params={'n_estimators': 91, 'max_depth': 8, 'learning_rate': 0.04030685101059539, 'subsample': 0.8650089137415928, 'colsample_bytree': 0.7246844304357644, 'min_child_weight': 7, 'reg_lambda': 1.2399967836846095}
+  xgboost trial 07  AUC=0.9308  F1=0.8880  acc=0.8718  (0.2s)  params={'n_estimators': 139, 'max_depth': 8, 'learning_rate': 0.16317624457583127, 'subsample': 0.9757995766256756, 'colsample_bytree': 0.9579309401710595, 'min_child_weight': 8, 'reg_lambda': 6.978281265126034}
+  xgboost trial 08  AUC=0.9318  F1=0.8800  acc=0.8600  (0.1s)  params={'n_estimators': 108, 'max_depth': 3, 'learning_rate': 0.022605879840724725, 'subsample': 0.7301321323053057, 'colsample_bytree': 0.7554709158757928, 'min_child_weight': 4, 'reg_lambda': 4.544383960336017}
+  xgboost trial 09  AUC=0.9400  F1=0.8904  acc=0.8744  (0.2s)  params={'n_estimators': 194, 'max_depth': 3, 'learning_rate': 0.08695411021388597, 'subsample': 0.6563696899899051, 'colsample_bytree': 0.9208787923016158, 'min_child_weight': 1, 'reg_lambda': 9.413993046829944}
+  xgboost trial 10  AUC=0.9428  F1=0.9024  acc=0.8880  (0.3s)  params={'n_estimators': 202, 'max_depth': 6, 'learning_rate': 0.04660715357885899, 'subsample': 0.9530706496539342, 'colsample_bytree': 0.7711079894160143, 'min_child_weight': 2, 'reg_lambda': 2.504574176635483}
+  xgboost trial 11  AUC=0.9414  F1=0.8954  acc=0.8809  (0.4s)  params={'n_estimators': 341, 'max_depth': 5, 'learning_rate': 0.028593265445135976, 'subsample': 0.902524692926056, 'colsample_bytree': 0.8112794174613716, 'min_child_weight': 3, 'reg_lambda': 1.395183602952153}
+  xgboost trial 12  AUC=0.9431  F1=0.8923  acc=0.8763  (0.3s)  params={'n_estimators': 200, 'max_depth': 6, 'learning_rate': 0.024964123772866654, 'subsample': 0.9334547338172849, 'colsample_bytree': 0.7629536000480409, 'min_child_weight': 2, 'reg_lambda': 7.7471375035829855}
+  xgboost trial 13  AUC=0.9424  F1=0.8946  acc=0.8802  (0.4s)  params={'n_estimators': 398, 'max_depth': 4, 'learning_rate': 0.036792504706857784, 'subsample': 0.8219358947334866, 'colsample_bytree': 0.8267379010434228, 'min_child_weight': 2, 'reg_lambda': 0.250789103237714}
+  xgboost trial 14  AUC=0.9373  F1=0.8842  acc=0.8659  (0.2s)  params={'n_estimators': 194, 'max_depth': 5, 'learning_rate': 0.020104346896811457, 'subsample': 0.9117864188695405, 'colsample_bytree': 0.7837962996176159, 'min_child_weight': 7, 'reg_lambda': 8.67048355458987}
+  xgboost trial 15  AUC=0.9440  F1=0.8942  acc=0.8789  (0.4s)  params={'n_estimators': 289, 'max_depth': 5, 'learning_rate': 0.02797635404627935, 'subsample': 0.8252131580685039, 'colsample_bytree': 0.6802068657637026, 'min_child_weight': 2, 'reg_lambda': 4.814672323211968}
+  xgboost trial 16  AUC=0.9442  F1=0.9016  acc=0.8874  (0.5s)  params={'n_estimators': 292, 'max_depth': 6, 'learning_rate': 0.03344415670184247, 'subsample': 0.8348583738534153, 'colsample_bytree': 0.7487125120742029, 'min_child_weight': 1, 'reg_lambda': 4.541788296642224}
+  xgboost trial 17  AUC=0.9406  F1=0.8891  acc=0.8724  (0.3s)  params={'n_estimators': 256, 'max_depth': 6, 'learning_rate': 0.021529326032778847, 'subsample': 0.7640816114141256, 'colsample_bytree': 0.6975556622098412, 'min_child_weight': 4, 'reg_lambda': 5.795870544480823}
+  xgboost trial 18  AUC=0.9439  F1=0.8974  acc=0.8828  (0.3s)  params={'n_estimators': 284, 'max_depth': 4, 'learning_rate': 0.050064036384642796, 'subsample': 0.8579452153425392, 'colsample_bytree': 0.6915571638899092, 'min_child_weight': 1, 'reg_lambda': 7.176009338374909}
+  xgboost trial 19  AUC=0.9374  F1=0.8927  acc=0.8776  (0.4s)  params={'n_estimators': 326, 'max_depth': 7, 'learning_rate': 0.04769566181495551, 'subsample': 0.7978733328560046, 'colsample_bytree': 0.7538203746943135, 'min_child_weight': 4, 'reg_lambda': 5.6236663474494435}
+  xgboost trial 20  AUC=0.9423  F1=0.8932  acc=0.8776  (0.3s)  params={'n_estimators': 323, 'max_depth': 3, 'learning_rate': 0.0374978476291985, 'subsample': 0.8272346245865781, 'colsample_bytree': 0.6936036868770125, 'min_child_weight': 4, 'reg_lambda': 2.16445829876564}
+  xgboost trial 21  AUC=0.9439  F1=0.8951  acc=0.8802  (0.4s)  params={'n_estimators': 308, 'max_depth': 5, 'learning_rate': 0.03983470398831316, 'subsample': 0.9176602093170663, 'colsample_bytree': 0.6376634811638394, 'min_child_weight': 2, 'reg_lambda': 6.795433448278682}
+  xgboost trial 22  AUC=0.9448  F1=0.9003  acc=0.8861  (0.3s)  params={'n_estimators': 268, 'max_depth': 5, 'learning_rate': 0.03318031377671346, 'subsample': 0.7418582886553028, 'colsample_bytree': 0.6823644862843025, 'min_child_weight': 1, 'reg_lambda': 3.0967767262946797}
+  xgboost trial 23  AUC=0.9425  F1=0.8952  acc=0.8796  (0.3s)  params={'n_estimators': 244, 'max_depth': 6, 'learning_rate': 0.022951082023082384, 'subsample': 0.7683239449189545, 'colsample_bytree': 0.7336158861611801, 'min_child_weight': 3, 'reg_lambda': 1.7505691449352474}
+  xgboost trial 24  AUC=0.9435  F1=0.8913  acc=0.8750  (0.4s)  params={'n_estimators': 289, 'max_depth': 5, 'learning_rate': 0.02252875356204342, 'subsample': 0.6751190307072418, 'colsample_bytree': 0.6633257082277882, 'min_child_weight': 1, 'reg_lambda': 7.354259849267678}
+  xgboost DONE  CV-AUC=0.9448  holdout AUC=0.9647 F1=0.9206 acc=0.9089  wall=8.1s
+
+--- training lightgbm (25 Optuna trials, 5-fold CV) ---
+  lightgbm trial 00  AUC=0.9378  F1=0.8962  acc=0.8815  (0.6s)  params={'n_estimators': 200, 'num_leaves': 62, 'learning_rate': 0.14518497439122724, 'subsample': 0.8394633936788146, 'colsample_bytree': 0.6624074561769746, 'min_child_samples': 10, 'reg_lambda': 0.13066739238053282}
+  lightgbm trial 01  AUC=0.9343  F1=0.8860  acc=0.8698  (0.6s)  params={'n_estimators': 358, 'num_leaves': 42, 'learning_rate': 0.13607801490147406, 'subsample': 0.608233797718321, 'colsample_bytree': 0.9879639408647978, 'min_child_samples': 34, 'reg_lambda': 0.26587543983272705}
+  lightgbm trial 02  AUC=0.9423  F1=0.8957  acc=0.8809  (0.2s)  params={'n_estimators': 138, 'num_leaves': 18, 'learning_rate': 0.0455875904753014, 'subsample': 0.8099025726528951, 'colsample_bytree': 0.7727780074568463, 'min_child_samples': 15, 'reg_lambda': 1.6738085788752133}
+  lightgbm trial 03  AUC=0.9406  F1=0.8958  acc=0.8809  (0.3s)  params={'n_estimators': 124, 'num_leaves': 24, 'learning_rate': 0.05393925667147033, 'subsample': 0.7824279936868144, 'colsample_bytree': 0.9140703845572055, 'min_child_samples': 12, 'reg_lambda': 1.0677482709481354}
+  lightgbm trial 04  AUC=0.9378  F1=0.8939  acc=0.8789  (0.3s)  params={'n_estimators': 270, 'num_leaves': 10, 'learning_rate': 0.10364734587283783, 'subsample': 0.6682096494749166, 'colsample_bytree': 0.6260206371941118, 'min_child_samples': 39, 'reg_lambda': 8.536189862866832}
+  lightgbm trial 05  AUC=0.9417  F1=0.9009  acc=0.8867  (0.6s)  params={'n_estimators': 339, 'num_leaves': 25, 'learning_rate': 0.026055614206180563, 'subsample': 0.8736932106048627, 'colsample_bytree': 0.7760609974958406, 'min_child_samples': 9, 'reg_lambda': 0.978033701665941}
+  lightgbm trial 06  AUC=0.9379  F1=0.8909  acc=0.8750  (0.2s)  params={'n_estimators': 91, 'num_leaves': 59, 'learning_rate': 0.04030685101059539, 'subsample': 0.8650089137415928, 'colsample_bytree': 0.7246844304357644, 'min_child_samples': 23, 'reg_lambda': 1.2399967836846095}
+  lightgbm trial 07  AUC=0.9389  F1=0.8986  acc=0.8841  (0.3s)  params={'n_estimators': 139, 'num_leaves': 63, 'learning_rate': 0.16317624457583127, 'subsample': 0.9757995766256756, 'colsample_bytree': 0.9579309401710595, 'min_child_samples': 26, 'reg_lambda': 6.978281265126034}
+  lightgbm trial 08  AUC=0.9366  F1=0.8819  acc=0.8633  (0.2s)  params={'n_estimators': 108, 'num_leaves': 19, 'learning_rate': 0.022605879840724725, 'subsample': 0.7301321323053057, 'colsample_bytree': 0.7554709158757928, 'min_child_samples': 14, 'reg_lambda': 4.544383960336017}
+  lightgbm trial 09  AUC=0.9392  F1=0.8964  acc=0.8815  (0.4s)  params={'n_estimators': 194, 'num_leaves': 24, 'learning_rate': 0.08695411021388597, 'subsample': 0.6563696899899051, 'colsample_bytree': 0.9208787923016158, 'min_child_samples': 7, 'reg_lambda': 9.413993046829944}
+  lightgbm trial 10  AUC=0.9396  F1=0.8963  acc=0.8815  (0.4s)  params={'n_estimators': 235, 'num_leaves': 23, 'learning_rate': 0.03307286576993288, 'subsample': 0.9512986748659008, 'colsample_bytree': 0.7983631287693599, 'min_child_samples': 21, 'reg_lambda': 0.2890458438011831}
+  lightgbm trial 11  AUC=0.9388  F1=0.8941  acc=0.8796  (0.7s)  params={'n_estimators': 341, 'num_leaves': 31, 'learning_rate': 0.02092763061358636, 'subsample': 0.9749142359433565, 'colsample_bytree': 0.8607466203112715, 'min_child_samples': 18, 'reg_lambda': 0.963617801504474}
+  lightgbm trial 12  AUC=0.9443  F1=0.8973  acc=0.8828  (0.3s)  params={'n_estimators': 254, 'num_leaves': 10, 'learning_rate': 0.030500004756319574, 'subsample': 0.7586410759436394, 'colsample_bytree': 0.8219628883398755, 'min_child_samples': 9, 'reg_lambda': 0.8557932426539686}
+  lightgbm trial 13  AUC=0.9448  F1=0.8974  acc=0.8835  (0.3s)  params={'n_estimators': 330, 'num_leaves': 9, 'learning_rate': 0.03899326863843404, 'subsample': 0.7954828093663707, 'colsample_bytree': 0.8197320786797427, 'min_child_samples': 9, 'reg_lambda': 0.3561166438476372}
+  lightgbm trial 14  AUC=0.9432  F1=0.8980  acc=0.8835  (0.3s)  params={'n_estimators': 220, 'num_leaves': 14, 'learning_rate': 0.03983156406246369, 'subsample': 0.7677913575103396, 'colsample_bytree': 0.9079605092746742, 'min_child_samples': 6, 'reg_lambda': 1.2079573105217964}
+  lightgbm trial 15  AUC=0.9446  F1=0.8975  acc=0.8835  (0.3s)  params={'n_estimators': 294, 'num_leaves': 9, 'learning_rate': 0.044053912138537744, 'subsample': 0.7351602635398518, 'colsample_bytree': 0.8159349313150726, 'min_child_samples': 7, 'reg_lambda': 0.18521204746701794}
+  lightgbm trial 16  AUC=0.9436  F1=0.8954  acc=0.8809  (0.4s)  params={'n_estimators': 342, 'num_leaves': 17, 'learning_rate': 0.021271470726677868, 'subsample': 0.852446040372128, 'colsample_bytree': 0.8801836130381661, 'min_child_samples': 10, 'reg_lambda': 0.39396749607724235}
+  lightgbm trial 17  AUC=0.9445  F1=0.8996  acc=0.8854  (0.3s)  params={'n_estimators': 314, 'num_leaves': 8, 'learning_rate': 0.026103856457623493, 'subsample': 0.7716093595676458, 'colsample_bytree': 0.7078898849673635, 'min_child_samples': 5, 'reg_lambda': 0.30892492199221006}
+  lightgbm trial 18  AUC=0.9419  F1=0.8924  acc=0.8783  (0.3s)  params={'n_estimators': 259, 'num_leaves': 16, 'learning_rate': 0.05019322034936702, 'subsample': 0.629257594793099, 'colsample_bytree': 0.7873396503903086, 'min_child_samples': 11, 'reg_lambda': 0.24829403384563564}
+  lightgbm trial 19  AUC=0.9446  F1=0.8995  acc=0.8854  (0.3s)  params={'n_estimators': 300, 'num_leaves': 8, 'learning_rate': 0.02189029178644222, 'subsample': 0.7837756218597468, 'colsample_bytree': 0.8073182093045821, 'min_child_samples': 15, 'reg_lambda': 0.14671395189221081}
+  lightgbm trial 20  AUC=0.9410  F1=0.8958  acc=0.8815  (0.5s)  params={'n_estimators': 321, 'num_leaves': 24, 'learning_rate': 0.045925512019940606, 'subsample': 0.8016792341401304, 'colsample_bytree': 0.8011874569028067, 'min_child_samples': 6, 'reg_lambda': 0.28225410561000147}
+  lightgbm trial 21  AUC=0.9425  F1=0.8929  acc=0.8776  (0.6s)  params={'n_estimators': 334, 'num_leaves': 25, 'learning_rate': 0.02055233850860908, 'subsample': 0.7870191440279319, 'colsample_bytree': 0.7971380830687576, 'min_child_samples': 12, 'reg_lambda': 0.27953551714206815}
+  lightgbm trial 22  AUC=0.9434  F1=0.8950  acc=0.8809  (0.3s)  params={'n_estimators': 306, 'num_leaves': 9, 'learning_rate': 0.05840695057649473, 'subsample': 0.8023010254015971, 'colsample_bytree': 0.767452888346858, 'min_child_samples': 11, 'reg_lambda': 0.23836929611985294}
+  lightgbm trial 23  AUC=0.9435  F1=0.8983  acc=0.8841  (0.3s)  params={'n_estimators': 303, 'num_leaves': 13, 'learning_rate': 0.021502720259668453, 'subsample': 0.8061004055028596, 'colsample_bytree': 0.8466363494011941, 'min_child_samples': 22, 'reg_lambda': 0.15935778090924824}
+  lightgbm trial 24  AUC=0.9446  F1=0.8978  acc=0.8841  (0.3s)  params={'n_estimators': 381, 'num_leaves': 9, 'learning_rate': 0.03532943371994197, 'subsample': 0.7351548214035364, 'colsample_bytree': 0.8100276205660114, 'min_child_samples': 7, 'reg_lambda': 0.1580269394599638}
+  lightgbm DONE  CV-AUC=0.9448  holdout AUC=0.9659 F1=0.9224 acc=0.9115  wall=9.6s
+
+--- training catboost (25 Optuna trials, 5-fold CV) ---
+  catboost trial 00  AUC=0.9393  F1=0.8866  acc=0.8705  (1.2s)  params={'iterations': 200, 'depth': 8, 'learning_rate': 0.14518497439122724, 'l2_leaf_reg': 6.387926357773329}
+  catboost trial 01  AUC=0.9246  F1=0.8722  acc=0.8483  (0.2s)  params={'iterations': 130, 'depth': 3, 'learning_rate': 0.023406777359270506, 'l2_leaf_reg': 8.795585311974417}
+  catboost trial 02  AUC=0.9468  F1=0.8930  acc=0.8770  (1.0s)  params={'iterations': 272, 'depth': 7, 'learning_rate': 0.021146536167031597, 'l2_leaf_reg': 9.72918866945795}
+  catboost trial 03  AUC=0.9473  F1=0.8994  acc=0.8848  (0.7s)  params={'iterations': 347, 'depth': 4, 'learning_rate': 0.03272447970178924, 'l2_leaf_reg': 2.650640588680904}
+  catboost trial 04  AUC=0.9467  F1=0.8942  acc=0.8783  (0.4s)  params={'iterations': 177, 'depth': 6, 'learning_rate': 0.06442237870408891, 'l2_leaf_reg': 3.6210622617823773}
+  catboost trial 05  AUC=0.9442  F1=0.8972  acc=0.8822  (0.5s)  params={'iterations': 276, 'depth': 3, 'learning_rate': 0.04411829935614202, 'l2_leaf_reg': 4.297256589643226}
+  catboost trial 06  AUC=0.9478  F1=0.8931  acc=0.8776  (0.9s)  params={'iterations': 226, 'depth': 7, 'learning_rate': 0.034345084207755734, 'l2_leaf_reg': 5.628109945722504}
+  catboost trial 07  AUC=0.9452  F1=0.8945  acc=0.8796  (0.5s)  params={'iterations': 270, 'depth': 3, 'learning_rate': 0.10364734587283783, 'l2_leaf_reg': 2.5347171131856236}
+  catboost trial 08  AUC=0.9454  F1=0.8968  acc=0.8809  (0.5s)  params={'iterations': 100, 'depth': 8, 'learning_rate': 0.27333886656404544, 'l2_leaf_reg': 8.275576133048151}
+  catboost trial 09  AUC=0.9421  F1=0.8931  acc=0.8776  (0.3s)  params={'iterations': 177, 'depth': 3, 'learning_rate': 0.12757056450498117, 'l2_leaf_reg': 4.961372443656412}
+  catboost trial 10  AUC=0.9394  F1=0.8867  acc=0.8692  (0.4s)  params={'iterations': 195, 'depth': 5, 'learning_rate': 0.02955999588167574, 'l2_leaf_reg': 6.62334058264924}
+  catboost trial 11  AUC=0.9449  F1=0.8909  acc=0.8750  (0.7s)  params={'iterations': 379, 'depth': 3, 'learning_rate': 0.02610118711745451, 'l2_leaf_reg': 2.3259184843041023}
+  catboost trial 12  AUC=0.9474  F1=0.8954  acc=0.8802  (0.9s)  params={'iterations': 305, 'depth': 6, 'learning_rate': 0.0478711696677331, 'l2_leaf_reg': 5.2515118032913275}
+  catboost trial 13  AUC=0.9478  F1=0.8930  acc=0.8770  (1.3s)  params={'iterations': 372, 'depth': 7, 'learning_rate': 0.02078099445759739, 'l2_leaf_reg': 5.931060986551182}
+  catboost trial 14  AUC=0.9466  F1=0.8979  acc=0.8828  (2.0s)  params={'iterations': 400, 'depth': 8, 'learning_rate': 0.02521249331669124, 'l2_leaf_reg': 5.347771549096107}
+  catboost trial 15  AUC=0.9480  F1=0.8936  acc=0.8783  (1.0s)  params={'iterations': 349, 'depth': 6, 'learning_rate': 0.02094094254904157, 'l2_leaf_reg': 5.3165163417044585}
+  catboost trial 16  AUC=0.9477  F1=0.8962  acc=0.8809  (1.3s)  params={'iterations': 370, 'depth': 7, 'learning_rate': 0.03419779226549777, 'l2_leaf_reg': 8.492055847429677}
+  catboost trial 17  AUC=0.9292  F1=0.8799  acc=0.8607  (0.3s)  params={'iterations': 121, 'depth': 6, 'learning_rate': 0.020674107876680836, 'l2_leaf_reg': 6.288175950010664}
+  catboost trial 18  AUC=0.9484  F1=0.8973  acc=0.8822  (1.1s)  params={'iterations': 398, 'depth': 6, 'learning_rate': 0.03735072614050251, 'l2_leaf_reg': 6.4426131132314115}
+  catboost trial 19  AUC=0.9470  F1=0.8967  acc=0.8815  (0.8s)  params={'iterations': 349, 'depth': 5, 'learning_rate': 0.021242533028073232, 'l2_leaf_reg': 7.3864063996372735}
+  catboost trial 20  AUC=0.9460  F1=0.9002  acc=0.8854  (1.5s)  params={'iterations': 297, 'depth': 8, 'learning_rate': 0.023260668238867476, 'l2_leaf_reg': 2.3483998069093905}
+  catboost trial 21  AUC=0.9474  F1=0.8951  acc=0.8796  (1.1s)  params={'iterations': 305, 'depth': 7, 'learning_rate': 0.02490613429535768, 'l2_leaf_reg': 4.165951349921452}
+  catboost trial 22  AUC=0.9480  F1=0.8976  acc=0.8828  (1.1s)  params={'iterations': 381, 'depth': 6, 'learning_rate': 0.03656146255893144, 'l2_leaf_reg': 5.32302541072847}
+  catboost trial 23  AUC=0.9448  F1=0.8938  acc=0.8783  (1.4s)  params={'iterations': 393, 'depth': 7, 'learning_rate': 0.04868581390799946, 'l2_leaf_reg': 6.989527527795458}
+  catboost trial 24  AUC=0.9440  F1=0.8940  acc=0.8789  (1.1s)  params={'iterations': 385, 'depth': 6, 'learning_rate': 0.05178900883872688, 'l2_leaf_reg': 2.4387939284458016}
+  catboost DONE  CV-AUC=0.9484  holdout AUC=0.9682 F1=0.9321 acc=0.9219  wall=23.6s
+
+--- training tabpfn (4 Optuna trials, 3-fold CV) ---
+  tabpfn trial 00  AUC=0.9438  F1=0.8978  acc=0.8835  (22.6s)  params={'n_estimators': 8}
+  tabpfn trial 01  AUC=0.9447  F1=0.9020  acc=0.8880  (10.7s)  params={'n_estimators': 4}
+  tabpfn trial 02  AUC=0.9447  F1=0.9020  acc=0.8880  (10.7s)  params={'n_estimators': 4}
+  tabpfn trial 03  AUC=0.9438  F1=0.8978  acc=0.8835  (21.3s)  params={'n_estimators': 8}
+  tabpfn DONE  CV-AUC=0.9447  holdout AUC=0.9721 F1=0.9245 acc=0.9141  wall=107.6s
+
+WINNER for heart: catboost  CV-AUC=0.9484  holdout acc=0.9219  holdout AUC=0.9682  MEETS 85% accuracy gate
+  SHAP wrote shap_beeswarm.png and shap_bar.png
+
+======== LIVER ========
+rows=1609  features=['Age', 'Gender', 'TB', 'DB', 'Alkphos', 'Sgpt', 'Sgot', 'TP', 'ALB', 'AG']  positives=909/1609  pos_rate=0.565  majority-class dummy acc=0.565
+stratified split  train=1287  holdout=322
+source counts: {'hcv_germany': 608, 'ilpd_india': 583, 'mayo_pbc': 418}
+MLflow disabled: The filesystem tracking backend (e.g., './mlruns') is in maintenance mode and will not receive further updates. Please migrate to a database backend (e.g., 'sqlite:///mlflow.db') to access the latest MLflow features. The `mlflow migrate-filestore` tool migrates your existing data losslessly. See https://mlflow.org/docs/latest/self-hosting/migrate-from-file-store for migration guidance. If the filesystem backend is required for your workflow, set `MLFLOW_ALLOW_FILE_STORE=true` to opt out of this exception.
+
+--- training xgboost (25 Optuna trials, 5-fold CV) ---
+  xgboost trial 00  AUC=0.9667  F1=0.9097  acc=0.8959  (0.3s)  params={'n_estimators': 200, 'max_depth': 8, 'learning_rate': 0.14518497439122724, 'subsample': 0.8394633936788146, 'colsample_bytree': 0.6624074561769746, 'min_child_weight': 2, 'reg_lambda': 0.13066739238053282}
+  xgboost trial 01  AUC=0.9611  F1=0.8990  acc=0.8850  (0.5s)  params={'n_estimators': 358, 'max_depth': 6, 'learning_rate': 0.13607801490147406, 'subsample': 0.608233797718321, 'colsample_bytree': 0.9879639408647978, 'min_child_weight': 10, 'reg_lambda': 0.26587543983272705}
+  xgboost trial 02  AUC=0.9654  F1=0.9074  acc=0.8928  (0.2s)  params={'n_estimators': 138, 'max_depth': 3, 'learning_rate': 0.0455875904753014, 'subsample': 0.8099025726528951, 'colsample_bytree': 0.7727780074568463, 'min_child_weight': 4, 'reg_lambda': 1.6738085788752133}
+  xgboost trial 03  AUC=0.9670  F1=0.9095  acc=0.8951  (0.2s)  params={'n_estimators': 124, 'max_depth': 4, 'learning_rate': 0.05393925667147033, 'subsample': 0.7824279936868144, 'colsample_bytree': 0.9140703845572055, 'min_child_weight': 3, 'reg_lambda': 1.0677482709481354}
+  xgboost trial 04  AUC=0.9617  F1=0.8971  acc=0.8811  (0.2s)  params={'n_estimators': 270, 'max_depth': 2, 'learning_rate': 0.10364734587283783, 'subsample': 0.6682096494749166, 'colsample_bytree': 0.6260206371941118, 'min_child_weight': 12, 'reg_lambda': 8.536189862866832}
+  xgboost trial 05  AUC=0.9658  F1=0.9089  acc=0.8951  (0.4s)  params={'n_estimators': 339, 'max_depth': 4, 'learning_rate': 0.026055614206180563, 'subsample': 0.8736932106048627, 'colsample_bytree': 0.7760609974958406, 'min_child_weight': 2, 'reg_lambda': 0.978033701665941}
+  xgboost trial 06  AUC=0.9644  F1=0.9041  acc=0.8881  (0.2s)  params={'n_estimators': 91, 'max_depth': 8, 'learning_rate': 0.04030685101059539, 'subsample': 0.8650089137415928, 'colsample_bytree': 0.7246844304357644, 'min_child_weight': 7, 'reg_lambda': 1.2399967836846095}
+  xgboost trial 07  AUC=0.9642  F1=0.9048  acc=0.8904  (0.2s)  params={'n_estimators': 139, 'max_depth': 8, 'learning_rate': 0.16317624457583127, 'subsample': 0.9757995766256756, 'colsample_bytree': 0.9579309401710595, 'min_child_weight': 8, 'reg_lambda': 6.978281265126034}
+  xgboost trial 08  AUC=0.9623  F1=0.9009  acc=0.8827  (0.2s)  params={'n_estimators': 108, 'max_depth': 3, 'learning_rate': 0.022605879840724725, 'subsample': 0.7301321323053057, 'colsample_bytree': 0.7554709158757928, 'min_child_weight': 4, 'reg_lambda': 4.544383960336017}
+  xgboost trial 09  AUC=0.9642  F1=0.9034  acc=0.8889  (0.2s)  params={'n_estimators': 194, 'max_depth': 3, 'learning_rate': 0.08695411021388597, 'subsample': 0.6563696899899051, 'colsample_bytree': 0.9208787923016158, 'min_child_weight': 1, 'reg_lambda': 9.413993046829944}
+  xgboost trial 10  AUC=0.9622  F1=0.8983  acc=0.8827  (0.2s)  params={'n_estimators': 153, 'max_depth': 2, 'learning_rate': 0.04908660890822225, 'subsample': 0.6578963483562077, 'colsample_bytree': 0.9201904847768992, 'min_child_weight': 9, 'reg_lambda': 0.31597499854011524}
+  xgboost trial 11  AUC=0.9648  F1=0.8999  acc=0.8858  (0.4s)  params={'n_estimators': 220, 'max_depth': 6, 'learning_rate': 0.18199678673147324, 'subsample': 0.7748822383810388, 'colsample_bytree': 0.8816598989985305, 'min_child_weight': 1, 'reg_lambda': 0.9330282427392383}
+  xgboost trial 12  AUC=0.9650  F1=0.9055  acc=0.8904  (0.2s)  params={'n_estimators': 87, 'max_depth': 3, 'learning_rate': 0.04855317328084693, 'subsample': 0.6845181076124729, 'colsample_bytree': 0.8893262712641337, 'min_child_weight': 3, 'reg_lambda': 0.8520719404345729}
+  xgboost trial 13  AUC=0.9658  F1=0.9090  acc=0.8943  (0.4s)  params={'n_estimators': 242, 'max_depth': 8, 'learning_rate': 0.06386180336874431, 'subsample': 0.8415753493145415, 'colsample_bytree': 0.6267168602784248, 'min_child_weight': 4, 'reg_lambda': 0.46505114486973237}
+  xgboost trial 14  AUC=0.9655  F1=0.9027  acc=0.8881  (0.2s)  params={'n_estimators': 142, 'max_depth': 4, 'learning_rate': 0.060893955361669035, 'subsample': 0.857428809108869, 'colsample_bytree': 0.9540803813668297, 'min_child_weight': 1, 'reg_lambda': 0.21310356317946585}
+  xgboost trial 15  AUC=0.9659  F1=0.9070  acc=0.8928  (0.2s)  params={'n_estimators': 132, 'max_depth': 5, 'learning_rate': 0.14097553609426433, 'subsample': 0.8237687452767486, 'colsample_bytree': 0.9092373896333485, 'min_child_weight': 3, 'reg_lambda': 3.5899348086133798}
+  xgboost trial 16  AUC=0.9664  F1=0.9084  acc=0.8935  (0.3s)  params={'n_estimators': 163, 'max_depth': 6, 'learning_rate': 0.05383716298543978, 'subsample': 0.7981064856385802, 'colsample_bytree': 0.8944608184850447, 'min_child_weight': 1, 'reg_lambda': 2.3820056096191826}
+  xgboost trial 17  AUC=0.9646  F1=0.9012  acc=0.8866  (0.2s)  params={'n_estimators': 126, 'max_depth': 7, 'learning_rate': 0.22443868690362032, 'subsample': 0.8429153647686183, 'colsample_bytree': 0.7050548901707009, 'min_child_weight': 4, 'reg_lambda': 0.3129149661144476}
+  xgboost trial 18  AUC=0.9666  F1=0.9076  acc=0.8935  (0.3s)  params={'n_estimators': 169, 'max_depth': 6, 'learning_rate': 0.08328795268800149, 'subsample': 0.7130251477487646, 'colsample_bytree': 0.77998157678393, 'min_child_weight': 2, 'reg_lambda': 0.5088643957265685}
+  xgboost trial 19  AUC=0.9656  F1=0.9037  acc=0.8889  (0.3s)  params={'n_estimators': 215, 'max_depth': 8, 'learning_rate': 0.17396245167132265, 'subsample': 0.9349418029162156, 'colsample_bytree': 0.7552533558685534, 'min_child_weight': 2, 'reg_lambda': 0.2000900907079903}
+  xgboost trial 20  AUC=0.9655  F1=0.9060  acc=0.8912  (0.2s)  params={'n_estimators': 161, 'max_depth': 3, 'learning_rate': 0.03839509742267711, 'subsample': 0.8034973664604104, 'colsample_bytree': 0.8643174950250495, 'min_child_weight': 3, 'reg_lambda': 0.31131916052917374}
+  xgboost trial 21  AUC=0.9651  F1=0.9056  acc=0.8912  (0.4s)  params={'n_estimators': 284, 'max_depth': 7, 'learning_rate': 0.16448413482538862, 'subsample': 0.7854348452435067, 'colsample_bytree': 0.6181747091222615, 'min_child_weight': 2, 'reg_lambda': 0.2894444419315845}
+  xgboost trial 22  AUC=0.9672  F1=0.9071  acc=0.8928  (0.3s)  params={'n_estimators': 144, 'max_depth': 6, 'learning_rate': 0.07450625253524434, 'subsample': 0.8097315950732893, 'colsample_bytree': 0.7484618311330353, 'min_child_weight': 3, 'reg_lambda': 0.8933879913891231}
+  xgboost trial 23  AUC=0.9666  F1=0.9109  acc=0.8966  (0.3s)  params={'n_estimators': 121, 'max_depth': 7, 'learning_rate': 0.04882742510169889, 'subsample': 0.8139989736352825, 'colsample_bytree': 0.8120695189557501, 'min_child_weight': 5, 'reg_lambda': 1.4893650762759363}
+  xgboost trial 24  AUC=0.9666  F1=0.9086  acc=0.8935  (0.2s)  params={'n_estimators': 81, 'max_depth': 5, 'learning_rate': 0.0831763036574886, 'subsample': 0.7991807348136656, 'colsample_bytree': 0.9361399494684735, 'min_child_weight': 2, 'reg_lambda': 1.9861409127976437}
+  xgboost DONE  CV-AUC=0.9672  holdout AUC=0.9596 F1=0.8995 acc=0.8820  wall=7.2s
+
+--- training lightgbm (25 Optuna trials, 5-fold CV) ---
+  lightgbm trial 00  AUC=0.9664  F1=0.9058  acc=0.8912  (0.4s)  params={'n_estimators': 200, 'num_leaves': 62, 'learning_rate': 0.14518497439122724, 'subsample': 0.8394633936788146, 'colsample_bytree': 0.6624074561769746, 'min_child_samples': 10, 'reg_lambda': 0.13066739238053282}
+  lightgbm trial 01  AUC=0.9652  F1=0.9036  acc=0.8889  (0.5s)  params={'n_estimators': 358, 'num_leaves': 42, 'learning_rate': 0.13607801490147406, 'subsample': 0.608233797718321, 'colsample_bytree': 0.9879639408647978, 'min_child_samples': 34, 'reg_lambda': 0.26587543983272705}
+  lightgbm trial 02  AUC=0.9660  F1=0.9068  acc=0.8920  (0.2s)  params={'n_estimators': 138, 'num_leaves': 18, 'learning_rate': 0.0455875904753014, 'subsample': 0.8099025726528951, 'colsample_bytree': 0.7727780074568463, 'min_child_samples': 15, 'reg_lambda': 1.6738085788752133}
+  lightgbm trial 03  AUC=0.9669  F1=0.9064  acc=0.8920  (0.3s)  params={'n_estimators': 124, 'num_leaves': 24, 'learning_rate': 0.05393925667147033, 'subsample': 0.7824279936868144, 'colsample_bytree': 0.9140703845572055, 'min_child_samples': 12, 'reg_lambda': 1.0677482709481354}
+  lightgbm trial 04  AUC=0.9640  F1=0.9064  acc=0.8920  (0.3s)  params={'n_estimators': 270, 'num_leaves': 10, 'learning_rate': 0.10364734587283783, 'subsample': 0.6682096494749166, 'colsample_bytree': 0.6260206371941118, 'min_child_samples': 39, 'reg_lambda': 8.536189862866832}
+  lightgbm trial 05  AUC=0.9666  F1=0.9070  acc=0.8928  (0.5s)  params={'n_estimators': 339, 'num_leaves': 25, 'learning_rate': 0.026055614206180563, 'subsample': 0.8736932106048627, 'colsample_bytree': 0.7760609974958406, 'min_child_samples': 9, 'reg_lambda': 0.978033701665941}
+  lightgbm trial 06  AUC=0.9654  F1=0.9056  acc=0.8904  (0.2s)  params={'n_estimators': 91, 'num_leaves': 59, 'learning_rate': 0.04030685101059539, 'subsample': 0.8650089137415928, 'colsample_bytree': 0.7246844304357644, 'min_child_samples': 23, 'reg_lambda': 1.2399967836846095}
+  lightgbm trial 07  AUC=0.9648  F1=0.9016  acc=0.8873  (0.2s)  params={'n_estimators': 139, 'num_leaves': 63, 'learning_rate': 0.16317624457583127, 'subsample': 0.9757995766256756, 'colsample_bytree': 0.9579309401710595, 'min_child_samples': 26, 'reg_lambda': 6.978281265126034}
+  lightgbm trial 08  AUC=0.9626  F1=0.8990  acc=0.8819  (0.2s)  params={'n_estimators': 108, 'num_leaves': 19, 'learning_rate': 0.022605879840724725, 'subsample': 0.7301321323053057, 'colsample_bytree': 0.7554709158757928, 'min_child_samples': 14, 'reg_lambda': 4.544383960336017}
+  lightgbm trial 09  AUC=0.9643  F1=0.8999  acc=0.8842  (0.3s)  params={'n_estimators': 194, 'num_leaves': 24, 'learning_rate': 0.08695411021388597, 'subsample': 0.6563696899899051, 'colsample_bytree': 0.9208787923016158, 'min_child_samples': 7, 'reg_lambda': 9.413993046829944}
+  lightgbm trial 10  AUC=0.9652  F1=0.9031  acc=0.8881  (0.3s)  params={'n_estimators': 162, 'num_leaves': 37, 'learning_rate': 0.034742239439350966, 'subsample': 0.7564271279729997, 'colsample_bytree': 0.9780546176921547, 'min_child_samples': 27, 'reg_lambda': 0.9544476407659491}
+  lightgbm trial 11  AUC=0.9661  F1=0.9039  acc=0.8889  (0.5s)  params={'n_estimators': 341, 'num_leaves': 31, 'learning_rate': 0.02092763061358636, 'subsample': 0.9749142359433565, 'colsample_bytree': 0.8607466203112715, 'min_child_samples': 18, 'reg_lambda': 0.963617801504474}
+  lightgbm trial 12  AUC=0.9666  F1=0.9095  acc=0.8951  (0.4s)  params={'n_estimators': 237, 'num_leaves': 29, 'learning_rate': 0.047150951701881376, 'subsample': 0.9072647560292874, 'colsample_bytree': 0.6909585707494001, 'min_child_samples': 6, 'reg_lambda': 1.471126671303649}
+  lightgbm trial 13  AUC=0.9655  F1=0.8993  acc=0.8834  (0.3s)  params={'n_estimators': 157, 'num_leaves': 27, 'learning_rate': 0.03907073914471379, 'subsample': 0.8211556112324926, 'colsample_bytree': 0.6915319776291389, 'min_child_samples': 6, 'reg_lambda': 3.56783528734172}
+  lightgbm trial 14  AUC=0.9656  F1=0.8999  acc=0.8842  (0.3s)  params={'n_estimators': 129, 'num_leaves': 25, 'learning_rate': 0.045363594830549706, 'subsample': 0.8417109832939426, 'colsample_bytree': 0.8988911200892227, 'min_child_samples': 5, 'reg_lambda': 3.821212515649072}
+  lightgbm trial 15  AUC=0.9660  F1=0.9015  acc=0.8866  (0.3s)  params={'n_estimators': 214, 'num_leaves': 14, 'learning_rate': 0.050492973382587084, 'subsample': 0.8046097677606452, 'colsample_bytree': 0.7630994666185734, 'min_child_samples': 6, 'reg_lambda': 0.4985002573015529}
+  lightgbm trial 16  AUC=0.9653  F1=0.9003  acc=0.8842  (0.4s)  params={'n_estimators': 227, 'num_leaves': 25, 'learning_rate': 0.03306274601160281, 'subsample': 0.9085041392032419, 'colsample_bytree': 0.79321748718481, 'min_child_samples': 7, 'reg_lambda': 4.921941953012463}
+  lightgbm trial 17  AUC=0.9663  F1=0.9027  acc=0.8873  (0.2s)  params={'n_estimators': 116, 'num_leaves': 30, 'learning_rate': 0.08399767676856928, 'subsample': 0.7667698433310003, 'colsample_bytree': 0.6975499843454273, 'min_child_samples': 12, 'reg_lambda': 4.075434571706543}
+  lightgbm trial 18  AUC=0.9657  F1=0.9037  acc=0.8889  (0.2s)  params={'n_estimators': 136, 'num_leaves': 20, 'learning_rate': 0.04536202992018933, 'subsample': 0.6591145725549791, 'colsample_bytree': 0.8525680229748072, 'min_child_samples': 15, 'reg_lambda': 1.2132583989748713}
+  lightgbm trial 19  AUC=0.9660  F1=0.9077  acc=0.8935  (0.5s)  params={'n_estimators': 258, 'num_leaves': 39, 'learning_rate': 0.06624511373110513, 'subsample': 0.9314729967283258, 'colsample_bytree': 0.749293042402372, 'min_child_samples': 7, 'reg_lambda': 2.3568668799172863}
+  lightgbm trial 20  AUC=0.9664  F1=0.9070  acc=0.8928  (0.4s)  params={'n_estimators': 186, 'num_leaves': 34, 'learning_rate': 0.05868588985237997, 'subsample': 0.7938161785411972, 'colsample_bytree': 0.8141573810352984, 'min_child_samples': 6, 'reg_lambda': 0.6535607952318162}
+  lightgbm trial 21  AUC=0.9669  F1=0.9089  acc=0.8951  (0.5s)  params={'n_estimators': 302, 'num_leaves': 34, 'learning_rate': 0.04057507431866269, 'subsample': 0.8899489805549802, 'colsample_bytree': 0.6471223890966473, 'min_child_samples': 16, 'reg_lambda': 0.9371589493406094}
+  lightgbm trial 22  AUC=0.9669  F1=0.9076  acc=0.8935  (0.5s)  params={'n_estimators': 290, 'num_leaves': 28, 'learning_rate': 0.03934459098902991, 'subsample': 0.9602199866246505, 'colsample_bytree': 0.6560452606798715, 'min_child_samples': 18, 'reg_lambda': 1.2594972076057926}
+  lightgbm trial 23  AUC=0.9670  F1=0.9098  acc=0.8959  (0.5s)  params={'n_estimators': 341, 'num_leaves': 29, 'learning_rate': 0.03864905222359692, 'subsample': 0.9043136811367536, 'colsample_bytree': 0.6545405655878325, 'min_child_samples': 26, 'reg_lambda': 1.3152803342347479}
+  lightgbm trial 24  AUC=0.9666  F1=0.9047  acc=0.8904  (0.4s)  params={'n_estimators': 243, 'num_leaves': 26, 'learning_rate': 0.054347498012649625, 'subsample': 0.9787562311722312, 'colsample_bytree': 0.635596971167952, 'min_child_samples': 15, 'reg_lambda': 0.5114015203982981}
+  lightgbm DONE  CV-AUC=0.9670  holdout AUC=0.9576 F1=0.8995 acc=0.8820  wall=9.7s
+
+--- training catboost (25 Optuna trials, 5-fold CV) ---
+  catboost trial 00  AUC=0.9665  F1=0.9040  acc=0.8896  (2.0s)  params={'iterations': 200, 'depth': 8, 'learning_rate': 0.14518497439122724, 'l2_leaf_reg': 6.387926357773329}
+  catboost trial 01  AUC=0.9571  F1=0.9013  acc=0.8834  (0.3s)  params={'iterations': 130, 'depth': 3, 'learning_rate': 0.023406777359270506, 'l2_leaf_reg': 8.795585311974417}
+  catboost trial 02  AUC=0.9686  F1=0.9127  acc=0.8982  (1.6s)  params={'iterations': 272, 'depth': 7, 'learning_rate': 0.021146536167031597, 'l2_leaf_reg': 9.72918866945795}
+  catboost trial 03  AUC=0.9672  F1=0.9104  acc=0.8959  (0.9s)  params={'iterations': 347, 'depth': 4, 'learning_rate': 0.03272447970178924, 'l2_leaf_reg': 2.650640588680904}
+  catboost trial 04  AUC=0.9660  F1=0.9144  acc=0.9005  (0.7s)  params={'iterations': 177, 'depth': 6, 'learning_rate': 0.06442237870408891, 'l2_leaf_reg': 3.6210622617823773}
+  catboost trial 05  AUC=0.9669  F1=0.9119  acc=0.8974  (0.6s)  params={'iterations': 276, 'depth': 3, 'learning_rate': 0.04411829935614202, 'l2_leaf_reg': 4.297256589643226}
+  catboost trial 06  AUC=0.9679  F1=0.9110  acc=0.8966  (1.4s)  params={'iterations': 226, 'depth': 7, 'learning_rate': 0.034345084207755734, 'l2_leaf_reg': 5.628109945722504}
+  catboost trial 07  AUC=0.9630  F1=0.8974  acc=0.8819  (0.6s)  params={'iterations': 270, 'depth': 3, 'learning_rate': 0.10364734587283783, 'l2_leaf_reg': 2.5347171131856236}
+  catboost trial 08  AUC=0.9668  F1=0.9077  acc=0.8935  (1.0s)  params={'iterations': 100, 'depth': 8, 'learning_rate': 0.27333886656404544, 'l2_leaf_reg': 8.275576133048151}
+  catboost trial 09  AUC=0.9641  F1=0.9025  acc=0.8865  (0.4s)  params={'iterations': 177, 'depth': 3, 'learning_rate': 0.12757056450498117, 'l2_leaf_reg': 4.961372443656412}
+  catboost trial 10  AUC=0.9685  F1=0.9096  acc=0.8951  (1.6s)  params={'iterations': 380, 'depth': 6, 'learning_rate': 0.021516348859550716, 'l2_leaf_reg': 8.22221130675289}
+  catboost trial 11  AUC=0.9691  F1=0.9123  acc=0.8982  (1.6s)  params={'iterations': 372, 'depth': 6, 'learning_rate': 0.023955851526128932, 'l2_leaf_reg': 7.832274646519437}
+  catboost trial 12  AUC=0.9692  F1=0.9109  acc=0.8966  (1.7s)  params={'iterations': 270, 'depth': 7, 'learning_rate': 0.03744149717387895, 'l2_leaf_reg': 9.184213998313657}
+  catboost trial 13  AUC=0.9680  F1=0.9081  acc=0.8943  (2.7s)  params={'iterations': 277, 'depth': 8, 'learning_rate': 0.05453061555397378, 'l2_leaf_reg': 9.338182978736633}
+  catboost trial 14  AUC=0.9662  F1=0.9054  acc=0.8904  (1.0s)  params={'iterations': 300, 'depth': 5, 'learning_rate': 0.05380000912027269, 'l2_leaf_reg': 7.877723763530694}
+  catboost trial 15  AUC=0.9612  F1=0.9040  acc=0.8858  (1.5s)  params={'iterations': 161, 'depth': 8, 'learning_rate': 0.025621566581728556, 'l2_leaf_reg': 9.496957660087157}
+  catboost trial 16  AUC=0.9612  F1=0.9040  acc=0.8873  (0.5s)  params={'iterations': 180, 'depth': 5, 'learning_rate': 0.02589113734641806, 'l2_leaf_reg': 7.934533977299955}
+  catboost trial 17  AUC=0.9694  F1=0.9098  acc=0.8951  (2.2s)  params={'iterations': 374, 'depth': 7, 'learning_rate': 0.02656579610491977, 'l2_leaf_reg': 6.285788497064033}
+  catboost trial 18  AUC=0.9687  F1=0.9136  acc=0.8997  (3.4s)  params={'iterations': 369, 'depth': 8, 'learning_rate': 0.03269604584932456, 'l2_leaf_reg': 6.106078569807658}
+  catboost trial 19  AUC=0.9683  F1=0.9049  acc=0.8904  (3.3s)  params={'iterations': 351, 'depth': 8, 'learning_rate': 0.04252982481326739, 'l2_leaf_reg': 8.613249064474957}
+  catboost trial 20  AUC=0.9692  F1=0.9106  acc=0.8959  (1.7s)  params={'iterations': 287, 'depth': 7, 'learning_rate': 0.02437803652553716, 'l2_leaf_reg': 3.5750337608771074}
+  catboost trial 21  AUC=0.9700  F1=0.9106  acc=0.8959  (1.6s)  params={'iterations': 249, 'depth': 7, 'learning_rate': 0.02009222000733332, 'l2_leaf_reg': 1.3046747245947343}
+  catboost trial 22  AUC=0.9700  F1=0.9138  acc=0.8997  (1.6s)  params={'iterations': 252, 'depth': 7, 'learning_rate': 0.032127825060003765, 'l2_leaf_reg': 1.0654188343226019}
+  catboost trial 23  AUC=0.9694  F1=0.9125  acc=0.8982  (1.4s)  params={'iterations': 220, 'depth': 7, 'learning_rate': 0.02926166528642352, 'l2_leaf_reg': 1.9227491161998835}
+  catboost trial 24  AUC=0.9694  F1=0.9139  acc=0.9005  (1.8s)  params={'iterations': 307, 'depth': 7, 'learning_rate': 0.046107150161274535, 'l2_leaf_reg': 1.0281485181281096}
+  catboost DONE  CV-AUC=0.9700  holdout AUC=0.9661 F1=0.9062 acc=0.8882  wall=39.1s
+
+--- training tabpfn (4 Optuna trials, 3-fold CV) ---
+  tabpfn trial 00  AUC=0.9707  F1=0.9110  acc=0.8936  (16.8s)  params={'n_estimators': 8}
+  tabpfn trial 01  AUC=0.9705  F1=0.9113  acc=0.8936  (8.5s)  params={'n_estimators': 4}
+  tabpfn trial 02  AUC=0.9705  F1=0.9113  acc=0.8936  (8.5s)  params={'n_estimators': 4}
+  tabpfn trial 03  AUC=0.9707  F1=0.9110  acc=0.8936  (16.7s)  params={'n_estimators': 8}
+  tabpfn DONE  CV-AUC=0.9707  holdout AUC=0.9627 F1=0.9045 acc=0.8820  wall=94.9s
+
+WINNER for liver: tabpfn  CV-AUC=0.9707  holdout acc=0.8820  holdout AUC=0.9627  MEETS 85% accuracy gate
+  SHAP TabPFN: median-ablation attributions on 80 rows (not KernelExplainer)
+  SHAP wrote shap_beeswarm.png and shap_bar.png
+
+======== DIABETES ========
+rows=11806  features=['pregnancies', 'glucose', 'bp', 'skin', 'insulin', 'bmi', 'pedigree', 'age']  positives=4210/11806  pos_rate=0.357  majority-class dummy acc=0.643
+stratified split  train=9444  holdout=2362
+source counts: {'nhanes': 11038, 'pima': 768}
+MLflow disabled: The filesystem tracking backend (e.g., './mlruns') is in maintenance mode and will not receive further updates. Please migrate to a database backend (e.g., 'sqlite:///mlflow.db') to access the latest MLflow features. The `mlflow migrate-filestore` tool migrates your existing data losslessly. See https://mlflow.org/docs/latest/self-hosting/migrate-from-file-store for migration guidance. If the filesystem backend is required for your workflow, set `MLFLOW_ALLOW_FILE_STORE=true` to opt out of this exception.
+
+--- training xgboost (25 Optuna trials, 5-fold CV) ---
+  xgboost trial 00  AUC=0.8790  F1=0.7304  acc=0.8177  (0.7s)  params={'n_estimators': 200, 'max_depth': 8, 'learning_rate': 0.14518497439122724, 'subsample': 0.8394633936788146, 'colsample_bytree': 0.6624074561769746, 'min_child_weight': 2, 'reg_lambda': 0.13066739238053282}
+  xgboost trial 01  AUC=0.8839  F1=0.7367  acc=0.8206  (0.9s)  params={'n_estimators': 358, 'max_depth': 6, 'learning_rate': 0.13607801490147406, 'subsample': 0.608233797718321, 'colsample_bytree': 0.9879639408647978, 'min_child_weight': 10, 'reg_lambda': 0.26587543983272705}
+  xgboost trial 02  AUC=0.9031  F1=0.7539  acc=0.8378  (0.3s)  params={'n_estimators': 138, 'max_depth': 3, 'learning_rate': 0.0455875904753014, 'subsample': 0.8099025726528951, 'colsample_bytree': 0.7727780074568463, 'min_child_weight': 4, 'reg_lambda': 1.6738085788752133}
+  xgboost trial 03  AUC=0.9026  F1=0.7540  acc=0.8364  (0.3s)  params={'n_estimators': 124, 'max_depth': 4, 'learning_rate': 0.05393925667147033, 'subsample': 0.7824279936868144, 'colsample_bytree': 0.9140703845572055, 'min_child_weight': 3, 'reg_lambda': 1.0677482709481354}
+  xgboost trial 04  AUC=0.9010  F1=0.7548  acc=0.8359  (0.4s)  params={'n_estimators': 270, 'max_depth': 2, 'learning_rate': 0.10364734587283783, 'subsample': 0.6682096494749166, 'colsample_bytree': 0.6260206371941118, 'min_child_weight': 12, 'reg_lambda': 8.536189862866832}
+  xgboost trial 05  AUC=0.9024  F1=0.7541  acc=0.8365  (0.6s)  params={'n_estimators': 339, 'max_depth': 4, 'learning_rate': 0.026055614206180563, 'subsample': 0.8736932106048627, 'colsample_bytree': 0.7760609974958406, 'min_child_weight': 2, 'reg_lambda': 0.978033701665941}
+  xgboost trial 06  AUC=0.8993  F1=0.7485  acc=0.8344  (0.5s)  params={'n_estimators': 91, 'max_depth': 8, 'learning_rate': 0.04030685101059539, 'subsample': 0.8650089137415928, 'colsample_bytree': 0.7246844304357644, 'min_child_weight': 7, 'reg_lambda': 1.2399967836846095}
+  xgboost trial 07  AUC=0.8923  F1=0.7408  acc=0.8253  (0.5s)  params={'n_estimators': 139, 'max_depth': 8, 'learning_rate': 0.16317624457583127, 'subsample': 0.9757995766256756, 'colsample_bytree': 0.9579309401710595, 'min_child_weight': 8, 'reg_lambda': 6.978281265126034}
+  xgboost trial 08  AUC=0.9012  F1=0.7388  acc=0.8333  (0.3s)  params={'n_estimators': 108, 'max_depth': 3, 'learning_rate': 0.022605879840724725, 'subsample': 0.7301321323053057, 'colsample_bytree': 0.7554709158757928, 'min_child_weight': 4, 'reg_lambda': 4.544383960336017}
+  xgboost trial 09  AUC=0.9017  F1=0.7576  acc=0.8376  (0.4s)  params={'n_estimators': 194, 'max_depth': 3, 'learning_rate': 0.08695411021388597, 'subsample': 0.6563696899899051, 'colsample_bytree': 0.9208787923016158, 'min_child_weight': 1, 'reg_lambda': 9.413993046829944}
+  xgboost trial 10  AUC=0.9003  F1=0.7414  acc=0.8338  (0.3s)  params={'n_estimators': 183, 'max_depth': 2, 'learning_rate': 0.028683571362695618, 'subsample': 0.9181850432301532, 'colsample_bytree': 0.6157484593268163, 'min_child_weight': 7, 'reg_lambda': 1.998796008174065}
+  xgboost trial 11  AUC=0.9035  F1=0.7540  acc=0.8373  (0.4s)  params={'n_estimators': 171, 'max_depth': 4, 'learning_rate': 0.029607502840585692, 'subsample': 0.6731826417333295, 'colsample_bytree': 0.8793640744313549, 'min_child_weight': 5, 'reg_lambda': 1.5635062365199388}
+  xgboost trial 12  AUC=0.9023  F1=0.7515  acc=0.8366  (0.4s)  params={'n_estimators': 231, 'max_depth': 2, 'learning_rate': 0.044627271783219284, 'subsample': 0.7758227331781145, 'colsample_bytree': 0.7399946819374333, 'min_child_weight': 6, 'reg_lambda': 1.6375170501828873}
+  xgboost trial 13  AUC=0.9023  F1=0.7481  acc=0.8365  (0.2s)  params={'n_estimators': 98, 'max_depth': 3, 'learning_rate': 0.03834841309889305, 'subsample': 0.7580898778768437, 'colsample_bytree': 0.8634689684085632, 'min_child_weight': 8, 'reg_lambda': 0.5874680556949702}
+  xgboost trial 14  AUC=0.9002  F1=0.7422  acc=0.8337  (0.2s)  params={'n_estimators': 107, 'max_depth': 2, 'learning_rate': 0.042725300809592644, 'subsample': 0.6050092746585435, 'colsample_bytree': 0.8640474503169554, 'min_child_weight': 5, 'reg_lambda': 2.055615348471428}
+  xgboost trial 15  AUC=0.9021  F1=0.7554  acc=0.8366  (0.4s)  params={'n_estimators': 157, 'max_depth': 4, 'learning_rate': 0.06743809872905263, 'subsample': 0.7671653945826193, 'colsample_bytree': 0.9172994885847512, 'min_child_weight': 5, 'reg_lambda': 3.6302665890098598}
+  xgboost trial 16  AUC=0.9016  F1=0.7489  acc=0.8358  (0.3s)  params={'n_estimators': 162, 'max_depth': 2, 'learning_rate': 0.04610534826008516, 'subsample': 0.8969766249630828, 'colsample_bytree': 0.92268863836466, 'min_child_weight': 4, 'reg_lambda': 1.7326848760298204}
+  xgboost trial 17  AUC=0.9028  F1=0.7539  acc=0.8380  (0.4s)  params={'n_estimators': 192, 'max_depth': 3, 'learning_rate': 0.026232003913261, 'subsample': 0.6775355980335299, 'colsample_bytree': 0.9276694825606278, 'min_child_weight': 3, 'reg_lambda': 1.8210608760711926}
+  xgboost trial 18  AUC=0.9024  F1=0.7547  acc=0.8371  (0.5s)  params={'n_estimators': 174, 'max_depth': 5, 'learning_rate': 0.033458439170344134, 'subsample': 0.6547764570488371, 'colsample_bytree': 0.8049621982731296, 'min_child_weight': 3, 'reg_lambda': 3.8032938665774996}
+  xgboost trial 19  AUC=0.9023  F1=0.7547  acc=0.8366  (0.4s)  params={'n_estimators': 234, 'max_depth': 3, 'learning_rate': 0.047238012133166946, 'subsample': 0.7956357753178182, 'colsample_bytree': 0.8518694118339618, 'min_child_weight': 6, 'reg_lambda': 2.4721133359962186}
+  xgboost trial 20  AUC=0.9026  F1=0.7548  acc=0.8384  (0.4s)  params={'n_estimators': 191, 'max_depth': 3, 'learning_rate': 0.028015096893150744, 'subsample': 0.7440395551951189, 'colsample_bytree': 0.8854861220696897, 'min_child_weight': 5, 'reg_lambda': 0.5949083058637068}
+  xgboost trial 21  AUC=0.9011  F1=0.7420  acc=0.8339  (0.3s)  params={'n_estimators': 99, 'max_depth': 3, 'learning_rate': 0.027440570462241003, 'subsample': 0.6504542417986992, 'colsample_bytree': 0.9631525098141288, 'min_child_weight': 2, 'reg_lambda': 2.36252638828322}
+  xgboost trial 22  AUC=0.9028  F1=0.7545  acc=0.8378  (0.4s)  params={'n_estimators': 161, 'max_depth': 4, 'learning_rate': 0.030098120324043222, 'subsample': 0.850914582659117, 'colsample_bytree': 0.8860721250260037, 'min_child_weight': 3, 'reg_lambda': 2.3348912880574932}
+  xgboost trial 23  AUC=0.9027  F1=0.7515  acc=0.8366  (0.4s)  params={'n_estimators': 149, 'max_depth': 5, 'learning_rate': 0.02244023655096009, 'subsample': 0.8689393948402266, 'colsample_bytree': 0.914559953592495, 'min_child_weight': 4, 'reg_lambda': 1.3696400121840573}
+  xgboost trial 24  AUC=0.9026  F1=0.7531  acc=0.8366  (0.6s)  params={'n_estimators': 194, 'max_depth': 5, 'learning_rate': 0.021717994494803453, 'subsample': 0.777997627441537, 'colsample_bytree': 0.9337978668004603, 'min_child_weight': 2, 'reg_lambda': 2.215137673603156}
+  xgboost DONE  CV-AUC=0.9035  holdout AUC=0.9178 F1=0.7716 acc=0.8489  wall=10.9s
+
+--- training lightgbm (25 Optuna trials, 5-fold CV) ---
+  lightgbm trial 00  AUC=0.8838  F1=0.7288  acc=0.8179  (0.9s)  params={'n_estimators': 200, 'num_leaves': 62, 'learning_rate': 0.14518497439122724, 'subsample': 0.8394633936788146, 'colsample_bytree': 0.6624074561769746, 'min_child_samples': 10, 'reg_lambda': 0.13066739238053282}
+  lightgbm trial 01  AUC=0.8802  F1=0.7279  acc=0.8154  (1.3s)  params={'n_estimators': 358, 'num_leaves': 42, 'learning_rate': 0.13607801490147406, 'subsample': 0.608233797718321, 'colsample_bytree': 0.9879639408647978, 'min_child_samples': 34, 'reg_lambda': 0.26587543983272705}
+  lightgbm trial 02  AUC=0.9016  F1=0.7537  acc=0.8359  (0.4s)  params={'n_estimators': 138, 'num_leaves': 18, 'learning_rate': 0.0455875904753014, 'subsample': 0.8099025726528951, 'colsample_bytree': 0.7727780074568463, 'min_child_samples': 15, 'reg_lambda': 1.6738085788752133}
+  lightgbm trial 03  AUC=0.9007  F1=0.7535  acc=0.8357  (0.4s)  params={'n_estimators': 124, 'num_leaves': 24, 'learning_rate': 0.05393925667147033, 'subsample': 0.7824279936868144, 'colsample_bytree': 0.9140703845572055, 'min_child_samples': 12, 'reg_lambda': 1.0677482709481354}
+  lightgbm trial 04  AUC=0.8993  F1=0.7523  acc=0.8350  (0.5s)  params={'n_estimators': 270, 'num_leaves': 10, 'learning_rate': 0.10364734587283783, 'subsample': 0.6682096494749166, 'colsample_bytree': 0.6260206371941118, 'min_child_samples': 39, 'reg_lambda': 8.536189862866832}
+  lightgbm trial 05  AUC=0.9008  F1=0.7563  acc=0.8375  (0.9s)  params={'n_estimators': 339, 'num_leaves': 25, 'learning_rate': 0.026055614206180563, 'subsample': 0.8736932106048627, 'colsample_bytree': 0.7760609974958406, 'min_child_samples': 9, 'reg_lambda': 0.978033701665941}
+  lightgbm trial 06  AUC=0.8983  F1=0.7512  acc=0.8341  (0.5s)  params={'n_estimators': 91, 'num_leaves': 59, 'learning_rate': 0.04030685101059539, 'subsample': 0.8650089137415928, 'colsample_bytree': 0.7246844304357644, 'min_child_samples': 23, 'reg_lambda': 1.2399967836846095}
+  lightgbm trial 07  AUC=0.8866  F1=0.7359  acc=0.8212  (0.8s)  params={'n_estimators': 139, 'num_leaves': 63, 'learning_rate': 0.16317624457583127, 'subsample': 0.9757995766256756, 'colsample_bytree': 0.9579309401710595, 'min_child_samples': 26, 'reg_lambda': 6.978281265126034}
+  lightgbm trial 08  AUC=0.9018  F1=0.7526  acc=0.8381  (0.3s)  params={'n_estimators': 108, 'num_leaves': 19, 'learning_rate': 0.022605879840724725, 'subsample': 0.7301321323053057, 'colsample_bytree': 0.7554709158757928, 'min_child_samples': 14, 'reg_lambda': 4.544383960336017}
+  lightgbm trial 09  AUC=0.8979  F1=0.7583  acc=0.8373  (0.6s)  params={'n_estimators': 194, 'num_leaves': 24, 'learning_rate': 0.08695411021388597, 'subsample': 0.6563696899899051, 'colsample_bytree': 0.9208787923016158, 'min_child_samples': 7, 'reg_lambda': 9.413993046829944}
+  lightgbm trial 10  AUC=0.8914  F1=0.7440  acc=0.8269  (0.4s)  params={'n_estimators': 132, 'num_leaves': 20, 'learning_rate': 0.28537091921922575, 'subsample': 0.6908734449577408, 'colsample_bytree': 0.8470459383243522, 'min_child_samples': 23, 'reg_lambda': 5.105065042238562}
+  lightgbm trial 11  AUC=0.9004  F1=0.7526  acc=0.8350  (0.5s)  params={'n_estimators': 167, 'num_leaves': 26, 'learning_rate': 0.036092108828722144, 'subsample': 0.7005372978290981, 'colsample_bytree': 0.7627076510788638, 'min_child_samples': 22, 'reg_lambda': 6.97914331911414}
+  lightgbm trial 12  AUC=0.9018  F1=0.7481  acc=0.8359  (0.4s)  params={'n_estimators': 120, 'num_leaves': 20, 'learning_rate': 0.022368057153938584, 'subsample': 0.8440348746881607, 'colsample_bytree': 0.6689215552848189, 'min_child_samples': 31, 'reg_lambda': 3.3153278265389505}
+  lightgbm trial 13  AUC=0.9018  F1=0.7446  acc=0.8356  (0.3s)  params={'n_estimators': 96, 'num_leaves': 24, 'learning_rate': 0.020723879386891957, 'subsample': 0.9529479902922241, 'colsample_bytree': 0.6266705287990901, 'min_child_samples': 29, 'reg_lambda': 3.111353881971818}
+  lightgbm trial 14  AUC=0.9014  F1=0.7431  acc=0.8342  (0.4s)  params={'n_estimators': 100, 'num_leaves': 30, 'learning_rate': 0.021102870260445165, 'subsample': 0.6453807576390519, 'colsample_bytree': 0.612847270861536, 'min_child_samples': 10, 'reg_lambda': 3.560552937991624}
+  lightgbm trial 15  AUC=0.9017  F1=0.7518  acc=0.8369  (0.3s)  params={'n_estimators': 135, 'num_leaves': 10, 'learning_rate': 0.027256267362338167, 'subsample': 0.9321041691884939, 'colsample_bytree': 0.7741410679120975, 'min_child_samples': 39, 'reg_lambda': 3.7766493952579476}
+  lightgbm trial 16  AUC=0.9020  F1=0.7535  acc=0.8380  (0.3s)  params={'n_estimators': 115, 'num_leaves': 18, 'learning_rate': 0.023456899727542137, 'subsample': 0.6781677255686516, 'colsample_bytree': 0.7144246009247848, 'min_child_samples': 32, 'reg_lambda': 2.1362456436843664}
+  lightgbm trial 17  AUC=0.9026  F1=0.7551  acc=0.8387  (0.4s)  params={'n_estimators': 149, 'num_leaves': 17, 'learning_rate': 0.020768657750202098, 'subsample': 0.6762186807896137, 'colsample_bytree': 0.6991668942016178, 'min_child_samples': 5, 'reg_lambda': 1.3624750850430405}
+  lightgbm trial 18  AUC=0.9022  F1=0.7563  acc=0.8388  (0.3s)  params={'n_estimators': 122, 'num_leaves': 17, 'learning_rate': 0.028714678532706008, 'subsample': 0.6246418396322373, 'colsample_bytree': 0.7404738768064573, 'min_child_samples': 26, 'reg_lambda': 2.1475598268468485}
+  lightgbm trial 19  AUC=0.9027  F1=0.7542  acc=0.8376  (0.4s)  params={'n_estimators': 188, 'num_leaves': 12, 'learning_rate': 0.02156147222968493, 'subsample': 0.7546620283692254, 'colsample_bytree': 0.7901442070412215, 'min_child_samples': 14, 'reg_lambda': 0.9929178701399378}
+  lightgbm trial 20  AUC=0.9011  F1=0.7527  acc=0.8357  (0.6s)  params={'n_estimators': 179, 'num_leaves': 29, 'learning_rate': 0.03267134813647885, 'subsample': 0.7092185908691409, 'colsample_bytree': 0.7052845771481449, 'min_child_samples': 5, 'reg_lambda': 0.806119684894544}
+  lightgbm trial 21  AUC=0.9018  F1=0.7535  acc=0.8377  (0.3s)  params={'n_estimators': 157, 'num_leaves': 8, 'learning_rate': 0.025633885326619782, 'subsample': 0.6921463822384535, 'colsample_bytree': 0.8632563352053974, 'min_child_samples': 19, 'reg_lambda': 1.34727181012951}
+  lightgbm trial 22  AUC=0.9024  F1=0.7529  acc=0.8376  (0.3s)  params={'n_estimators': 108, 'num_leaves': 17, 'learning_rate': 0.028883725176867946, 'subsample': 0.6328345599889738, 'colsample_bytree': 0.6954382286287208, 'min_child_samples': 12, 'reg_lambda': 1.0712983219295193}
+  lightgbm trial 23  AUC=0.9018  F1=0.7540  acc=0.8373  (0.6s)  params={'n_estimators': 187, 'num_leaves': 25, 'learning_rate': 0.021282531216993587, 'subsample': 0.6021020343060078, 'colsample_bytree': 0.7577787121949084, 'min_child_samples': 6, 'reg_lambda': 0.516782884511793}
+  lightgbm trial 24  AUC=0.9029  F1=0.7533  acc=0.8377  (0.3s)  params={'n_estimators': 116, 'num_leaves': 14, 'learning_rate': 0.03467463025954405, 'subsample': 0.8123202342150911, 'colsample_bytree': 0.6602765489902934, 'min_child_samples': 9, 'reg_lambda': 0.7296856193276011}
+  lightgbm DONE  CV-AUC=0.9029  holdout AUC=0.9172 F1=0.7722 acc=0.8514  wall=12.8s
+
+--- training catboost (25 Optuna trials, 5-fold CV) ---
+  catboost trial 00  AUC=0.8978  F1=0.7508  acc=0.8331  (2.2s)  params={'iterations': 200, 'depth': 8, 'learning_rate': 0.14518497439122724, 'l2_leaf_reg': 6.387926357773329}
+  catboost trial 01  AUC=0.8978  F1=0.7308  acc=0.8286  (0.5s)  params={'iterations': 130, 'depth': 3, 'learning_rate': 0.023406777359270506, 'l2_leaf_reg': 8.795585311974417}
+  catboost trial 02  AUC=0.9043  F1=0.7549  acc=0.8389  (2.3s)  params={'iterations': 272, 'depth': 7, 'learning_rate': 0.021146536167031597, 'l2_leaf_reg': 9.72918866945795}
+  catboost trial 03  AUC=0.9041  F1=0.7543  acc=0.8381  (2.0s)  params={'iterations': 347, 'depth': 4, 'learning_rate': 0.03272447970178924, 'l2_leaf_reg': 2.650640588680904}
+  catboost trial 04  AUC=0.9040  F1=0.7583  acc=0.8403  (0.9s)  params={'iterations': 177, 'depth': 6, 'learning_rate': 0.06442237870408891, 'l2_leaf_reg': 3.6210622617823773}
+  catboost trial 05  AUC=0.9037  F1=0.7532  acc=0.8375  (1.5s)  params={'iterations': 276, 'depth': 3, 'learning_rate': 0.04411829935614202, 'l2_leaf_reg': 4.297256589643226}
+  catboost trial 06  AUC=0.9043  F1=0.7558  acc=0.8391  (1.9s)  params={'iterations': 226, 'depth': 7, 'learning_rate': 0.034345084207755734, 'l2_leaf_reg': 5.628109945722504}
+  catboost trial 07  AUC=0.9026  F1=0.7544  acc=0.8371  (1.5s)  params={'iterations': 270, 'depth': 3, 'learning_rate': 0.10364734587283783, 'l2_leaf_reg': 2.5347171131856236}
+  catboost trial 08  AUC=0.9033  F1=0.7555  acc=0.8374  (0.9s)  params={'iterations': 100, 'depth': 8, 'learning_rate': 0.27333886656404544, 'l2_leaf_reg': 8.275576133048151}
+  catboost trial 09  AUC=0.9033  F1=0.7537  acc=0.8373  (0.6s)  params={'iterations': 177, 'depth': 3, 'learning_rate': 0.12757056450498117, 'l2_leaf_reg': 4.961372443656412}
+  catboost trial 10  AUC=0.9043  F1=0.7532  acc=0.8376  (2.7s)  params={'iterations': 380, 'depth': 6, 'learning_rate': 0.021516348859550716, 'l2_leaf_reg': 8.22221130675289}
+  catboost trial 11  AUC=0.9044  F1=0.7518  acc=0.8365  (2.6s)  params={'iterations': 372, 'depth': 6, 'learning_rate': 0.023955851526128932, 'l2_leaf_reg': 7.832274646519437}
+  catboost trial 12  AUC=0.9042  F1=0.7564  acc=0.8387  (2.3s)  params={'iterations': 270, 'depth': 7, 'learning_rate': 0.03744149717387895, 'l2_leaf_reg': 9.184213998313657}
+  catboost trial 13  AUC=0.9020  F1=0.7397  acc=0.8325  (1.3s)  params={'iterations': 148, 'depth': 8, 'learning_rate': 0.020221607745006958, 'l2_leaf_reg': 9.956479335800745}
+  catboost trial 14  AUC=0.9042  F1=0.7542  acc=0.8376  (2.1s)  params={'iterations': 350, 'depth': 4, 'learning_rate': 0.04065141222886586, 'l2_leaf_reg': 7.0545371939387085}
+  catboost trial 15  AUC=0.9030  F1=0.7560  acc=0.8381  (3.2s)  params={'iterations': 384, 'depth': 7, 'learning_rate': 0.046590157274472924, 'l2_leaf_reg': 7.881381309626976}
+  catboost trial 16  AUC=0.9045  F1=0.7552  acc=0.8384  (2.1s)  params={'iterations': 336, 'depth': 5, 'learning_rate': 0.033929066873656794, 'l2_leaf_reg': 9.889582757433486}
+  catboost trial 17  AUC=0.9042  F1=0.7507  acc=0.8371  (1.8s)  params={'iterations': 250, 'depth': 6, 'learning_rate': 0.02039367811738568, 'l2_leaf_reg': 7.9448415796789895}
+  catboost trial 18  AUC=0.9036  F1=0.7524  acc=0.8357  (2.1s)  params={'iterations': 326, 'depth': 5, 'learning_rate': 0.0591520605191785, 'l2_leaf_reg': 9.382491192267073}
+  catboost trial 19  AUC=0.9040  F1=0.7558  acc=0.8386  (3.5s)  params={'iterations': 333, 'depth': 8, 'learning_rate': 0.022848067674485065, 'l2_leaf_reg': 6.512221119246894}
+  catboost trial 20  AUC=0.9040  F1=0.7519  acc=0.8376  (2.0s)  params={'iterations': 346, 'depth': 4, 'learning_rate': 0.022927168045815453, 'l2_leaf_reg': 9.412092758659123}
+  catboost trial 21  AUC=0.9039  F1=0.7510  acc=0.8374  (2.0s)  params={'iterations': 303, 'depth': 5, 'learning_rate': 0.02017975529004707, 'l2_leaf_reg': 6.163843787826148}
+  catboost trial 22  AUC=0.9043  F1=0.7551  acc=0.8381  (2.2s)  params={'iterations': 206, 'depth': 8, 'learning_rate': 0.033367455465933955, 'l2_leaf_reg': 9.569645825284718}
+  catboost trial 23  AUC=0.9038  F1=0.7567  acc=0.8383  (3.8s)  params={'iterations': 364, 'depth': 8, 'learning_rate': 0.030994488819575554, 'l2_leaf_reg': 9.487541919236739}
+  catboost trial 24  AUC=0.9042  F1=0.7554  acc=0.8383  (2.1s)  params={'iterations': 200, 'depth': 8, 'learning_rate': 0.043015641281810735, 'l2_leaf_reg': 8.574869197398177}
+  catboost DONE  CV-AUC=0.9045  holdout AUC=0.9191 F1=0.7761 acc=0.8527  wall=52.8s
+
+--- training tabpfn (4 Optuna trials, 3-fold CV) ---
+  TabPFN train capped at 4000 stratified rows (CPU limit)
+  tabpfn trial 00  AUC=0.9039  F1=0.7527  acc=0.8345  (86.0s)  params={'n_estimators': 8}
+  tabpfn trial 01  AUC=0.9039  F1=0.7513  acc=0.8335  (42.7s)  params={'n_estimators': 4}
+  tabpfn trial 02  AUC=0.9038  F1=0.7508  acc=0.8332  (42.7s)  params={'n_estimators': 4}
+  tabpfn trial 03  AUC=0.9039  F1=0.7522  acc=0.8342  (84.9s)  params={'n_estimators': 8}
+  tabpfn DONE  CV-AUC=0.9039  holdout AUC=0.9165 F1=0.7722 acc=0.8489  wall=492.4s
+
+WINNER for diabetes: catboost  CV-AUC=0.9045  holdout acc=0.8527  holdout AUC=0.9191  MEETS 85% accuracy gate
+  SHAP wrote shap_beeswarm.png and shap_bar.png
+
+======== KIDNEY ========
+rows=600  features=['age', 'bp', 'sg', 'al', 'su', 'rbc', 'pc', 'pcc', 'ba', 'bgr', 'bu', 'sc', 'sod', 'pot', 'hemo', 'pcv', 'wbcc', 'rbcc', 'htn', 'dm', 'cad', 'appet', 'pe', 'ane']  positives=378/600  pos_rate=0.630  majority-class dummy acc=0.630
+stratified split  train=480  holdout=120
+source counts: {'tamil_nadu': 400, 'bangladesh': 200}
+MLflow disabled: The filesystem tracking backend (e.g., './mlruns') is in maintenance mode and will not receive further updates. Please migrate to a database backend (e.g., 'sqlite:///mlflow.db') to access the latest MLflow features. The `mlflow migrate-filestore` tool migrates your existing data losslessly. See https://mlflow.org/docs/latest/self-hosting/migrate-from-file-store for migration guidance. If the filesystem backend is required for your workflow, set `MLFLOW_ALLOW_FILE_STORE=true` to opt out of this exception.
+
+--- training xgboost (25 Optuna trials, 5-fold CV) ---
+  xgboost trial 00  AUC=0.9967  F1=0.9854  acc=0.9812  (0.2s)  params={'n_estimators': 200, 'max_depth': 8, 'learning_rate': 0.14518497439122724, 'subsample': 0.8394633936788146, 'colsample_bytree': 0.6624074561769746, 'min_child_weight': 2, 'reg_lambda': 0.13066739238053282}
+  xgboost trial 01  AUC=0.9877  F1=0.9551  acc=0.9437  (0.2s)  params={'n_estimators': 358, 'max_depth': 6, 'learning_rate': 0.13607801490147406, 'subsample': 0.608233797718321, 'colsample_bytree': 0.9879639408647978, 'min_child_weight': 10, 'reg_lambda': 0.26587543983272705}
+  xgboost trial 02  AUC=0.9971  F1=0.9807  acc=0.9750  (0.2s)  params={'n_estimators': 138, 'max_depth': 3, 'learning_rate': 0.0455875904753014, 'subsample': 0.8099025726528951, 'colsample_bytree': 0.7727780074568463, 'min_child_weight': 4, 'reg_lambda': 1.6738085788752133}
+  xgboost trial 03  AUC=0.9970  F1=0.9821  acc=0.9771  (0.2s)  params={'n_estimators': 124, 'max_depth': 4, 'learning_rate': 0.05393925667147033, 'subsample': 0.7824279936868144, 'colsample_bytree': 0.9140703845572055, 'min_child_weight': 3, 'reg_lambda': 1.0677482709481354}
+  xgboost trial 04  AUC=0.9848  F1=0.9485  acc=0.9354  (0.2s)  params={'n_estimators': 270, 'max_depth': 2, 'learning_rate': 0.10364734587283783, 'subsample': 0.6682096494749166, 'colsample_bytree': 0.6260206371941118, 'min_child_weight': 12, 'reg_lambda': 8.536189862866832}
+  xgboost trial 05  AUC=0.9978  F1=0.9886  acc=0.9854  (0.3s)  params={'n_estimators': 339, 'max_depth': 4, 'learning_rate': 0.026055614206180563, 'subsample': 0.8736932106048627, 'colsample_bytree': 0.7760609974958406, 'min_child_weight': 2, 'reg_lambda': 0.978033701665941}
+  xgboost trial 06  AUC=0.9944  F1=0.9756  acc=0.9688  (0.2s)  params={'n_estimators': 91, 'max_depth': 8, 'learning_rate': 0.04030685101059539, 'subsample': 0.8650089137415928, 'colsample_bytree': 0.7246844304357644, 'min_child_weight': 7, 'reg_lambda': 1.2399967836846095}
+  xgboost trial 07  AUC=0.9950  F1=0.9774  acc=0.9708  (0.2s)  params={'n_estimators': 139, 'max_depth': 8, 'learning_rate': 0.16317624457583127, 'subsample': 0.9757995766256756, 'colsample_bytree': 0.9579309401710595, 'min_child_weight': 8, 'reg_lambda': 6.978281265126034}
+  xgboost trial 08  AUC=0.9935  F1=0.9790  acc=0.9729  (0.2s)  params={'n_estimators': 108, 'max_depth': 3, 'learning_rate': 0.022605879840724725, 'subsample': 0.7301321323053057, 'colsample_bytree': 0.7554709158757928, 'min_child_weight': 4, 'reg_lambda': 4.544383960336017}
+  xgboost trial 09  AUC=0.9984  F1=0.9887  acc=0.9854  (0.2s)  params={'n_estimators': 194, 'max_depth': 3, 'learning_rate': 0.08695411021388597, 'subsample': 0.6563696899899051, 'colsample_bytree': 0.9208787923016158, 'min_child_weight': 1, 'reg_lambda': 9.413993046829944}
+  xgboost trial 10  AUC=0.9982  F1=0.9870  acc=0.9833  (0.2s)  params={'n_estimators': 157, 'max_depth': 5, 'learning_rate': 0.28718336613347384, 'subsample': 0.6849660524413035, 'colsample_bytree': 0.880006638463644, 'min_child_weight': 2, 'reg_lambda': 5.209707247315254}
+  xgboost trial 11  AUC=0.9967  F1=0.9821  acc=0.9771  (0.2s)  params={'n_estimators': 194, 'max_depth': 6, 'learning_rate': 0.14941192162024788, 'subsample': 0.673256662488081, 'colsample_bytree': 0.8664451564722262, 'min_child_weight': 4, 'reg_lambda': 7.22784806720263}
+  xgboost trial 12  AUC=0.9969  F1=0.9824  acc=0.9771  (0.2s)  params={'n_estimators': 160, 'max_depth': 5, 'learning_rate': 0.04194759024138145, 'subsample': 0.7359420439629017, 'colsample_bytree': 0.8542177330327878, 'min_child_weight': 2, 'reg_lambda': 8.783632793237832}
+  xgboost trial 13  AUC=0.9985  F1=0.9870  acc=0.9833  (0.2s)  params={'n_estimators': 124, 'max_depth': 2, 'learning_rate': 0.10073567261945202, 'subsample': 0.7518988042074869, 'colsample_bytree': 0.8659659617979798, 'min_child_weight': 1, 'reg_lambda': 6.8139580576868255}
+  xgboost trial 14  AUC=0.9990  F1=0.9886  acc=0.9854  (0.2s)  params={'n_estimators': 167, 'max_depth': 2, 'learning_rate': 0.08984127926369437, 'subsample': 0.799297729244471, 'colsample_bytree': 0.9664429254055034, 'min_child_weight': 1, 'reg_lambda': 4.2588927182930405}
+  xgboost trial 15  AUC=0.9984  F1=0.9870  acc=0.9833  (0.2s)  params={'n_estimators': 108, 'max_depth': 2, 'learning_rate': 0.09304359367524374, 'subsample': 0.8697424411630587, 'colsample_bytree': 0.8645531564454941, 'min_child_weight': 1, 'reg_lambda': 9.191336573087234}
+  xgboost trial 16  AUC=0.9979  F1=0.9854  acc=0.9812  (0.2s)  params={'n_estimators': 154, 'max_depth': 2, 'learning_rate': 0.08889666602199929, 'subsample': 0.835371893070152, 'colsample_bytree': 0.9689858250195706, 'min_child_weight': 2, 'reg_lambda': 4.256048057266969}
+  xgboost trial 17  AUC=0.9980  F1=0.9870  acc=0.9833  (0.1s)  params={'n_estimators': 93, 'max_depth': 2, 'learning_rate': 0.09086296788959163, 'subsample': 0.6248464600103079, 'colsample_bytree': 0.8622810672223988, 'min_child_weight': 1, 'reg_lambda': 2.700414296734291}
+  xgboost trial 18  AUC=0.9988  F1=0.9886  acc=0.9854  (0.2s)  params={'n_estimators': 156, 'max_depth': 2, 'learning_rate': 0.138681256360759, 'subsample': 0.7954660949783453, 'colsample_bytree': 0.8372384535156524, 'min_child_weight': 1, 'reg_lambda': 7.727840455446112}
+  xgboost trial 19  AUC=0.9974  F1=0.9837  acc=0.9792  (0.2s)  params={'n_estimators': 222, 'max_depth': 2, 'learning_rate': 0.1579524962621661, 'subsample': 0.8588627550457415, 'colsample_bytree': 0.812893014068763, 'min_child_weight': 3, 'reg_lambda': 5.86775908292652}
+  xgboost trial 20  AUC=0.9979  F1=0.9853  acc=0.9812  (0.2s)  params={'n_estimators': 181, 'max_depth': 2, 'learning_rate': 0.0836995524408134, 'subsample': 0.8147598433292093, 'colsample_bytree': 0.8532801379547899, 'min_child_weight': 2, 'reg_lambda': 2.005350041638089}
+  xgboost trial 21  AUC=0.9978  F1=0.9870  acc=0.9833  (0.2s)  params={'n_estimators': 111, 'max_depth': 2, 'learning_rate': 0.10838703498263264, 'subsample': 0.66162214307922, 'colsample_bytree': 0.9717474259781654, 'min_child_weight': 2, 'reg_lambda': 4.636798282147162}
+  xgboost trial 22  AUC=0.9967  F1=0.9774  acc=0.9708  (0.2s)  params={'n_estimators': 106, 'max_depth': 3, 'learning_rate': 0.07232616611288602, 'subsample': 0.7531966906728975, 'colsample_bytree': 0.9620098477126277, 'min_child_weight': 2, 'reg_lambda': 9.425618403705158}
+  xgboost trial 23  AUC=0.9986  F1=0.9886  acc=0.9854  (0.2s)  params={'n_estimators': 249, 'max_depth': 2, 'learning_rate': 0.0871896069875193, 'subsample': 0.7223875796988409, 'colsample_bytree': 0.8914033446982409, 'min_child_weight': 1, 'reg_lambda': 4.342921983463943}
+  xgboost trial 24  AUC=0.9990  F1=0.9887  acc=0.9854  (0.2s)  params={'n_estimators': 83, 'max_depth': 3, 'learning_rate': 0.19049351176252016, 'subsample': 0.8116337602552454, 'colsample_bytree': 0.8955896170528481, 'min_child_weight': 1, 'reg_lambda': 7.049260269218684}
+  xgboost DONE  CV-AUC=0.9990  holdout AUC=1.0000 F1=1.0000 acc=1.0000  wall=4.8s
+
+--- training lightgbm (25 Optuna trials, 5-fold CV) ---
+  lightgbm trial 00  AUC=0.9998  F1=0.9951  acc=0.9938  (0.2s)  params={'n_estimators': 200, 'num_leaves': 62, 'learning_rate': 0.14518497439122724, 'subsample': 0.8394633936788146, 'colsample_bytree': 0.6624074561769746, 'min_child_samples': 10, 'reg_lambda': 0.13066739238053282}
+  lightgbm trial 01  AUC=0.9995  F1=0.9902  acc=0.9875  (0.2s)  params={'n_estimators': 358, 'num_leaves': 42, 'learning_rate': 0.13607801490147406, 'subsample': 0.608233797718321, 'colsample_bytree': 0.9879639408647978, 'min_child_samples': 34, 'reg_lambda': 0.26587543983272705}
+  lightgbm trial 02  AUC=0.9996  F1=0.9919  acc=0.9896  (0.2s)  params={'n_estimators': 138, 'num_leaves': 18, 'learning_rate': 0.0455875904753014, 'subsample': 0.8099025726528951, 'colsample_bytree': 0.7727780074568463, 'min_child_samples': 15, 'reg_lambda': 1.6738085788752133}
+  lightgbm trial 03  AUC=0.9998  F1=0.9935  acc=0.9917  (0.2s)  params={'n_estimators': 124, 'num_leaves': 24, 'learning_rate': 0.05393925667147033, 'subsample': 0.7824279936868144, 'colsample_bytree': 0.9140703845572055, 'min_child_samples': 12, 'reg_lambda': 1.0677482709481354}
+  lightgbm trial 04  AUC=0.9995  F1=0.9902  acc=0.9875  (0.2s)  params={'n_estimators': 270, 'num_leaves': 10, 'learning_rate': 0.10364734587283783, 'subsample': 0.6682096494749166, 'colsample_bytree': 0.6260206371941118, 'min_child_samples': 39, 'reg_lambda': 8.536189862866832}
+  lightgbm trial 05  AUC=0.9998  F1=0.9935  acc=0.9917  (0.3s)  params={'n_estimators': 339, 'num_leaves': 25, 'learning_rate': 0.026055614206180563, 'subsample': 0.8736932106048627, 'colsample_bytree': 0.7760609974958406, 'min_child_samples': 9, 'reg_lambda': 0.978033701665941}
+  lightgbm trial 06  AUC=0.9992  F1=0.9857  acc=0.9812  (0.1s)  params={'n_estimators': 91, 'num_leaves': 59, 'learning_rate': 0.04030685101059539, 'subsample': 0.8650089137415928, 'colsample_bytree': 0.7246844304357644, 'min_child_samples': 23, 'reg_lambda': 1.2399967836846095}
+  lightgbm trial 07  AUC=0.9994  F1=0.9919  acc=0.9896  (0.2s)  params={'n_estimators': 139, 'num_leaves': 63, 'learning_rate': 0.16317624457583127, 'subsample': 0.9757995766256756, 'colsample_bytree': 0.9579309401710595, 'min_child_samples': 26, 'reg_lambda': 6.978281265126034}
+  lightgbm trial 08  AUC=0.9966  F1=0.9774  acc=0.9708  (0.1s)  params={'n_estimators': 108, 'num_leaves': 19, 'learning_rate': 0.022605879840724725, 'subsample': 0.7301321323053057, 'colsample_bytree': 0.7554709158757928, 'min_child_samples': 14, 'reg_lambda': 4.544383960336017}
+  lightgbm trial 09  AUC=0.9998  F1=0.9936  acc=0.9917  (0.2s)  params={'n_estimators': 194, 'num_leaves': 24, 'learning_rate': 0.08695411021388597, 'subsample': 0.6563696899899051, 'colsample_bytree': 0.9208787923016158, 'min_child_samples': 7, 'reg_lambda': 9.413993046829944}
+  lightgbm trial 10  AUC=0.9998  F1=0.9951  acc=0.9938  (0.2s)  params={'n_estimators': 243, 'num_leaves': 56, 'learning_rate': 0.23940711447719504, 'subsample': 0.6728678349964421, 'colsample_bytree': 0.6713152343532499, 'min_child_samples': 9, 'reg_lambda': 0.3124010524221838}
+  lightgbm trial 11  AUC=0.9998  F1=0.9951  acc=0.9938  (0.2s)  params={'n_estimators': 212, 'num_leaves': 53, 'learning_rate': 0.07653413729410877, 'subsample': 0.8776231833898903, 'colsample_bytree': 0.811123075772733, 'min_child_samples': 16, 'reg_lambda': 0.6701579895673606}
+  lightgbm trial 12  AUC=0.9997  F1=0.9935  acc=0.9917  (0.2s)  params={'n_estimators': 147, 'num_leaves': 10, 'learning_rate': 0.04855317328084693, 'subsample': 0.6845181076124729, 'colsample_bytree': 0.8893262712641337, 'min_child_samples': 10, 'reg_lambda': 0.8520719404345729}
+  lightgbm trial 13  AUC=0.9997  F1=0.9951  acc=0.9938  (0.2s)  params={'n_estimators': 156, 'num_leaves': 63, 'learning_rate': 0.23496843411927987, 'subsample': 0.8501558907559955, 'colsample_bytree': 0.6677270535419961, 'min_child_samples': 10, 'reg_lambda': 0.23422479364394103}
+  lightgbm trial 14  AUC=0.9996  F1=0.9935  acc=0.9917  (0.2s)  params={'n_estimators': 113, 'num_leaves': 37, 'learning_rate': 0.05672078809807837, 'subsample': 0.8254849143353382, 'colsample_bytree': 0.9741525769562496, 'min_child_samples': 9, 'reg_lambda': 1.2080350893160574}
+  lightgbm trial 15  AUC=0.9998  F1=0.9951  acc=0.9938  (0.2s)  params={'n_estimators': 154, 'num_leaves': 23, 'learning_rate': 0.28017774648478433, 'subsample': 0.8491737664305173, 'colsample_bytree': 0.7450316662546288, 'min_child_samples': 5, 'reg_lambda': 0.14376548522283883}
+  lightgbm trial 16  AUC=0.9992  F1=0.9904  acc=0.9875  (0.1s)  params={'n_estimators': 90, 'num_leaves': 36, 'learning_rate': 0.05383716298543978, 'subsample': 0.7981064856385802, 'colsample_bytree': 0.8944608184850447, 'min_child_samples': 17, 'reg_lambda': 2.3820056096191835}
+  lightgbm trial 17  AUC=0.9997  F1=0.9919  acc=0.9896  (0.2s)  params={'n_estimators': 116, 'num_leaves': 30, 'learning_rate': 0.08399767676856926, 'subsample': 0.7667698433310003, 'colsample_bytree': 0.6975499843454274, 'min_child_samples': 12, 'reg_lambda': 4.075434571706543}
+  lightgbm trial 18  AUC=0.9998  F1=0.9951  acc=0.9938  (0.2s)  params={'n_estimators': 238, 'num_leaves': 45, 'learning_rate': 0.29135104238904364, 'subsample': 0.8193634869717487, 'colsample_bytree': 0.7142639364159865, 'min_child_samples': 9, 'reg_lambda': 0.2670695279935863}
+  lightgbm trial 19  AUC=0.9997  F1=0.9951  acc=0.9938  (0.2s)  params={'n_estimators': 167, 'num_leaves': 47, 'learning_rate': 0.087110937255156, 'subsample': 0.847803380198981, 'colsample_bytree': 0.8142036839476191, 'min_child_samples': 8, 'reg_lambda': 2.149274986841659}
+  lightgbm trial 20  AUC=0.9998  F1=0.9951  acc=0.9938  (0.2s)  params={'n_estimators': 217, 'num_leaves': 53, 'learning_rate': 0.115575890948269, 'subsample': 0.839194398968368, 'colsample_bytree': 0.7409880225466556, 'min_child_samples': 6, 'reg_lambda': 0.2548321458876262}
+  lightgbm trial 21  AUC=0.9998  F1=0.9935  acc=0.9917  (0.3s)  params={'n_estimators': 341, 'num_leaves': 55, 'learning_rate': 0.02083875299094757, 'subsample': 0.8703838679582468, 'colsample_bytree': 0.76994012392158, 'min_child_samples': 8, 'reg_lambda': 1.6500686349074292}
+  lightgbm trial 22  AUC=0.9998  F1=0.9951  acc=0.9938  (0.2s)  params={'n_estimators': 198, 'num_leaves': 19, 'learning_rate': 0.1696212707005659, 'subsample': 0.8438949269914856, 'colsample_bytree': 0.654883072474722, 'min_child_samples': 11, 'reg_lambda': 0.20909705546147894}
+  lightgbm trial 23  AUC=0.9996  F1=0.9951  acc=0.9938  (0.2s)  params={'n_estimators': 126, 'num_leaves': 30, 'learning_rate': 0.22055670452319956, 'subsample': 0.7392093331749939, 'colsample_bytree': 0.9524126547165137, 'min_child_samples': 16, 'reg_lambda': 0.784853126220758}
+  lightgbm trial 24  AUC=0.9998  F1=0.9936  acc=0.9917  (0.2s)  params={'n_estimators': 226, 'num_leaves': 39, 'learning_rate': 0.10536432571547805, 'subsample': 0.8368747162481521, 'colsample_bytree': 0.613151281989779, 'min_child_samples': 5, 'reg_lambda': 0.1683430826419147}
+  lightgbm DONE  CV-AUC=0.9998  holdout AUC=1.0000 F1=1.0000 acc=1.0000  wall=5.1s
+
+--- training catboost (25 Optuna trials, 5-fold CV) ---
+  catboost trial 00  AUC=0.9975  F1=0.9870  acc=0.9833  (1.9s)  params={'iterations': 200, 'depth': 8, 'learning_rate': 0.14518497439122724, 'l2_leaf_reg': 6.387926357773329}
+  catboost trial 01  AUC=0.9992  F1=0.9887  acc=0.9854  (0.3s)  params={'iterations': 130, 'depth': 3, 'learning_rate': 0.023406777359270506, 'l2_leaf_reg': 8.795585311974417}
+  catboost trial 02  AUC=0.9991  F1=0.9902  acc=0.9875  (1.6s)  params={'iterations': 272, 'depth': 7, 'learning_rate': 0.021146536167031597, 'l2_leaf_reg': 9.72918866945795}
+  catboost trial 03  AUC=0.9992  F1=0.9902  acc=0.9875  (0.8s)  params={'iterations': 347, 'depth': 4, 'learning_rate': 0.03272447970178924, 'l2_leaf_reg': 2.650640588680904}
+  catboost trial 04  AUC=0.9985  F1=0.9919  acc=0.9896  (0.8s)  params={'iterations': 177, 'depth': 6, 'learning_rate': 0.06442237870408891, 'l2_leaf_reg': 3.6210622617823773}
+  catboost trial 05  AUC=0.9994  F1=0.9902  acc=0.9875  (0.5s)  params={'iterations': 276, 'depth': 3, 'learning_rate': 0.04411829935614202, 'l2_leaf_reg': 4.297256589643226}
+  catboost trial 06  AUC=0.9984  F1=0.9902  acc=0.9875  (1.3s)  params={'iterations': 226, 'depth': 7, 'learning_rate': 0.034345084207755734, 'l2_leaf_reg': 5.628109945722504}
+  catboost trial 07  AUC=0.9996  F1=0.9903  acc=0.9875  (0.5s)  params={'iterations': 270, 'depth': 3, 'learning_rate': 0.10364734587283783, 'l2_leaf_reg': 2.5347171131856236}
+  catboost trial 08  AUC=0.9954  F1=0.9887  acc=0.9854  (1.1s)  params={'iterations': 100, 'depth': 8, 'learning_rate': 0.27333886656404544, 'l2_leaf_reg': 8.275576133048151}
+  catboost trial 09  AUC=0.9993  F1=0.9870  acc=0.9833  (0.4s)  params={'iterations': 177, 'depth': 3, 'learning_rate': 0.12757056450498117, 'l2_leaf_reg': 4.961372443656412}
+  catboost trial 10  AUC=0.9992  F1=0.9887  acc=0.9854  (0.6s)  params={'iterations': 365, 'depth': 3, 'learning_rate': 0.11690965203161782, 'l2_leaf_reg': 1.5940597524709736}
+  catboost trial 11  AUC=0.9996  F1=0.9902  acc=0.9875  (0.5s)  params={'iterations': 273, 'depth': 3, 'learning_rate': 0.07079615393561292, 'l2_leaf_reg': 5.754755432371677}
+  catboost trial 12  AUC=0.9993  F1=0.9919  acc=0.9896  (0.7s)  params={'iterations': 289, 'depth': 4, 'learning_rate': 0.12322752589673427, 'l2_leaf_reg': 4.820546751656957}
+  catboost trial 13  AUC=0.9991  F1=0.9902  acc=0.9875  (0.5s)  params={'iterations': 224, 'depth': 3, 'learning_rate': 0.2531650391221657, 'l2_leaf_reg': 1.4994371699823164}
+  catboost trial 14  AUC=0.9993  F1=0.9886  acc=0.9854  (0.6s)  params={'iterations': 269, 'depth': 4, 'learning_rate': 0.05680346500738423, 'l2_leaf_reg': 6.609802900355353}
+  catboost trial 15  AUC=0.9994  F1=0.9886  acc=0.9854  (0.6s)  params={'iterations': 294, 'depth': 3, 'learning_rate': 0.0739060382966952, 'l2_leaf_reg': 1.9817005538567214}
+  catboost trial 16  AUC=0.9993  F1=0.9886  acc=0.9854  (0.8s)  params={'iterations': 372, 'depth': 4, 'learning_rate': 0.07928038386840632, 'l2_leaf_reg': 7.449008849560702}
+  catboost trial 17  AUC=0.9992  F1=0.9919  acc=0.9896  (0.7s)  params={'iterations': 354, 'depth': 4, 'learning_rate': 0.16990009929725647, 'l2_leaf_reg': 3.93122600996176}
+  catboost trial 18  AUC=0.9985  F1=0.9886  acc=0.9854  (0.8s)  params={'iterations': 284, 'depth': 5, 'learning_rate': 0.24219984342956988, 'l2_leaf_reg': 2.962433635412391}
+  catboost trial 19  AUC=0.9993  F1=0.9887  acc=0.9854  (0.6s)  params={'iterations': 305, 'depth': 3, 'learning_rate': 0.1491603013232606, 'l2_leaf_reg': 6.660839577874363}
+  catboost trial 20  AUC=0.9993  F1=0.9902  acc=0.9875  (0.5s)  params={'iterations': 262, 'depth': 3, 'learning_rate': 0.13896947766653953, 'l2_leaf_reg': 1.6137343839981286}
+  catboost trial 21  AUC=0.9996  F1=0.9902  acc=0.9875  (0.5s)  params={'iterations': 229, 'depth': 3, 'learning_rate': 0.027167250848456018, 'l2_leaf_reg': 4.457452038079788}
+  catboost trial 22  AUC=0.9992  F1=0.9886  acc=0.9854  (0.5s)  params={'iterations': 210, 'depth': 4, 'learning_rate': 0.08449822185408688, 'l2_leaf_reg': 6.135149558558429}
+  catboost trial 23  AUC=0.9996  F1=0.9902  acc=0.9875  (0.4s)  params={'iterations': 186, 'depth': 3, 'learning_rate': 0.04842435693199407, 'l2_leaf_reg': 2.1445527876510053}
+  catboost trial 24  AUC=0.9990  F1=0.9902  acc=0.9875  (0.6s)  params={'iterations': 277, 'depth': 4, 'learning_rate': 0.02659767752655405, 'l2_leaf_reg': 7.148126631338272}
+  catboost DONE  CV-AUC=0.9996  holdout AUC=1.0000 F1=1.0000 acc=1.0000  wall=19.1s
+
+--- training tabpfn (4 Optuna trials, 3-fold CV) ---
+  tabpfn trial 00  AUC=1.0000  F1=0.9984  acc=0.9979  (7.3s)  params={'n_estimators': 8}
+  tabpfn trial 01  AUC=1.0000  F1=0.9984  acc=0.9979  (3.9s)  params={'n_estimators': 4}
+  tabpfn trial 02  AUC=1.0000  F1=0.9984  acc=0.9979  (3.7s)  params={'n_estimators': 4}
+  tabpfn trial 03  AUC=1.0000  F1=0.9984  acc=0.9979  (7.2s)  params={'n_estimators': 8}
+  tabpfn DONE  CV-AUC=1.0000  holdout AUC=1.0000 F1=1.0000 acc=1.0000  wall=38.2s
+
+WINNER for kidney: tabpfn  CV-AUC=1.0000  holdout acc=1.0000  holdout AUC=1.0000  MEETS 85% accuracy gate
+  SHAP TabPFN: median-ablation attributions on 80 rows (not KernelExplainer)
+  SHAP wrote shap_beeswarm.png and shap_bar.png
+
+======== SUMMARY ========
+ disease winning_algorithm  accuracy       f1  roc_auc                                                   dataset
+   heart          catboost  0.921875 0.932127 0.968194     India hospital + UCI Cleveland/Hungary/Switzerland/VA
+   liver            tabpfn  0.881988 0.904523 0.962677                ILPD (Andhra Pradesh) + UCI HCV + Mayo PBC
+diabetes          catboost  0.852667 0.776062 0.919073 Pima 8-lab + NHANES 2011–2023 (negatives subsampled 1.8×)
+  kidney            tabpfn  1.000000 1.000000 1.000000    UCI CKD Tamil Nadu (leak-blocked) + Bangladesh UCI 857
+TRAIN_EXIT:0

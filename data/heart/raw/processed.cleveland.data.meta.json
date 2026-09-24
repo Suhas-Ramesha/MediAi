@@ -1,0 +1,13 @@
+{
+  "title": "UCI Heart Disease processed cleveland",
+  "source_url": "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data",
+  "doi": "10.24432/C52P4X",
+  "license": "CC BY 4.0",
+  "geography": "cleveland",
+  "india": false,
+  "role": "cleveland=core US cath-lab table; others=same-schema extra sites for pooled training",
+  "bytes": 18461,
+  "sha256": "a74b7efa387bc9d108d7d0115d831fe9b414b29ae7124f331b622b4efa0427c8",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/heart/raw/processed.cleveland.data"
+}

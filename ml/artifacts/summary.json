@@ -1,0 +1,46 @@
+[
+  {
+    "disease": "heart",
+    "winning_algorithm": "catboost",
+    "accuracy": 0.9219,
+    "F1": 0.9321,
+    "ROC-AUC": 0.9682,
+    "dummy_acc": 0.5672,
+    "meets_85": true,
+    "n_rows": 1920,
+    "dataset_used": "India hospital + UCI 4 sites (Cleveland/Hungary/Switzerland/VA)"
+  },
+  {
+    "disease": "liver",
+    "winning_algorithm": "tabpfn",
+    "accuracy": 0.882,
+    "F1": 0.9045,
+    "ROC-AUC": 0.9627,
+    "dummy_acc": 0.5649,
+    "meets_85": true,
+    "n_rows": 1609,
+    "dataset_used": "ILPD Andhra Pradesh + UCI HCV + Mayo PBC"
+  },
+  {
+    "disease": "diabetes",
+    "winning_algorithm": "catboost",
+    "accuracy": 0.8527,
+    "F1": 0.7761,
+    "ROC-AUC": 0.9191,
+    "dummy_acc": 0.6434,
+    "meets_85": true,
+    "n_rows": 11806,
+    "dataset_used": "Pima 8-lab + NHANES 2011\u20132023 (1.8\u00d7 negative subsample); Sylhet not pooled"
+  },
+  {
+    "disease": "kidney",
+    "winning_algorithm": "tabpfn",
+    "accuracy": 1.0,
+    "F1": 1.0,
+    "ROC-AUC": 1.0,
+    "dummy_acc": 0.63,
+    "meets_85": true,
+    "n_rows": 600,
+    "dataset_used": "UCI CKD Tamil Nadu + Bangladesh UCI 857 (pooled)"
+  }
+]

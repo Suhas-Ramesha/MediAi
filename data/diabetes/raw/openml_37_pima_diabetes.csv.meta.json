@@ -1,0 +1,13 @@
+{
+  "title": "Pima Indians Diabetes (OpenML 37 / NIDDK)",
+  "source_url": "https://www.openml.org/d/37",
+  "citation": "Smith, Everhart, Dickson, Knowler, Johannes 1988 SCAMC",
+  "license": "historic UCI dump; cite NIDDK / Smith 1988",
+  "geography": "Gila River community, Arizona, USA \u2014 not India despite the name",
+  "india": false,
+  "role": "Schema match for the current diabetes form. Ethics limitation must stay in the notebook.",
+  "bytes": 33824,
+  "sha256": "de2e5ee67a97714d8cabfad8abe892375fc621feed7e9bf76c11a4ee43f403f6",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/diabetes/raw/openml_37_pima_diabetes.csv"
+}

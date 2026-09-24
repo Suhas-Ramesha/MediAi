@@ -1,0 +1,13 @@
+{
+  "title": "UCI Heart Disease processed va_long_beach",
+  "source_url": "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.va.data",
+  "doi": "10.24432/C52P4X",
+  "license": "CC BY 4.0",
+  "geography": "va_long_beach",
+  "india": false,
+  "role": "cleveland=core US cath-lab table; others=same-schema extra sites for pooled training",
+  "bytes": 6737,
+  "sha256": "e7c93d8d0d2acdadfa4c5e8de768e2191e7f618b952e29623f1f0d5949ff6b8f",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/heart/raw/processed.va_long_beach.data"
+}

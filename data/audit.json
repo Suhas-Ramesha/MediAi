@@ -1,0 +1,490 @@
+[
+  {
+    "disease": "heart",
+    "file": "processed.cleveland.data",
+    "n": 303,
+    "columns": [
+      "age",
+      "sex",
+      "cp",
+      "trestbps",
+      "chol",
+      "fbs",
+      "restecg",
+      "thalach",
+      "exang",
+      "oldpeak",
+      "slope",
+      "ca",
+      "thal",
+      "num"
+    ],
+    "target": "num (0=absence, 1-4=presence; binarize as num>0)",
+    "class_balance_raw": {
+      "0": 164,
+      "1": 55,
+      "2": 36,
+      "3": 35,
+      "4": 13
+    },
+    "class_balance_binary": {
+      "0": 164,
+      "1": 139
+    },
+    "missing": {
+      "ca": 4,
+      "thal": 2
+    },
+    "india": false,
+    "geography": "cleveland"
+  },
+  {
+    "disease": "heart",
+    "file": "processed.hungarian.data",
+    "n": 294,
+    "columns": [
+      "age",
+      "sex",
+      "cp",
+      "trestbps",
+      "chol",
+      "fbs",
+      "restecg",
+      "thalach",
+      "exang",
+      "oldpeak",
+      "slope",
+      "ca",
+      "thal",
+      "num"
+    ],
+    "target": "num (0=absence, 1-4=presence; binarize as num>0)",
+    "class_balance_raw": {
+      "0": 188,
+      "1": 106
+    },
+    "class_balance_binary": {
+      "0": 188,
+      "1": 106
+    },
+    "missing": {
+      "trestbps": 1,
+      "chol": 23,
+      "fbs": 8,
+      "restecg": 1,
+      "thalach": 1,
+      "exang": 1,
+      "slope": 190,
+      "ca": 291,
+      "thal": 266
+    },
+    "india": false,
+    "geography": "hungarian"
+  },
+  {
+    "disease": "heart",
+    "file": "processed.switzerland.data",
+    "n": 123,
+    "columns": [
+      "age",
+      "sex",
+      "cp",
+      "trestbps",
+      "chol",
+      "fbs",
+      "restecg",
+      "thalach",
+      "exang",
+      "oldpeak",
+      "slope",
+      "ca",
+      "thal",
+      "num"
+    ],
+    "target": "num (0=absence, 1-4=presence; binarize as num>0)",
+    "class_balance_raw": {
+      "1": 48,
+      "2": 32,
+      "3": 30,
+      "0": 8,
+      "4": 5
+    },
+    "class_balance_binary": {
+      "1": 115,
+      "0": 8
+    },
+    "missing": {
+      "trestbps": 2,
+      "fbs": 75,
+      "restecg": 1,
+      "thalach": 1,
+      "exang": 1,
+      "oldpeak": 6,
+      "slope": 17,
+      "ca": 118,
+      "thal": 52
+    },
+    "india": false,
+    "geography": "switzerland"
+  },
+  {
+    "disease": "heart",
+    "file": "processed.va_long_beach.data",
+    "n": 200,
+    "columns": [
+      "age",
+      "sex",
+      "cp",
+      "trestbps",
+      "chol",
+      "fbs",
+      "restecg",
+      "thalach",
+      "exang",
+      "oldpeak",
+      "slope",
+      "ca",
+      "thal",
+      "num"
+    ],
+    "target": "num (0=absence, 1-4=presence; binarize as num>0)",
+    "class_balance_raw": {
+      "1": 56,
+      "0": 51,
+      "3": 42,
+      "2": 41,
+      "4": 10
+    },
+    "class_balance_binary": {
+      "1": 149,
+      "0": 51
+    },
+    "missing": {
+      "trestbps": 56,
+      "chol": 7,
+      "fbs": 7,
+      "thalach": 53,
+      "exang": 53,
+      "oldpeak": 56,
+      "slope": 102,
+      "ca": 198,
+      "thal": 166
+    },
+    "india": false,
+    "geography": "va_long_beach"
+  },
+  {
+    "disease": "heart",
+    "file": "india_mendeley_dzz48mvjht_Cardiovascular_Disease_Dataset.csv",
+    "n": 1000,
+    "columns": [
+      "patientid",
+      "age",
+      "gender",
+      "chestpain",
+      "restingBP",
+      "serumcholestrol",
+      "fastingbloodsugar",
+      "restingrelectro",
+      "maxheartrate",
+      "exerciseangia",
+      "oldpeak",
+      "slope",
+      "noofmajorvessels",
+      "target"
+    ],
+    "target": "target (0=absence, 1=presence)",
+    "class_balance_raw": {
+      "1": 580,
+      "0": 420
+    },
+    "missing": {
+      "gender": 235,
+      "chestpain": 420,
+      "serumcholestrol": 53,
+      "fastingbloodsugar": 704,
+      "restingrelectro": 454,
+      "exerciseangia": 502,
+      "oldpeak": 19,
+      "slope": 180,
+      "noofmajorvessels": 275,
+      "target": 420
+    },
+    "india": true,
+    "geography": "India",
+    "head": [
+      {
+        "patientid": 103368,
+        "age": 53,
+        "gender": 1,
+        "chestpain": 2,
+        "restingBP": 171,
+        "serumcholestrol": 0,
+        "fastingbloodsugar": 0,
+        "restingrelectro": 1,
+        "maxheartrate": 147,
+        "exerciseangia": 0,
+        "oldpeak": 5.3,
+        "slope": 3,
+        "noofmajorvessels": 3,
+        "target": 1
+      },
+      {
+        "patientid": 119250,
+        "age": 40,
+        "gender": 1,
+        "chestpain": 0,
+        "restingBP": 94,
+        "serumcholestrol": 229,
+        "fastingbloodsugar": 0,
+        "restingrelectro": 1,
+        "maxheartrate": 115,
+        "exerciseangia": 0,
+        "oldpeak": 3.7,
+        "slope": 1,
+        "noofmajorvessels": 1,
+        "target": 0
+      }
+    ]
+  },
+  {
+    "disease": "liver",
+    "file": "ucimlrepo_id225_ilpd.csv",
+    "n": 583,
+    "columns": [
+      "Age",
+      "Gender",
+      "TB",
+      "DB",
+      "Alkphos",
+      "Sgpt",
+      "Sgot",
+      "TP",
+      "ALB",
+      "A/G Ratio",
+      "Selector"
+    ],
+    "target": "Selector (1=liver disease, 2=no disease)",
+    "class_balance_raw": {
+      "1": 416,
+      "2": 167
+    },
+    "missing": {
+      "A/G Ratio": 4
+    },
+    "india": true,
+    "geography": "Andhra Pradesh, India"
+  },
+  {
+    "disease": "liver",
+    "file": "ucimlrepo_id571_hcv.csv",
+    "n": 615,
+    "columns": [
+      "Age",
+      "Sex",
+      "ALB",
+      "ALP",
+      "AST",
+      "BIL",
+      "CHE",
+      "CHOL",
+      "CREA",
+      "CGT",
+      "PROT",
+      "ALT",
+      "Category"
+    ],
+    "target": "Category (blood donor vs hepatitis/fibrosis/cirrhosis)",
+    "class_balance_raw": {
+      "0=Blood Donor": 533,
+      "3=Cirrhosis": 30,
+      "1=Hepatitis": 24,
+      "2=Fibrosis": 21,
+      "0s=suspect Blood Donor": 7
+    },
+    "missing": {
+      "ALB": 1,
+      "ALP": 18,
+      "CHOL": 10,
+      "PROT": 1,
+      "ALT": 1
+    },
+    "india": false,
+    "geography": "Germany"
+  },
+  {
+    "disease": "diabetes",
+    "file": "openml_37_pima_diabetes.csv",
+    "n": 768,
+    "columns": [
+      "preg",
+      "plas",
+      "pres",
+      "skin",
+      "insu",
+      "mass",
+      "pedi",
+      "age",
+      "class"
+    ],
+    "target": "class",
+    "class_balance_raw": {
+      "tested_negative": 500,
+      "tested_positive": 268
+    },
+    "missing": {},
+    "zeros_as_possible_missing": {
+      "plas": 5,
+      "pres": 35,
+      "skin": 227,
+      "insu": 374,
+      "mass": 11,
+      "pedi": 0,
+      "age": 0
+    },
+    "india": false,
+    "geography": "USA (Pima / Akimel O'odham women \u226521)"
+  },
+  {
+    "disease": "diabetes",
+    "file": "ucimlrepo_id529_early_stage_diabetes_sylhet.csv",
+    "n": 520,
+    "columns": [
+      "age",
+      "gender",
+      "polyuria",
+      "polydipsia",
+      "sudden_weight_loss",
+      "weakness",
+      "polyphagia",
+      "genital_thrush",
+      "visual_blurring",
+      "itching",
+      "irritability",
+      "delayed_healing",
+      "partial_paresis",
+      "muscle_stiffness",
+      "alopecia",
+      "obesity",
+      "class"
+    ],
+    "target": "class",
+    "class_balance_raw": {
+      "Positive": 320,
+      "Negative": 200
+    },
+    "missing": {},
+    "india": false,
+    "geography": "Bangladesh (Sylhet)"
+  },
+  {
+    "disease": "kidney",
+    "file": "ucimlrepo_id336_ckd_tamil_nadu.csv",
+    "n": 400,
+    "columns": [
+      "age",
+      "bp",
+      "sg",
+      "al",
+      "su",
+      "rbc",
+      "pc",
+      "pcc",
+      "ba",
+      "bgr",
+      "bu",
+      "sc",
+      "sod",
+      "pot",
+      "hemo",
+      "pcv",
+      "wbcc",
+      "rbcc",
+      "htn",
+      "dm",
+      "cad",
+      "appet",
+      "pe",
+      "ane",
+      "class"
+    ],
+    "target": "class",
+    "class_balance_raw": {
+      "ckd": 248,
+      "notckd": 150,
+      "ckd\t": 2
+    },
+    "missing": {
+      "age": 9,
+      "bp": 12,
+      "sg": 47,
+      "al": 46,
+      "su": 49,
+      "rbc": 152,
+      "pc": 65,
+      "pcc": 4,
+      "ba": 4,
+      "bgr": 44,
+      "bu": 19,
+      "sc": 17,
+      "sod": 87,
+      "pot": 88,
+      "hemo": 52,
+      "pcv": 71,
+      "wbcc": 106,
+      "rbcc": 131,
+      "htn": 2,
+      "dm": 2,
+      "cad": 2,
+      "appet": 1,
+      "pe": 1,
+      "ane": 1
+    },
+    "india": true,
+    "geography": "Tamil Nadu, India"
+  },
+  {
+    "disease": "kidney",
+    "file": "ucimlrepo_id857_ckd_bangladesh.csv",
+    "n": 200,
+    "columns": [
+      "bp (Diastolic)",
+      "bp limit",
+      "sg",
+      "al",
+      "rbc",
+      "su",
+      "pc",
+      "pcc",
+      "ba",
+      "bgr",
+      "bu",
+      "sod",
+      "sc",
+      "pot",
+      "hemo",
+      "pcv",
+      "rbcc",
+      "wbcc",
+      "htn",
+      "dm",
+      "cad",
+      "appet",
+      "pe",
+      "ane",
+      "grf",
+      "stage",
+      "affected",
+      "age",
+      "class"
+    ],
+    "target": "class",
+    "class_balance_raw": {
+      "ckd": 128,
+      "notckd": 72
+    },
+    "missing": {},
+    "india": false,
+    "geography": "Bangladesh"
+  }
+]

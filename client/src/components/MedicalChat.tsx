@@ -1615,15 +1615,19 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     )
       .map((f) => {
         const why = f.explanation?.trim();
-        return why ? `• ${f.name}: ${why}` : `• ${f.name}`;
+        const tag =
+          f.direction === "down" ? "lowered" : f.direction === "up" ? "raised" : "";
+        const head = tag ? `${f.name} (${tag})` : f.name;
+        return why ? `• ${head}: ${why}` : `• ${head}`;
       })
       .join("\n");
 
     const prev = preventionTips(disease);
     const spec = DISEASE_SPECIALIST[disease];
+    const specArticle = /^[aeiou]/i.test(spec) ? "An" : "A";
     const summaryBlock = (riskSummary && riskSummary.trim()) || band;
 
-    return `Your estimated risk for ${title} is ${percent}%.\n\nWhat this means (in plain terms):\n${summaryBlock}\n\nKey contributing factors:\n${factorLines}\n\nGeneral ideas that support wellness:\n${prev}\n\nWould you like to consult a specialist? A ${spec} can review your situation in person.`;
+    return `Your estimated risk for ${title} is ${percent}%.\n\nWhat this means (in plain terms):\n${summaryBlock}\n\nWhy the score moved this way:\n${factorLines}\n\nGeneral ideas that support wellness:\n${prev}\n\nWould you like to consult a specialist? ${specArticle} ${spec} can review your situation in person.`;
   };
 
   const handleRiskFormSubmit = async (payload: Record<string, number | string>) => {
@@ -1635,25 +1639,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     }
     setRiskSubmitLoading(true);
     try {
-      if (riskModalDisease === "kidney") {
-        const assistantMessage: Message = {
-          id: `a-risk-kidney-${Date.now()}`,
-          role: "assistant",
-          content: `Kidney risk scoring is not connected yet, so we cannot show a percentage. Your entries were noted for when the model is ready.\n\n${preventionTips(
-            "kidney",
-          )}\n\nWould you like to consult a specialist? A ${DISEASE_SPECIALIST.kidney} can help with kidney-related questions.`,
-          timestamp: new Date(),
-          suggestsBooking: true,
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-        await addMessageToConsultation(cid, assistantMessage);
-        setBookingSpecialtyHint(DISEASE_SPECIALIST.kidney);
-        setRiskBookingSummary(`Kidney health discussion (${DISEASE_TITLE.kidney})`);
-        riskModalCompletedRef.current = true;
-        setRiskModalOpen(false);
-        return;
-      }
-
       const data = await predictRisk(riskModalDisease, payload);
       const pct =
         typeof data.riskPercent === "number" && !Number.isNaN(data.riskPercent)

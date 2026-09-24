@@ -29,11 +29,19 @@ __pycache__/
 ml_service/models/*.joblib
 ml_service/models/*.pkl
 .ipynb_checkpoints/
+ml/artifacts/mlruns/
+ml/artifacts/models/*.joblib
+# Ship the four CatBoost files (a few hundred KB) so a 4GB laptop can run locally.
+!ml/artifacts/models/*_catboost.joblib
+ml/artifacts/models/*_tabpfn.joblib
+catboost_info/
+notebooks/catboost_info/
 
 # ---- Editor / local ----
 .vscode/settings.json
 .breakpoints
-data/mediai-store.json
+data/shared/raw/nhanes_full.csv
+data/**/nhanes_full.csv
 
 # ---- Agent design skills ----
 # The skill content is committed so the whole team gets it, but the detector

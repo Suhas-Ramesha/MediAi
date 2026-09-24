@@ -1,0 +1,14 @@
+{
+  "title": "Early Stage Diabetes Risk Prediction",
+  "source_url": "https://archive.ics.uci.edu/dataset/529/early+stage+diabetes+risk+prediction+dataset",
+  "license": "CC BY 4.0 (UCI)",
+  "paper": "Islam et al. 2020 doi:10.1007/978-981-13-8798-2_12",
+  "geography": "Sylhet Diabetes Hospital, Bangladesh",
+  "india": false,
+  "south_asia": true,
+  "role": "South-Asian extra table. Symptom schema, not Pima labs \u2014 cannot pool into the product model; keep as a second diabetes view / schema-shift check.",
+  "bytes": 34161,
+  "sha256": "aedb4c29fa697086c957ede846c5487f52e70eb93f7899d5e15d70bb68f8a397",
+  "downloaded_utc": "2026-09-22T10:41:05Z",
+  "local_path": "data/diabetes/raw/ucimlrepo_id529_early_stage_diabetes_sylhet.csv"
+}
