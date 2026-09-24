@@ -257,7 +257,8 @@ class KidneyPayload(BaseModel):
     creatinine: float = Field(1.0, ge=0.1, le=20)
     urea: float = Field(30, ge=1, le=400)
     hemoglobin: float = Field(14, ge=3, le=22)
-    bp: float = Field(120, ge=50, le=250)
+    bp: float = Field(80, ge=40, le=250)
+    bpScale: str | None = Field(None)
     age: float | None = Field(None, ge=1, le=120)
 
 

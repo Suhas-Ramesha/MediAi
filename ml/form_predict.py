@@ -32,34 +32,54 @@ MODELS = {
 # UCI Cleveland encodings used in training (see data/AUDIT.md).
 CP_MAP = {
     "typical angina": 1,
+    "tightness or pressure when i walk or climb stairs": 1,
     "atypical angina": 2,
+    "odd chest discomfort, not like classic squeezing": 2,
     "non-anginal pain": 3,
     "nonanginal pain": 3,
+    "ache that does not feel like heart pain": 3,
     "asymptomatic (no chest pain)": 4,
     "asymptomatic": 4,
+    "no chest pain or tightness": 4,
+    "i'm not sure": 3,
+    "im not sure": 3,
+    "i don't know": 3,
 }
 FBS_MAP = {
     "no (under 120 mg/dl)": 0,
     "yes (over 120 mg/dl)": 1,
     "no": 0,
     "yes": 1,
+    "i don't have this number": 0,
+    "i dont have this number": 0,
 }
 RESTECG_MAP = {
     "normal": 0,
     "st-t wave abnormality": 1,
     "left ventricular hypertrophy": 2,
+    "i don't know": 0,
+    "i dont know": 0,
 }
 SLOPE_MAP = {
     "upsloping": 1,
     "flat": 2,
     "downsloping": 3,
+    "i don't know": 2,
+    "i dont know": 2,
 }
 THAL_MAP = {
     "normal": 3,
     "fixed defect": 6,
     "reversible defect": 7,
+    "i don't know": 3,
+    "i dont know": 3,
 }
-EXANG_MAP = {"no": 0, "yes": 1}
+EXANG_MAP = {
+    "no": 0,
+    "yes": 1,
+    "i don't know": 0,
+    "i dont know": 0,
+}
 SEX_MAP = {"male": 1, "m": 1, "1": 1, "female": 0, "f": 0, "0": 0}
 
 
@@ -154,25 +174,25 @@ KIDNEY_COLUMNS = ["sc", "bu", "hemo", "bp"]
 # UI labels for TreeSHAP — ranking/sign come from CatBoost, not lab cut-offs.
 FEATURE_LABELS: dict[str, str] = {
     "pregnancies": "Pregnancies",
-    "glucose": "Glucose",
+    "glucose": "Blood sugar",
     "bp": "Blood pressure",
-    "skin": "Skin thickness",
+    "skin": "Skin-fold thickness",
     "insulin": "Insulin",
     "bmi": "BMI",
     "pedigree": "Family diabetes history",
     "age": "Age",
     "sex": "Sex",
-    "cp": "Chest pain type",
+    "cp": "Chest discomfort",
     "trestbps": "Resting blood pressure",
     "chol": "Cholesterol",
     "fbs": "Fasting blood sugar",
-    "restecg": "Resting ECG",
-    "thalach": "Maximum heart rate",
-    "exang": "Exercise-induced angina",
-    "oldpeak": "ST depression",
-    "slope": "ST slope",
-    "ca": "Major vessels (angiogram)",
-    "thal": "Thalassemia",
+    "restecg": "Heart tracing (ECG)",
+    "thalach": "Highest heart rate",
+    "exang": "Chest pain with exercise",
+    "oldpeak": "Exercise-test line dip",
+    "slope": "Exercise-test line shape",
+    "ca": "Heart-artery dye test",
+    "thal": "Heart blood-flow scan",
     "Age": "Age",
     "Gender": "Gender",
     "TB": "Total bilirubin",
@@ -240,13 +260,26 @@ FEATURE_PAYLOAD_KEY: dict[str, str] = {
 
 
 def kidney_frame(payload: dict[str, Any]) -> pd.DataFrame:
-    """Four labs from the risk form.
+    """Four labs the served kidney model was trained on: sc, bu, hemo, bp.
 
-    UCI CKD ``bp`` is diastolic. The modal slider is labeled systolic, so we
-    convert with a ~40 mm Hg pulse-pressure offset before scoring.
+    UCI CKD ``bp`` is diastolic. The form now sends diastolic with
+    ``bpScale=diastolic``. Older systolic sliders are still converted.
     """
-    sbp = _num(payload.get("bp"))
-    dbp = float(np.clip(sbp - 40.0, 40.0, 180.0)) if sbp == sbp else np.nan
+    raw = payload.get("diastolic", payload.get("bp"))
+    scale = str(payload.get("bpScale", "")).strip().lower()
+    old_systolic = "creatinine" in payload and scale != "diastolic" and payload.get("diastolic") is None
+    if raw is None or raw == "":
+        dbp = np.nan
+    else:
+        raw_n = _num(raw)
+        if scale == "diastolic":
+            dbp = float(raw_n)
+        elif old_systolic and raw_n > 110:
+            dbp = float(np.clip(raw_n - 40.0, 40.0, 180.0))
+        elif payload.get("systolic") is not None and payload.get("diastolic") is None:
+            dbp = float(np.clip(_num(payload.get("systolic")) - 40.0, 40.0, 180.0))
+        else:
+            dbp = float(raw_n)
     return pd.DataFrame(
         [
             {
@@ -369,7 +402,6 @@ def _shap_summary(pct: float, factors: list[dict[str, Any]]) -> str:
         bits.append(f"For the numbers you entered, {ups[0]} raised the score the most.")
     elif downs:
         bits.append(f"For the numbers you entered, {downs[0]} brought the score down the most.")
-    bits.append("This is a screening estimate from the model, not a diagnosis.")
     return " ".join(bits)
 
 

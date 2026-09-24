@@ -30,23 +30,128 @@ export interface RiskAssessmentModalProps {
 }
 
 const CP_OPTIONS = [
-  "Asymptomatic (no chest pain)",
-  "Typical angina",
-  "Atypical angina",
-  "Non-anginal pain",
+  { value: "No chest pain or tightness", label: "No chest pain or tightness" },
+  {
+    value: "Tightness or pressure when I walk or climb stairs",
+    label: "Tightness or pressure when I walk or climb stairs",
+  },
+  {
+    value: "Odd chest discomfort, not like classic squeezing",
+    label: "Odd chest discomfort — not like classic squeezing",
+  },
+  {
+    value: "Ache that does not feel like heart pain",
+    label: "An ache that does not feel like heart pain",
+  },
+  { value: "I'm not sure", label: "I'm not sure" },
 ] as const;
 
-const FBS_OPTIONS = ["No (under 120 mg/dl)", "Yes (over 120 mg/dl)"] as const;
+const FBS_OPTIONS = [
+  { value: "No (under 120 mg/dl)", label: "Under 120 — or I was told it was fine" },
+  { value: "Yes (over 120 mg/dl)", label: "120 or higher on a fasting test" },
+  { value: "I don't have this number", label: "I don't have this number" },
+] as const;
 
 const RESTECG_OPTIONS = [
-  "Normal",
-  "ST-T wave abnormality",
-  "Left ventricular hypertrophy",
+  { value: "Normal", label: "They said my heart tracing (ECG) was normal" },
+  { value: "ST-T wave abnormality", label: "They said the ECG pattern was irregular" },
+  {
+    value: "Left ventricular hypertrophy",
+    label: "They said the heart muscle looked thickened on the ECG",
+  },
+  { value: "I don't know", label: "I have not had an ECG, or I don't remember" },
 ] as const;
 
-const SLOPE_OPTIONS = ["Downsloping", "Flat", "Upsloping"] as const;
+const SLOPE_OPTIONS = [
+  { value: "Upsloping", label: "The line rose during the exercise test" },
+  { value: "Flat", label: "The line stayed flat during the exercise test" },
+  { value: "Downsloping", label: "The line fell during the exercise test" },
+  { value: "I don't know", label: "I have not had an exercise heart test" },
+] as const;
 
-const THAL_OPTIONS = ["Fixed defect", "Reversible defect", "Normal"] as const;
+const THAL_OPTIONS = [
+  { value: "Normal", label: "Nobody has told me I have this" },
+  {
+    value: "Reversible defect",
+    label: "A scan showed a blood-flow problem that comes and goes",
+  },
+  { value: "Fixed defect", label: "A scan showed an old, fixed blood-flow scar" },
+  { value: "I don't know", label: "I don't know / I have not had this scan" },
+] as const;
+
+const CA_OPTIONS = [
+  { value: "0", label: "I have not had a dye test of the heart arteries" },
+  { value: "1", label: "Doctor said 1 artery was narrowed" },
+  { value: "2", label: "Doctor said 2 arteries were narrowed" },
+  { value: "3", label: "Doctor said 3 arteries were narrowed" },
+] as const;
+
+function SliderField({
+  label,
+  hint,
+  min,
+  max,
+  step,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const shown = Number.isInteger(step) && step >= 1 ? value : Number(value.toFixed(2));
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between gap-3 text-sm">
+        <div>
+          <Label>{label}</Label>
+          {hint ? <p className="mt-0.5 text-xs font-normal text-muted-foreground">{hint}</p> : null}
+        </div>
+        <span className="shrink-0 tabular-nums text-muted-foreground">{shown}</span>
+      </div>
+      <Slider min={min} max={max} step={step} value={[value]} onValueChange={([v]) => onChange(v)} />
+    </div>
+  );
+}
+
+function Choice({
+  label,
+  hint,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly { value: string; label: string }[];
+}) {
+  return (
+    <div className="space-y-2">
+      <div>
+        <Label>{label}</Label>
+        {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
+      </div>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export function RiskAssessmentModal({
   open,
@@ -55,9 +160,7 @@ export function RiskAssessmentModal({
   onSubmit,
   isSubmitting,
 }: RiskAssessmentModalProps) {
-  const [gender, setGender] = useState<"1" | "0">("1");
-  const [smokes, setSmokes] = useState(false);
-  const [activity, setActivity] = useState<"low" | "moderate" | "high">("moderate");
+  const [sex, setSex] = useState<"male" | "female">("male");
 
   const [diabetes, setDiabetes] = useState({
     pregnancies: 0,
@@ -72,17 +175,17 @@ export function RiskAssessmentModal({
 
   const [heart, setHeart] = useState({
     age: 54,
-    cp: "Asymptomatic (no chest pain)" as (typeof CP_OPTIONS)[number],
+    cp: "No chest pain or tightness",
     trestbps: 130,
     chol: 240,
-    fbs: "No (under 120 mg/dl)" as (typeof FBS_OPTIONS)[number],
-    restecg: "Normal" as (typeof RESTECG_OPTIONS)[number],
+    fbs: "I don't have this number",
+    restecg: "I don't know",
     thalach: 150,
-    exang: "No" as "No" | "Yes",
+    exang: "No",
     oldpeak: 1.0,
-    slope: "Flat" as (typeof SLOPE_OPTIONS)[number],
-    ca: 0,
-    thal: "Normal" as (typeof THAL_OPTIONS)[number],
+    slope: "I don't know",
+    ca: "0",
+    thal: "I don't know",
   });
 
   const [liver, setLiver] = useState({
@@ -101,37 +204,65 @@ export function RiskAssessmentModal({
     creatinine: 1,
     urea: 30,
     hemoglobin: 14,
-    bp: 120,
+    bp: 80,
   });
 
   const title = useMemo(() => {
     switch (disease) {
       case "diabetes":
-        return "Diabetes risk: your numbers";
+        return "Diabetes risk check";
       case "heart":
-        return "Heart disease risk: clinical inputs";
+        return "Heart risk check";
       case "liver":
-        return "Liver disease risk: lab values";
+        return "Liver risk check";
       case "kidney":
-        return "Kidney disease risk: your numbers";
+        return "Kidney risk check";
       default:
-        return "Risk assessment";
+        return "Risk check";
     }
   }, [disease]);
 
-  const showSmokingActivity = disease === "diabetes" || disease === "kidney";
+  const sexBlock = (id: string) => (
+    <div className="space-y-2">
+      <Label>What is your sex?</Label>
+      <RadioGroup
+        value={sex}
+        onValueChange={(v) => {
+          const next = v as "male" | "female";
+          setSex(next);
+          if (next === "male") setDiabetes((d) => ({ ...d, pregnancies: 0 }));
+        }}
+        className="flex gap-4"
+      >
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="female" id={`${id}-f`} />
+          <Label htmlFor={`${id}-f`} className="font-normal">
+            Female
+          </Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="male" id={`${id}-m`} />
+          <Label htmlFor={`${id}-m`} className="font-normal">
+            Male
+          </Label>
+        </div>
+      </RadioGroup>
+    </div>
+  );
 
   const handleSubmit = () => {
     if (!disease) return;
-    const lifestyle = { activity, smokes: smokes ? 1 : 0 };
     if (disease === "diabetes") {
-      onSubmit({ ...diabetes, ...lifestyle, gender: Number(gender) });
+      onSubmit({
+        ...diabetes,
+        pregnancies: sex === "male" ? 0 : diabetes.pregnancies,
+      });
       return;
     }
     if (disease === "heart") {
       onSubmit({
         age: heart.age,
-        sex: gender === "1" ? "Male" : "Female",
+        sex: sex === "male" ? "Male" : "Female",
         cp: heart.cp,
         trestbps: heart.trestbps,
         chol: heart.chol,
@@ -141,7 +272,7 @@ export function RiskAssessmentModal({
         exang: heart.exang,
         oldpeak: heart.oldpeak,
         slope: heart.slope,
-        ca: heart.ca,
+        ca: Number(heart.ca),
         thal: heart.thal,
       });
       return;
@@ -149,8 +280,7 @@ export function RiskAssessmentModal({
     if (disease === "liver") {
       onSubmit({
         ...liver,
-        Gender: gender === "1" ? "Male" : "Female",
-        ...lifestyle,
+        Gender: sex === "male" ? "Male" : "Female",
       });
       return;
     }
@@ -159,84 +289,9 @@ export function RiskAssessmentModal({
       urea: kidney.urea,
       hemoglobin: kidney.hemoglobin,
       bp: kidney.bp,
-      gender: Number(gender),
-      ...lifestyle,
+      bpScale: "diastolic",
     });
   };
-
-  const genderBlock = (
-    <div className="space-y-2">
-      <Label>{disease === "liver" ? "Gender" : "Sex"}</Label>
-      <RadioGroup
-        value={gender}
-        onValueChange={(v) => setGender(v as "1" | "0")}
-        className="flex gap-4"
-      >
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value="0" id="g-f" />
-          <Label htmlFor="g-f" className="font-normal">
-            Female
-          </Label>
-        </div>
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value="1" id="g-m" />
-          <Label htmlFor="g-m" className="font-normal">
-            Male
-          </Label>
-        </div>
-      </RadioGroup>
-    </div>
-  );
-
-  const smokingActivityBlock = showSmokingActivity && (
-    <>
-      <div className="flex items-center justify-between gap-4">
-        <div className="space-y-1">
-          <Label>Smoking</Label>
-          <p className="text-xs text-muted-foreground">General health context</p>
-        </div>
-        <Select
-          value={smokes ? "yes" : "no"}
-          onValueChange={(v) => setSmokes(v === "yes")}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="no">No</SelectItem>
-            <SelectItem value="yes">Yes</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label>Activity level</Label>
-        <Select
-          value={activity}
-          onValueChange={(v) => setActivity(v as typeof activity)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="low">Mostly seated / low</SelectItem>
-            <SelectItem value="moderate">Moderate</SelectItem>
-            <SelectItem value="high">Very active</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </>
-  );
-
-  const aboutYouSection = (disease === "diabetes" ||
-    disease === "kidney" ||
-    disease === "heart" ||
-    disease === "liver") && (
-    <div className="space-y-4 rounded-md border bg-muted/40 p-3">
-      <p className="text-sm font-medium text-foreground">About you</p>
-      {genderBlock}
-      {smokingActivityBlock}
-    </div>
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -244,342 +299,341 @@ export function RiskAssessmentModal({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Match the fields to your recent readings or best estimate.
+            Use numbers from a recent report if you have one. If you do not know a test result, pick
+            “I don’t know” or leave the slider near the hint.
           </DialogDescription>
         </DialogHeader>
 
-        {disease === "kidney" && (
+        {disease === "diabetes" && (
           <p className="rounded-md bg-muted/60 p-2 text-sm text-muted-foreground">
-            This screen uses creatinine, urea, hemoglobin, and blood pressure. Blood
-            pressure is read as systolic here and converted to the diastolic scale the
-            model was trained on. Higher hemoglobin is treated as healthier — dragging
-            every slider up does not automatically mean higher risk.
+            Eight everyday numbers (same as the Pima / Pabna / NHANES model). Pregnancy is hidden
+            for males.
           </p>
         )}
         {disease === "heart" && (
           <p className="rounded-md bg-muted/60 p-2 text-sm text-muted-foreground">
-            A higher maximum heart rate is treated as fitter. Asymptomatic chest-pain
-            type is a higher-risk code in this model — not every upward slider means
-            more risk.
+            Answer how it feels day to day. Hospital-only items can stay on “I don’t know”.
           </p>
         )}
         {disease === "liver" && (
           <p className="rounded-md bg-muted/60 p-2 text-sm text-muted-foreground">
-            Higher albumin is treated as healthier. Raised bilirubin or ALT/AST push
-            risk up — dragging every slider to the top does not automatically mean
-            higher risk.
+            Copy these from a liver blood report. Higher albumin is usually healthier.
+          </p>
+        )}
+        {disease === "kidney" && (
+          <p className="rounded-md bg-muted/60 p-2 text-sm text-muted-foreground">
+            This model only uses four numbers: creatinine, urea, hemoglobin, and the lower blood
+            pressure reading. You do not need to know about heart-artery disease.
           </p>
         )}
 
         <div className="space-y-6 py-2">
           {disease === "diabetes" && (
             <div className="space-y-4">
-              {[
-                ["pregnancies", "Pregnancies (number)", 0, 17, 1, diabetes.pregnancies],
-                ["glucose", "Glucose (mg/dL)", 50, 200, 1, diabetes.glucose],
-                ["bp", "Blood pressure (mm Hg)", 40, 120, 1, diabetes.bp],
-                ["skin", "Skin thickness (mm)", 7, 99, 1, diabetes.skin],
-                ["insulin", "Insulin (μU/mL)", 0, 300, 1, diabetes.insulin],
-                ["bmi", "BMI (kg/m²)", 15, 50, 0.5, diabetes.bmi],
-                ["pedigree", "Diabetes pedigree function", 0.08, 2.5, 0.01, diabetes.pedigree],
-                ["age", "Age (years)", 18, 90, 1, diabetes.age],
-              ].map(([key, label, min, max, step, val]) => (
-                <div key={key as string} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <Label>{label}</Label>
-                    <span className="tabular-nums text-muted-foreground">
-                      {typeof val === "number" ? val : ""}
-                    </span>
-                  </div>
-                  <Slider
-                    min={min as number}
-                    max={max as number}
-                    step={step as number}
-                    value={[val as number]}
-                    onValueChange={([v]) =>
-                      setDiabetes((d) => ({ ...d, [key as string]: v }))
-                    }
-                  />
-                </div>
-              ))}
-              {aboutYouSection}
+              {sexBlock("dm")}
+              {sex === "female" && (
+                <SliderField
+                  label="How many times have you been pregnant?"
+                  hint="Count every pregnancy. Use 0 if none."
+                  min={0}
+                  max={17}
+                  step={1}
+                  value={diabetes.pregnancies}
+                  onChange={(v) => setDiabetes((d) => ({ ...d, pregnancies: v }))}
+                />
+              )}
+              <SliderField
+                label="Blood sugar (glucose)"
+                hint="From a lab slip, in mg/dL. Around 70–99 is often usual when fasting."
+                min={50}
+                max={200}
+                step={1}
+                value={diabetes.glucose}
+                onChange={(v) => setDiabetes((d) => ({ ...d, glucose: v }))}
+              />
+              <SliderField
+                label="Blood pressure"
+                hint="A cuff reading, in mm Hg."
+                min={40}
+                max={120}
+                step={1}
+                value={diabetes.bp}
+                onChange={(v) => setDiabetes((d) => ({ ...d, bp: v }))}
+              />
+              <SliderField
+                label="Skin-fold thickness"
+                hint="A pinch of skin at the back of the upper arm, in mm. Leave near 20 if never measured."
+                min={7}
+                max={99}
+                step={1}
+                value={diabetes.skin}
+                onChange={(v) => setDiabetes((d) => ({ ...d, skin: v }))}
+              />
+              <SliderField
+                label="Insulin level"
+                hint="From a blood test, in μU/mL. Leave near 80 if you do not have this."
+                min={0}
+                max={300}
+                step={1}
+                value={diabetes.insulin}
+                onChange={(v) => setDiabetes((d) => ({ ...d, insulin: v }))}
+              />
+              <SliderField
+                label="Body mass index (BMI)"
+                hint="Weight in kg ÷ height in metres squared. 18.5–24.9 is often called a usual range."
+                min={15}
+                max={50}
+                step={0.5}
+                value={diabetes.bmi}
+                onChange={(v) => setDiabetes((d) => ({ ...d, bmi: v }))}
+              />
+              <SliderField
+                label="Diabetes in your close family"
+                hint="Low (left) if almost nobody has it. Higher if parents or siblings do."
+                min={0.08}
+                max={2.5}
+                step={0.01}
+                value={diabetes.pedigree}
+                onChange={(v) => setDiabetes((d) => ({ ...d, pedigree: v }))}
+              />
+              <SliderField
+                label="Your age"
+                hint="In years."
+                min={18}
+                max={90}
+                step={1}
+                value={diabetes.age}
+                onChange={(v) => setDiabetes((d) => ({ ...d, age: v }))}
+              />
             </div>
           )}
 
           {disease === "heart" && (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <Label>Age (years)</Label>
-                  <span className="text-muted-foreground">{heart.age}</span>
-                </div>
-                <Slider
-                  min={18}
-                  max={90}
-                  step={1}
-                  value={[heart.age]}
-                  onValueChange={([v]) => setHeart((h) => ({ ...h, age: v }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Chest pain type</Label>
-                <Select
-                  value={heart.cp}
-                  onValueChange={(v) =>
-                    setHeart((h) => ({ ...h, cp: v as (typeof CP_OPTIONS)[number] }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CP_OPTIONS.map((o) => (
-                      <SelectItem key={o} value={o}>
-                        {o}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <Label>Resting blood pressure (mm Hg)</Label>
-                  <span className="text-muted-foreground">{heart.trestbps}</span>
-                </div>
-                <Slider
-                  min={80}
-                  max={200}
-                  step={1}
-                  value={[heart.trestbps]}
-                  onValueChange={([v]) => setHeart((h) => ({ ...h, trestbps: v }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <Label>Serum cholesterol (mg/dl)</Label>
-                  <span className="text-muted-foreground">{heart.chol}</span>
-                </div>
-                <Slider
-                  min={100}
-                  max={600}
-                  step={1}
-                  value={[heart.chol]}
-                  onValueChange={([v]) => setHeart((h) => ({ ...h, chol: v }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Fasting blood sugar &gt; 120 mg/dl</Label>
-                <Select
-                  value={heart.fbs}
-                  onValueChange={(v) =>
-                    setHeart((h) => ({ ...h, fbs: v as (typeof FBS_OPTIONS)[number] }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FBS_OPTIONS.map((o) => (
-                      <SelectItem key={o} value={o}>
-                        {o}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Resting ECG</Label>
-                <Select
-                  value={heart.restecg}
-                  onValueChange={(v) =>
-                    setHeart((h) => ({
-                      ...h,
-                      restecg: v as (typeof RESTECG_OPTIONS)[number],
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RESTECG_OPTIONS.map((o) => (
-                      <SelectItem key={o} value={o}>
-                        {o}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <Label>Maximum heart rate achieved</Label>
-                  <span className="text-muted-foreground">{heart.thalach}</span>
-                </div>
-                <Slider
-                  min={60}
-                  max={220}
-                  step={1}
-                  value={[heart.thalach]}
-                  onValueChange={([v]) => setHeart((h) => ({ ...h, thalach: v }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Exercise-induced angina</Label>
-                <Select
-                  value={heart.exang}
-                  onValueChange={(v) => setHeart((h) => ({ ...h, exang: v as "No" | "Yes" }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="No">No</SelectItem>
-                    <SelectItem value="Yes">Yes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <Label>ST depression (oldpeak)</Label>
-                  <span className="text-muted-foreground">{heart.oldpeak}</span>
-                </div>
-                <Slider
-                  min={0}
-                  max={6.5}
-                  step={0.1}
-                  value={[heart.oldpeak]}
-                  onValueChange={([v]) => setHeart((h) => ({ ...h, oldpeak: v }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Slope of peak exercise ST segment</Label>
-                <Select
-                  value={heart.slope}
-                  onValueChange={(v) =>
-                    setHeart((h) => ({ ...h, slope: v as (typeof SLOPE_OPTIONS)[number] }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SLOPE_OPTIONS.map((o) => (
-                      <SelectItem key={o} value={o}>
-                        {o}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <Label>Major vessels coloured (0–3)</Label>
-                  <span className="text-muted-foreground">{heart.ca}</span>
-                </div>
-                <Slider
-                  min={0}
-                  max={3}
-                  step={1}
-                  value={[heart.ca]}
-                  onValueChange={([v]) => setHeart((h) => ({ ...h, ca: v }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Thalassemia</Label>
-                <Select
-                  value={heart.thal}
-                  onValueChange={(v) =>
-                    setHeart((h) => ({ ...h, thal: v as (typeof THAL_OPTIONS)[number] }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {THAL_OPTIONS.map((o) => (
-                      <SelectItem key={o} value={o}>
-                        {o}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {aboutYouSection}
+              {sexBlock("ht")}
+              <SliderField
+                label="Your age"
+                hint="In years."
+                min={18}
+                max={90}
+                step={1}
+                value={heart.age}
+                onChange={(v) => setHeart((h) => ({ ...h, age: v }))}
+              />
+              <Choice
+                label="When you get chest discomfort, what is it like?"
+                hint="Pick the closest match, or I’m not sure."
+                value={heart.cp}
+                onChange={(v) => setHeart((h) => ({ ...h, cp: v }))}
+                options={CP_OPTIONS}
+              />
+              <SliderField
+                label="Blood pressure while resting"
+                hint="The upper number from a cuff, in mm Hg, sitting quietly."
+                min={80}
+                max={200}
+                step={1}
+                value={heart.trestbps}
+                onChange={(v) => setHeart((h) => ({ ...h, trestbps: v }))}
+              />
+              <SliderField
+                label="Cholesterol in your blood"
+                hint="Total cholesterol from a lab slip, in mg/dL."
+                min={100}
+                max={600}
+                step={1}
+                value={heart.chol}
+                onChange={(v) => setHeart((h) => ({ ...h, chol: v }))}
+              />
+              <Choice
+                label="Fasting blood sugar"
+                hint="A sugar test after not eating overnight."
+                value={heart.fbs}
+                onChange={(v) => setHeart((h) => ({ ...h, fbs: v }))}
+                options={FBS_OPTIONS}
+              />
+              <Choice
+                label="Heart tracing (ECG) while resting"
+                value={heart.restecg}
+                onChange={(v) => setHeart((h) => ({ ...h, restecg: v }))}
+                options={RESTECG_OPTIONS}
+              />
+              <SliderField
+                label="Highest heart rate you have reached"
+                hint="Beats per minute during hard activity. About 150 if you do not know."
+                min={60}
+                max={220}
+                step={1}
+                value={heart.thalach}
+                onChange={(v) => setHeart((h) => ({ ...h, thalach: v }))}
+              />
+              <Choice
+                label="Does walking or exercise bring on chest pain?"
+                value={heart.exang}
+                onChange={(v) => setHeart((h) => ({ ...h, exang: v }))}
+                options={[
+                  { value: "No", label: "No" },
+                  { value: "Yes", label: "Yes" },
+                  { value: "I don't know", label: "I don't know / I rarely exercise" },
+                ]}
+              />
+              <SliderField
+                label="How much the exercise-test line dipped"
+                hint="A hospital number called ST depression. Leave at 1.0 if you never had this test."
+                min={0}
+                max={6.5}
+                step={0.1}
+                value={heart.oldpeak}
+                onChange={(v) => setHeart((h) => ({ ...h, oldpeak: v }))}
+              />
+              <Choice
+                label="Shape of the line on an exercise heart test"
+                value={heart.slope}
+                onChange={(v) => setHeart((h) => ({ ...h, slope: v }))}
+                options={SLOPE_OPTIONS}
+              />
+              <Choice
+                label="Have you had a dye test of the heart arteries?"
+                hint="Only use 1–3 if a cardiologist told you how many arteries were narrowed."
+                value={heart.ca}
+                onChange={(v) => setHeart((h) => ({ ...h, ca: v }))}
+                options={CA_OPTIONS}
+              />
+              <Choice
+                label="Special heart blood-flow scan"
+                hint="Sometimes listed as thalassemia on old reports. Use I don’t know if you never had this."
+                value={heart.thal}
+                onChange={(v) => setHeart((h) => ({ ...h, thal: v }))}
+                options={THAL_OPTIONS}
+              />
             </div>
           )}
 
           {disease === "liver" && (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <Label>Age (years)</Label>
-                  <span className="text-muted-foreground">{liver.Age}</span>
-                </div>
-                <Slider
-                  min={1}
-                  max={100}
-                  step={1}
-                  value={[liver.Age]}
-                  onValueChange={([v]) => setLiver((l) => ({ ...l, Age: v }))}
-                />
-              </div>
-              {(
-                [
-                  ["Total_Bilirubin", "Total bilirubin", 0.1, 25, 0.1, liver.Total_Bilirubin],
-                  ["Direct_Bilirubin", "Direct bilirubin", 0.1, 15, 0.1, liver.Direct_Bilirubin],
-                  ["Alkaline_Phosphotase", "Alkaline phosphatase", 10, 500, 5, liver.Alkaline_Phosphotase],
-                  ["Alamine_Aminotransferase", "ALT", 5, 500, 1, liver.Alamine_Aminotransferase],
-                  ["Aspartate_Aminotransferase", "AST", 5, 500, 1, liver.Aspartate_Aminotransferase],
-                  ["Total_Protiens", "Total proteins", 2, 9, 0.1, liver.Total_Protiens],
-                  ["Albumin", "Albumin", 1, 6, 0.1, liver.Albumin],
-                  ["Albumin_and_Globulin_Ratio", "Albumin / globulin ratio", 0.3, 4, 0.05, liver.Albumin_and_Globulin_Ratio],
-                ] as const
-              ).map(([key, label, min, max, step, val]) => (
-                <div key={key} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <Label>{label}</Label>
-                    <span className="tabular-nums text-muted-foreground">{val}</span>
-                  </div>
-                  <Slider
-                    min={min}
-                    max={max}
-                    step={step}
-                    value={[val]}
-                    onValueChange={([v]) =>
-                      setLiver((l) => ({ ...l, [key]: v }))
-                    }
-                  />
-                </div>
-              ))}
-              {aboutYouSection}
+              {sexBlock("lv")}
+              <SliderField
+                label="Your age"
+                hint="In years."
+                min={1}
+                max={100}
+                step={1}
+                value={liver.Age}
+                onChange={(v) => setLiver((l) => ({ ...l, Age: v }))}
+              />
+              <SliderField
+                label="Yellow pigment in blood (total bilirubin)"
+                hint="On the report as total bilirubin, mg/dL. Often under 1.2 when usual."
+                min={0.1}
+                max={25}
+                step={0.1}
+                value={liver.Total_Bilirubin}
+                onChange={(v) => setLiver((l) => ({ ...l, Total_Bilirubin: v }))}
+              />
+              <SliderField
+                label="Direct bilirubin"
+                hint="The second bilirubin number, mg/dL."
+                min={0.1}
+                max={15}
+                step={0.1}
+                value={liver.Direct_Bilirubin}
+                onChange={(v) => setLiver((l) => ({ ...l, Direct_Bilirubin: v }))}
+              />
+              <SliderField
+                label="ALP — a liver and bone enzyme"
+                hint="Alkaline phosphatase, U/L."
+                min={10}
+                max={500}
+                step={5}
+                value={liver.Alkaline_Phosphotase}
+                onChange={(v) => setLiver((l) => ({ ...l, Alkaline_Phosphotase: v }))}
+              />
+              <SliderField
+                label="ALT — a liver enzyme"
+                hint="Also written SGPT, U/L."
+                min={5}
+                max={500}
+                step={1}
+                value={liver.Alamine_Aminotransferase}
+                onChange={(v) => setLiver((l) => ({ ...l, Alamine_Aminotransferase: v }))}
+              />
+              <SliderField
+                label="AST — a liver enzyme"
+                hint="Also written SGOT, U/L."
+                min={5}
+                max={500}
+                step={1}
+                value={liver.Aspartate_Aminotransferase}
+                onChange={(v) => setLiver((l) => ({ ...l, Aspartate_Aminotransferase: v }))}
+              />
+              <SliderField
+                label="Total protein in blood"
+                hint="g/dL. Often around 6–8."
+                min={2}
+                max={9}
+                step={0.1}
+                value={liver.Total_Protiens}
+                onChange={(v) => setLiver((l) => ({ ...l, Total_Protiens: v }))}
+              />
+              <SliderField
+                label="Albumin — a helpful blood protein"
+                hint="g/dL. Higher is usually healthier."
+                min={1}
+                max={6}
+                step={0.1}
+                value={liver.Albumin}
+                onChange={(v) => setLiver((l) => ({ ...l, Albumin: v }))}
+              />
+              <SliderField
+                label="Albumin compared with globulin"
+                hint="A/G ratio on the report. Around 1–2 is common."
+                min={0.3}
+                max={4}
+                step={0.05}
+                value={liver.Albumin_and_Globulin_Ratio}
+                onChange={(v) => setLiver((l) => ({ ...l, Albumin_and_Globulin_Ratio: v }))}
+              />
             </div>
           )}
 
           {disease === "kidney" && (
             <div className="space-y-4">
-              {[
-                ["creatinine", "Creatinine (mg/dL)", 0.5, 5, 0.1, kidney.creatinine],
-                ["urea", "Urea (mg/dL)", 10, 200, 1, kidney.urea],
-                ["hemoglobin", "Hemoglobin (g/dL)", 8, 18, 0.1, kidney.hemoglobin],
-                ["bp", "Blood pressure (mm Hg systolic)", 80, 200, 1, kidney.bp],
-              ].map(([key, label, min, max, step, val]) => (
-                <div key={key as string} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <Label>{label}</Label>
-                    <span className="tabular-nums text-muted-foreground">{val as number}</span>
-                  </div>
-                  <Slider
-                    min={min as number}
-                    max={max as number}
-                    step={step as number}
-                    value={[val as number]}
-                    onValueChange={([v]) =>
-                      setKidney((k) => ({ ...k, [key as string]: v }))
-                    }
-                  />
-                </div>
-              ))}
-              {aboutYouSection}
+              <SliderField
+                label="Creatinine"
+                hint="Kidney waste in blood, mg/dL. Often around 0.7–1.3."
+                min={0.4}
+                max={15}
+                step={0.1}
+                value={kidney.creatinine}
+                onChange={(v) => setKidney((k) => ({ ...k, creatinine: v }))}
+              />
+              <SliderField
+                label="Urea (or BUN / blood urea)"
+                hint="Another kidney waste number, mg/dL."
+                min={10}
+                max={400}
+                step={1}
+                value={kidney.urea}
+                onChange={(v) => setKidney((k) => ({ ...k, urea: v }))}
+              />
+              <SliderField
+                label="Hemoglobin"
+                hint="The oxygen-carrying part of blood, g/dL. Higher is usually healthier."
+                min={3}
+                max={18}
+                step={0.1}
+                value={kidney.hemoglobin}
+                onChange={(v) => setKidney((k) => ({ ...k, hemoglobin: v }))}
+              />
+              <SliderField
+                label="Lower blood-pressure number (diastolic)"
+                hint="The bottom number on a cuff, such as 80 in 120/80."
+                min={40}
+                max={180}
+                step={1}
+                value={kidney.bp}
+                onChange={(v) => setKidney((k) => ({ ...k, bp: v }))}
+              />
             </div>
           )}
         </div>
@@ -595,7 +649,7 @@ export function RiskAssessmentModal({
                 Estimating…
               </>
             ) : (
-              "Run estimate"
+              "See my estimate"
             )}
           </Button>
         </DialogFooter>

@@ -171,7 +171,7 @@ class TreeShapExplanationTests(unittest.TestCase):
         ).lower()
         self.assertIn("you entered", blob)
         self.assertIn("raised the estimate", blob)
-        self.assertIn("not a diagnosis", blob)
+        self.assertNotIn("not a diagnosis", blob)
         self.assertNotIn("gemini", blob)
         self.assertNotIn("treeshap", blob)
         self.assertNotIn("126 mg/dl", blob)
