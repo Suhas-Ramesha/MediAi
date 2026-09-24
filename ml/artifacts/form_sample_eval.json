@@ -1,12 +1,12 @@
 {
   "diabetes": {
-    "form_default": 1.8,
-    "healthy": 0.8,
-    "diseased_pima_like": 90.6,
-    "all_slider_min": 6.1,
-    "all_slider_max": 82.7,
-    "high_glucose_only": 53.7,
-    "high_bmi_normal_glucose": 7.0
+    "form_default": 3.5,
+    "healthy": 1.3,
+    "diseased_pima_like": 96.0,
+    "all_slider_min": 17.8,
+    "all_slider_max": 85.8,
+    "high_glucose_only": 70.3,
+    "high_bmi_normal_glucose": 8.3
   },
   "heart": {
     "form_default": 13.0,
@@ -30,13 +30,13 @@
     "high_alt_ast": 68.0
   },
   "kidney": {
-    "form_default": 42.5,
-    "healthy": 29.8,
-    "diseased": 100.0,
-    "all_slider_min": 99.7,
-    "all_slider_max": 39.7,
-    "high_hemoglobin_only": 2.2,
-    "low_hemoglobin_only": 99.9,
-    "high_creatinine_only": 99.6
+    "form_default": 10.7,
+    "healthy": 35.8,
+    "diseased": 99.8,
+    "all_slider_min": 97.1,
+    "all_slider_max": 21.2,
+    "high_hemoglobin_only": 1.1,
+    "low_hemoglobin_only": 97.9,
+    "high_creatinine_only": 94.6
   }
 }

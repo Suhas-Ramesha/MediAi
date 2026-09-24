@@ -235,22 +235,39 @@ class EncodedModel:
         return names
 
     def shap_contrib(self, X: pd.DataFrame) -> tuple[list[str], np.ndarray, float]:
-        """Per-row TreeSHAP in CatBoost raw (log-odds) space.
+        """Per-row TreeSHAP in the model's additive space.
 
         Positive values push toward the disease class. The returned vector
         aligns with ``transformed_feature_names()``; ``bias`` is the base value.
         """
-        if self.kind != "catboost":
-            raise RuntimeError("TreeSHAP explanations are only wired for CatBoost")
-        from catboost import Pool
-
         Xt = np.asarray(self.prep.transform(X))
         names = self.transformed_feature_names()
-        sv = np.asarray(self.model.get_feature_importance(data=Pool(Xt), type="ShapValues"))
-        row = sv[0]
-        contrib = np.asarray(row[: len(names)], dtype=float)
-        bias = float(row[-1])
-        return names, contrib, bias
+        if self.kind == "catboost":
+            from catboost import Pool
+
+            sv = np.asarray(self.model.get_feature_importance(data=Pool(Xt), type="ShapValues"))
+            row = sv[0]
+            contrib = np.asarray(row[: len(names)], dtype=float)
+            bias = float(row[-1])
+            return names, contrib, bias
+        if self.kind in {"lightgbm", "xgboost"}:
+            import shap
+
+            explainer = getattr(self, "_shap_explainer", None)
+            if explainer is None:
+                explainer = shap.TreeExplainer(self.model)
+                self._shap_explainer = explainer
+            sv = explainer.shap_values(Xt)
+            if isinstance(sv, list):
+                sv = sv[-1]
+            row = np.asarray(sv[0], dtype=float)
+            bias = explainer.expected_value
+            if isinstance(bias, (list, tuple, np.ndarray)):
+                bias = float(np.asarray(bias).reshape(-1)[-1])
+            else:
+                bias = float(bias)
+            return names, row[: len(names)], bias
+        raise RuntimeError(f"TreeSHAP explanations are not wired for {self.kind}")
 
 
 def _suggest(trial: Any, kind: str) -> dict[str, Any]:

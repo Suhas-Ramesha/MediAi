@@ -124,6 +124,64 @@ def _strip_cat(val):
     return s if s else np.nan
 
 
+def clean_pabna() -> dict:
+    """Pabna 8-lab table → the same columns as pima_cleaned.csv.
+
+    Skinfold in the raw file is stored as mm×10 (median 304.8 → 30.5 mm).
+    Insulin 0 is “not measured” (334/465). Pedigree is an integer 0–8 family
+    count; it is linearly mapped onto the form’s 0–2.5 Pima DPF slider so the
+    chat and the hospital table share one scale.
+    """
+    raw_path = DATA / "diabetes/raw/mendeley_vxnyysk9vc_pabna_diabetes.csv"
+    if not raw_path.exists():
+        return {"file": None, "n": 0, "skipped": "raw pabna csv missing"}
+    raw = pd.read_csv(raw_path)
+    raw.columns = [c.strip() for c in raw.columns]
+    insulin_zero = int((pd.to_numeric(raw["Insulin"], errors="coerce") == 0).sum())
+    glucose_zero = int((pd.to_numeric(raw["Glucose"], errors="coerce") == 0).sum())
+    skin_raw = pd.to_numeric(raw["Skin Thickness(mm)"], errors="coerce")
+    pedigree_raw = pd.to_numeric(raw["DiabetesPedigreeFunction"], errors="coerce")
+    out = pd.DataFrame(
+        {
+            "pregnancies": pd.to_numeric(raw["No. of Pregnancy"], errors="coerce"),
+            "glucose": pd.to_numeric(raw["Glucose"], errors="coerce").replace(0, np.nan),
+            "bp": pd.to_numeric(raw["BP(Diastolic)"], errors="coerce").replace(0, np.nan),
+            "skin": (skin_raw / 10.0).replace(0, np.nan),
+            "insulin": pd.to_numeric(raw["Insulin"], errors="coerce").replace(0, np.nan),
+            "bmi": pd.to_numeric(raw["BMI"], errors="coerce").replace(0, np.nan),
+            "pedigree": np.clip(pedigree_raw * (2.5 / 8.0), 0, 2.5),
+            "age": pd.to_numeric(raw["Age"], errors="coerce"),
+            "disease": pd.to_numeric(raw["Outcome"], errors="coerce").fillna(0).astype(int),
+        }
+    )
+    _write(
+        DATA / "diabetes/processed/pabna_cleaned.csv",
+        out,
+        {
+            "source": "data/diabetes/raw/mendeley_vxnyysk9vc_pabna_diabetes.csv",
+            "doi": "10.17632/vxnyysk9vc.3",
+            "fix": (
+                "skinfold ÷10 (raw mm×10); insulin 0 and glucose 0 → NA; "
+                "BP is diastolic; pedigree 0–8 family count mapped onto 0–2.5 "
+                "to match the risk-form slider"
+            ),
+            "insulin_zeros_recoded_to_na": insulin_zero,
+            "glucose_zeros_recoded_to_na": glucose_zero,
+            "skin_raw_median": float(skin_raw.median()),
+            "skin_mm_median": float(out["skin"].median()),
+            "class_balance": out["disease"].value_counts().to_dict(),
+            "overlap_with_pima_on_glucose_age_bmi": 0,
+        },
+    )
+    return {
+        "file": "diabetes/processed/pabna_cleaned.csv",
+        "n": int(len(out)),
+        "insulin_zeros_to_na": insulin_zero,
+        "class_balance": {"disease": int((out["disease"] == 1).sum()), "not": int((out["disease"] == 0).sum())},
+        "skin_mm_median": round(float(out["skin"].median()), 2),
+    }
+
+
 def clean_ckd() -> dict:
     raw = pd.read_csv(DATA / "kidney/raw/ucimlrepo_id336_ckd_tamil_nadu.csv")
     df = raw.copy()
@@ -190,6 +248,7 @@ def main() -> None:
         "written_utc": STAMP,
         "ilpd": clean_ilpd(),
         "pima": clean_pima(),
+        "pabna": clean_pabna(),
         "ckd": clean_ckd(),
     }
     (DATA / "CLEANING.md").write_text(
@@ -220,6 +279,16 @@ Zeros recoded: `{report['pima']['zeros_recoded']}`
 
 File: `data/diabetes/processed/pima_cleaned.csv`  
 Columns renamed to the MediAI form: pregnancies, glucose, bp, skin, insulin, bmi, pedigree, age, disease.
+
+## Pabna — same 8 labs, South Asia (not a Pima clone)
+
+Mendeley DOI 10.17632/vxnyysk9vc.3, Pabna Diabetes Hospital, 465 women ≥21.
+Skinfold stored as mm×10 (median raw `{report['pabna'].get('skin_mm_median', '—')} mm after ÷10`).
+Insulin 0 recoded to NA (`{report['pabna'].get('insulin_zeros_to_na')}` rows). Family-count 0–8 mapped onto the form’s 0–2.5 pedigree slider.
+Class: `{report['pabna'].get('class_balance')}`.
+0 overlapping (glucose, age, BMI) keys with Pima.
+
+File: `data/diabetes/processed/pabna_cleaned.csv`
 
 ## Tamil Nadu CKD — missing labs leaked the label
 

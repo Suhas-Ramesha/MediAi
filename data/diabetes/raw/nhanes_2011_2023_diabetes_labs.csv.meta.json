@@ -20,6 +20,6 @@
   "extracted_from": "/tmp/nhanes_full.csv",
   "bytes": 2180995,
   "sha256": "bd716ec1b94815d58b62a5e17401b18bd22d4e413f78c776775e58ca9f20ecb5",
-  "downloaded_utc": "2026-09-23T09:47:39Z",
+  "downloaded_utc": "2026-09-24T13:49:29Z",
   "local_path": "data/diabetes/raw/nhanes_2011_2023_diabetes_labs.csv"
 }

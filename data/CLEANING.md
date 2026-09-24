@@ -1,6 +1,6 @@
 # Processed-table fixes (raw files unchanged)
 
-Written (UTC): `2026-09-22T10:46:51Z`
+Written (UTC): `2026-09-24T13:49:30Z`
 
 These three problems are **fixed in `data/<disease>/processed/`**. Raw downloads are still the originals.
 
@@ -25,6 +25,16 @@ Zeros recoded: `{'plas': 5, 'pres': 35, 'skin': 227, 'insu': 374, 'mass': 11}`
 
 File: `data/diabetes/processed/pima_cleaned.csv`  
 Columns renamed to the MediAI form: pregnancies, glucose, bp, skin, insulin, bmi, pedigree, age, disease.
+
+## Pabna — same 8 labs, South Asia (not a Pima clone)
+
+Mendeley DOI 10.17632/vxnyysk9vc.3, Pabna Diabetes Hospital, 465 women ≥21.
+Skinfold stored as mm×10 (median raw `30.48 mm after ÷10`).
+Insulin 0 recoded to NA (`334` rows). Family-count 0–8 mapped onto the form’s 0–2.5 pedigree slider.
+Class: `{'disease': 372, 'not': 93}`.
+0 overlapping (glucose, age, BMI) keys with Pima.
+
+File: `data/diabetes/processed/pabna_cleaned.csv`
 
 ## Tamil Nadu CKD — missing labs leaked the label
 

@@ -1,0 +1,30 @@
+{
+  "source": "data/diabetes/raw/mendeley_vxnyysk9vc_pabna_diabetes.csv",
+  "doi": "10.17632/vxnyysk9vc.3",
+  "fix": "skinfold \u00f710 (raw mm\u00d710); insulin 0 and glucose 0 \u2192 NA; BP is diastolic; pedigree 0\u20138 family count mapped onto 0\u20132.5 to match the risk-form slider",
+  "insulin_zeros_recoded_to_na": 334,
+  "glucose_zeros_recoded_to_na": 0,
+  "skin_raw_median": 304.8,
+  "skin_mm_median": 30.48,
+  "class_balance": {
+    "1": 372,
+    "0": 93
+  },
+  "overlap_with_pima_on_glucose_age_bmi": 0,
+  "n": 465,
+  "columns": [
+    "pregnancies",
+    "glucose",
+    "bp",
+    "skin",
+    "insulin",
+    "bmi",
+    "pedigree",
+    "age",
+    "disease"
+  ],
+  "missing_after": {
+    "insulin": 334
+  },
+  "written_utc": "2026-09-24T13:49:30Z"
+}

@@ -1,8 +1,8 @@
 """
-ML risk service: four local CatBoost classifiers (form-field payloads).
+ML risk service: four local tree classifiers (form-field payloads).
 
 Fits a 4GB laptop: no PyTorch/TabPFN. Joblib files live in
-``ml/artifacts/models/*_catboost.joblib`` (~1.2MB total).
+``ml/artifacts/models/*_{catboost,lightgbm}.joblib`` (~1.5MB total).
 
 Run from the ``ml_service`` directory (not the repo root), or use ``ml_service/start.bat``
 or ``run_ml_service.bat`` at the repo root::
