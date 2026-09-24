@@ -3,9 +3,9 @@
 The UI strings/slider names are not the same as the training columns.
 This module is the single translation layer used by eval scripts and the ML service.
 
-Serving uses CatBoost for all four diseases so a 4GB laptop can run locally
-(no PyTorch / TabPFN). Kidney TabPFN ~100% is the 24-column hospital table
-the chat never collects; the served file is the 4-lab CatBoost (sc, bu, hemo, bp).
+Serving uses laptop-sized trees (CatBoost, or LightGBM when CatBoost misses
+the 85% gate). Kidney TabPFN ~100% is the 24-column hospital table the chat
+never collects; the served file is the 4-lab CatBoost (sc, bu, hemo, bp).
 Liver CatBoost already clears the 85% pooled holdout; ILPD-only is harder.
 """
 from __future__ import annotations
@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MODELS = {
     "heart": ROOT / "ml/artifacts/models/heart_catboost.joblib",
     "liver": ROOT / "ml/artifacts/models/liver_catboost.joblib",
-    "diabetes": ROOT / "ml/artifacts/models/diabetes_catboost.joblib",
+    "diabetes": ROOT / "ml/artifacts/models/diabetes_lightgbm.joblib",
     "kidney": ROOT / "ml/artifacts/models/kidney_catboost.joblib",
 }
 

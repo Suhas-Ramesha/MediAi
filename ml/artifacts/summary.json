@@ -1,39 +1,72 @@
 [
   {
     "disease": "heart",
+    "served_algorithm": "catboost",
     "winning_algorithm": "catboost",
-    "accuracy": 0.9219,
-    "F1": 0.9321,
-    "ROC-AUC": 0.9682,
-    "dummy_acc": 0.5672,
+    "accuracy": 0.921875,
+    "F1": 0.9321266968325792,
+    "ROC-AUC": 0.9681938764231237,
+    "dummy_acc": 0.5671875,
     "meets_85": true,
     "n_rows": 1920,
-    "dataset_used": "India hospital + UCI 4 sites (Cleveland/Hungary/Switzerland/VA)"
+    "dataset_used": "India hospital + UCI Cleveland/Hungary/Switzerland/VA",
+    "form_native_holdout": null,
+    "bakeoff_winner_holdout": 0.921875,
+    "note": "Quote served_algorithm / accuracy. Bake-off winner may be TabPFN on a wider table the chat does not collect."
   },
   {
     "disease": "liver",
+    "served_algorithm": "catboost",
     "winning_algorithm": "tabpfn",
-    "accuracy": 0.882,
-    "F1": 0.9045,
-    "ROC-AUC": 0.9627,
-    "dummy_acc": 0.5649,
+    "accuracy": 0.8881987577639752,
+    "F1": 0.90625,
+    "ROC-AUC": 0.9661302982731554,
+    "dummy_acc": 0.564947172156619,
     "meets_85": true,
     "n_rows": 1609,
-    "dataset_used": "ILPD Andhra Pradesh + UCI HCV + Mayo PBC"
+    "dataset_used": "ILPD (Andhra Pradesh) + UCI HCV + Mayo PBC",
+    "form_native_holdout": {
+      "ilpd_india": 0.7119
+    },
+    "bakeoff_winner_holdout": 0.8819875776397516,
+    "note": "Quote served_algorithm / accuracy. Bake-off winner may be TabPFN on a wider table the chat does not collect."
   },
   {
     "disease": "diabetes",
-    "winning_algorithm": "catboost",
-    "accuracy": 0.8527,
-    "F1": 0.7761,
-    "ROC-AUC": 0.9191,
-    "dummy_acc": 0.6434,
+    "served_algorithm": "lightgbm",
+    "winning_algorithm": "lightgbm",
+    "accuracy": 0.8522205206738132,
+    "F1": 0.7729411764705882,
+    "ROC-AUC": 0.9144879809672902,
+    "dummy_acc": 0.6491308676008882,
     "meets_85": true,
-    "n_rows": 11806,
-    "dataset_used": "Pima 8-lab + NHANES 2011\u20132023 (1.8\u00d7 negative subsample); Sylhet not pooled"
+    "n_rows": 13059,
+    "dataset_used": "Pima 8-lab + Pabna 8-lab (Bangladesh) + NHANES 2011\u20132023 (negatives subsampled 2.0\u00d7)",
+    "form_native_holdout": {
+      "pima": 0.726,
+      "pabna": 0.9318
+    },
+    "bakeoff_winner_holdout": 0.8522205206738132,
+    "note": "Quote served_algorithm / accuracy. Bake-off winner may be TabPFN on a wider table the chat does not collect."
   },
   {
     "disease": "kidney",
+    "served_algorithm": "catboost",
+    "winning_algorithm": "tabpfn",
+    "accuracy": 0.9416666666666667,
+    "F1": 0.9530201342281879,
+    "ROC-AUC": 0.986842105263158,
+    "dummy_acc": 0.63,
+    "meets_85": true,
+    "n_rows": 600,
+    "dataset_used": "SERVED 4 labs the form types (sc, bu, hemo, bp) on Tamil Nadu + Bangladesh",
+    "form_native_holdout": null,
+    "bakeoff_winner_holdout": 0.9333333333333333,
+    "note": "Quote served_algorithm / accuracy. Bake-off winner may be TabPFN on a wider table the chat does not collect."
+  },
+  {
+    "disease": "kidney_24col_not_served",
+    "served_algorithm": null,
     "winning_algorithm": "tabpfn",
     "accuracy": 1.0,
     "F1": 1.0,
@@ -41,6 +74,8 @@
     "dummy_acc": 0.63,
     "meets_85": true,
     "n_rows": 600,
-    "dataset_used": "UCI CKD Tamil Nadu + Bangladesh UCI 857 (pooled)"
+    "dataset_used": "NOT SERVED: 24-column UCI CKD hospital table",
+    "form_native_holdout": null,
+    "note": "Do not quote this as the chat model."
   }
 ]

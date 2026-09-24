@@ -158,10 +158,10 @@ def persist_nhanes_subset() -> dict:
         "geography": "United States (population survey)",
         "india": False,
         "role": (
-            "Second diabetes source, pooled with Pima on glucose/BMI/age/diastolic BP. "
+            "Second diabetes source, pooled with Pima and Pabna on glucose/BMI/age/diastolic BP. "
             "Label is DIQ010 recoded 0=no, 2=diabetes (prediabetes=1 dropped). "
             "Do not use DIQ050 (insulin treatment) or LBXGH (HbA1c) as features — leakage. "
-            "The 57MB full table is not stored in git."
+            "The 57MB full table is not stored in git. Negatives subsampled 2.0× in load_diabetes."
         ),
         "columns": NHANES_COLS,
         "n": int(len(df)),

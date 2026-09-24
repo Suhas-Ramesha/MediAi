@@ -83,7 +83,7 @@ same-schema tables are stored for **pooled training** (not a single combined mul
 - `diabetes/raw/nhanes_2011_2023_diabetes_labs.csv` — NHANES 2011–2023 overlapping labs (column subset, not the 57MB dump)  
   source: CDC/NCHS NHANES packaged at https://zenodo.org/records/21051814  
   license: NCHS public-use · DOI: 10.5281/zenodo.20299025  
-  role: second diabetes source; DIQ010 0 vs 2; subsample negatives 1.8× in `ml/data_prep.py`
+  role: second diabetes source; DIQ010 0 vs 2; subsample negatives 2.0× in `ml/data_prep.py`
 - `diabetes/raw/mendeley_vxnyysk9vc_pabna_diabetes.csv` — Pabna Diabetes Hospital 8-lab (women ≥21)  
   source: https://data.mendeley.com/datasets/vxnyysk9vc/3  
   license: CC BY 4.0 · DOI: 10.17632/vxnyysk9vc.3  

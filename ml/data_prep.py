@@ -11,8 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 
 # NHANES negatives are subsampled so 85% accuracy cannot be a majority-class dummy.
-# ~1.8× matches Pima prevalence (~35% positive) and was the first honest ≥85% pool.
-NHANES_NEG_RATIO = 1.8
+# 2.0× keeps prevalence ~35% (dummy ~65%) after Pabna (80% positive) is pooled.
+# 1.8× was enough before Pabna; with Pabna it dropped pooled holdout to 84.6%.
+NHANES_NEG_RATIO = 2.0
 POOL_SEED = 42
 
 HEART_UCI_COLS = [

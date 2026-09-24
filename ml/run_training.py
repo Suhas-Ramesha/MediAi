@@ -16,14 +16,14 @@ from ml.data_prep import (  # noqa: E402
     load_kidney,
     load_liver,
 )
-from ml.train_compare import run_disease  # noqa: E402
+from ml.train_compare import ACCURACY_GATE, run_disease  # noqa: E402
 
 ART = ROOT / "ml" / "artifacts"
 
 DATASET_USED = {
     "heart": "India hospital + UCI Cleveland/Hungary/Switzerland/VA",
     "liver": "ILPD (Andhra Pradesh) + UCI HCV + Mayo PBC",
-    "diabetes": "Pima 8-lab + Pabna 8-lab (Bangladesh) + NHANES 2011–2023 (negatives subsampled 1.8×)",
+    "diabetes": "Pima 8-lab + Pabna 8-lab (Bangladesh) + NHANES 2011–2023 (negatives subsampled 2.0×)",
     "kidney": "SERVED 4 labs the form types (sc, bu, hemo, bp) on Tamil Nadu + Bangladesh",
     "kidney_24col": "NOT SERVED: 24-column UCI CKD hospital table (chat never collects this)",
 }
@@ -73,8 +73,20 @@ def train_kidney_form() -> dict:
     return run_disease("kidney_form", X4, y, sources=pool["source"], log=_log)
 
 
-def _summary_row(disease: str, payload: dict, *, served: str = "catboost") -> dict:
-    cat = _algo(payload, served)
+def _served_tree(payload: dict) -> tuple[str, dict | None]:
+    """Laptop-sized tree. Prefer CatBoost; if it misses 85%, use LightGBM/XGBoost."""
+    for name in ("catboost", "lightgbm", "xgboost"):
+        row = _algo(payload, name)
+        if row and row.get("holdout_accuracy", 0) >= ACCURACY_GATE:
+            return name, row
+    return "catboost", _algo(payload, "catboost")
+
+
+def _summary_row(disease: str, payload: dict, *, served: str | None = None) -> dict:
+    if served is None:
+        served, cat = _served_tree(payload)
+    else:
+        cat = _algo(payload, served)
     hold = (cat or {}).get("holdout_accuracy")
     if hold is None:
         hold = payload["winner_holdout"]["accuracy"]

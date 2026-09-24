@@ -20,7 +20,7 @@ Incompatible schemas are stored but **not concatenated**. Quoted holdout accurac
 |---|---|---|
 | Heart | Indian hospital + UCI 4 sites, aligned encodings | 20% stratified; also report India-only and Cleveland-only AUC |
 | Liver | ILPD (India) + UCI HCV + Mayo PBC (UCI 878, all disease=1 on overlapping labs) | 20% stratified; report ILPD-only because HCV/Mayo are easier. No extra public ILPD-like labelled table. |
-| Diabetes | Pima 8-lab + Pabna 8-lab (Bangladesh, DOI 10.17632/vxnyysk9vc.3) + NHANES 2011–2023 adults (glucose/BMI/age/diastolic BP); NHANES negatives subsampled 1.8× so dummy ≪ 85% | Sylhet / Frankfurt clone / Iraqi HbA1c / DiaBD not pooled |
+| Diabetes | Pima 8-lab + Pabna 8-lab (Bangladesh, DOI 10.17632/vxnyysk9vc.3) + NHANES 2011–2023 adults (glucose/BMI/age/diastolic BP); NHANES negatives subsampled 2.0× so dummy ≪ 85% | Sylhet / Frankfurt clone / Iraqi HbA1c / DiaBD not pooled |
 | Kidney | **Served:** 4 labs (sc, bu, hemo, bp) on Tamil Nadu UCI 336 + Bangladesh UCI 857. 24-col hospital table is bake-off only — do not quote its ~100% as the chat score. | 20% stratified by source |
 
 ## Per-file audit
