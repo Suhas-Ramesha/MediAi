@@ -160,14 +160,39 @@ def load_liver() -> tuple[pd.DataFrame, pd.DataFrame]:
     return pool, core
 
 
+# Four labs the risk form actually types. The 24-column UCI CKD table is a
+# hospital dump the chat never collects — do not quote its ~100% score as served.
+KIDNEY_FORM_FEATURES = ["sc", "bu", "hemo", "bp"]
+
+
+def load_pabna() -> pd.DataFrame:
+    """Pabna Diabetes Hospital 8-lab table (Mendeley 10.17632/vxnyysk9vc.3)."""
+    path = DATA / "diabetes/processed/pabna_cleaned.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    pab = pd.read_csv(path).copy()
+    pab["source"] = "pabna"
+    return pab
+
+
 def load_diabetes() -> pd.DataFrame:
-    """Pima 8-lab form plus NHANES adults on the overlapping labs (glucose, BMI, age, diastolic BP)."""
+    """Pima 8-lab form plus Pabna (same 8 labs) plus NHANES adults on overlapping labs.
+
+    Pabna is the only extra public 8-lab table that is not a Pima clone. NHANES
+    supplies glucose/BMI/age/diastolic BP. Frankfurt (Pima row-clone), Iraqi
+    (HbA1c, not OGTT), and DiaBD (mmol/L fasting, overlap-only; hurt Pima
+    holdout in a smoke test) are not concatenated.
+    """
     pima = pd.read_csv(DATA / "diabetes/processed/pima_cleaned.csv")
     pima = pima.copy()
     pima["source"] = "pima"
+    parts = [pima]
+    pab = load_pabna()
+    if len(pab):
+        parts.append(pab)
     nh_path = DATA / "diabetes/raw/nhanes_2011_2023_diabetes_labs.csv"
     if not nh_path.exists():
-        return pima
+        return pd.concat(parts, ignore_index=True)
     nh = pd.read_csv(nh_path)
     adult = nh[
         (pd.to_numeric(nh["RIDAGEYR"], errors="coerce") >= 21)
@@ -191,7 +216,8 @@ def load_diabetes() -> pd.DataFrame:
             "source": "nhanes",
         }
     )
-    return pd.concat([pima, nh_part], ignore_index=True)
+    parts.append(nh_part)
+    return pd.concat(parts, ignore_index=True)
 
 
 def load_diabetes_sylhet() -> pd.DataFrame:

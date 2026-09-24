@@ -1,5 +1,5 @@
 {
-  "written_utc": "2026-09-22T10:46:51Z",
+  "written_utc": "2026-09-24T13:49:30Z",
   "ilpd": {
     "file": "liver/processed/ilpd_cleaned.csv",
     "n": 583,
@@ -37,6 +37,16 @@
       "not": 500
     },
     "pregnancies_zero_kept": 111
+  },
+  "pabna": {
+    "file": "diabetes/processed/pabna_cleaned.csv",
+    "n": 465,
+    "insulin_zeros_to_na": 334,
+    "class_balance": {
+      "disease": 372,
+      "not": 93
+    },
+    "skin_mm_median": 30.48
   },
   "ckd": {
     "file": "kidney/processed/ckd_tamil_nadu_cleaned.csv",

@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 import joblib
 from sklearn.model_selection import train_test_split
 
-from ml.data_prep import feature_target, load_kidney, load_liver
+from ml.data_prep import KIDNEY_FORM_FEATURES, feature_target, load_kidney, load_liver
 from ml.train_compare import (  # noqa: E402
     MODELS,
     RANDOM_STATE,
@@ -82,10 +82,12 @@ def export(name: str, df) -> Path:
 def export_kidney_form_model() -> Path:
     """4-lab CatBoost matching the risk modal (creatinine, urea, hemoglobin, BP)."""
     print("\n======== kidney catboost 4-lab (local form) ========")
-    params = _best_catboost_params(ROOT / "ml/artifacts/kidney_results.json")
+    form_results = ROOT / "ml/artifacts/kidney_form_results.json"
+    params_src = form_results if form_results.exists() else ROOT / "ml/artifacts/kidney_results.json"
+    params = _best_catboost_params(params_src)
     pool, _ = load_kidney()
     X, y = feature_target(pool)
-    X4 = X[["sc", "bu", "hemo", "bp"]]
+    X4 = X[KIDNEY_FORM_FEATURES]
     Xtr, Xho, ytr, yho = train_test_split(
         X4, y, test_size=0.2, stratify=y, random_state=RANDOM_STATE
     )

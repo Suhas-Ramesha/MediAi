@@ -1,0 +1,28 @@
+{
+  "title": "Type-2 Diabetes (Bangladeshi Patients) \u2014 Pabna Diabetes Hospital",
+  "source_url": "https://data.mendeley.com/datasets/vxnyysk9vc/3",
+  "doi": "10.17632/vxnyysk9vc.3",
+  "paper": "10.1016/j.heliyon.2024.e24536",
+  "license": "CC BY 4.0",
+  "geography": "Pabna, Bangladesh",
+  "india": false,
+  "south_asia": true,
+  "role": "Third diabetes source on the same 8-lab form as Pima (pregnancies, OGTT glucose, diastolic BP, skinfold, insulin, BMI, family-history score, age). Independent of Pima (0 overlapping glucose+age+BMI keys). Not the Frankfurt 2000-row file, which is a Pima clone. Skinfold in the raw file is stored as mm\u00d710 (25.4 cm-scale tenths); cleaning divides by 10. Insulin 0 and glucose 0 recoded to NA.",
+  "n": 465,
+  "columns": [
+    "No. of Pregnancy",
+    "Age",
+    "BMI",
+    "BP(Systolic)",
+    "BP(Diastolic)",
+    "DiabetesPedigreeFunction",
+    "Insulin",
+    "Skin Thickness(mm)",
+    "Outcome",
+    "Glucose "
+  ],
+  "bytes": 19625,
+  "sha256": "32accf91b848c2c5e79aab8d5c8e079a73f2ffab7d61b3f79bc76a1b4c98abd8",
+  "downloaded_utc": "2026-09-24T13:49:29Z",
+  "local_path": "data/diabetes/raw/mendeley_vxnyysk9vc_pabna_diabetes.csv"
+}

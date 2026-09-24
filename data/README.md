@@ -15,8 +15,8 @@ same-schema tables are stored for **pooled training** (not a single combined mul
 |---|---|---|---|
 | Heart | Mendeley Indian hospital (DOI 10.17632/dzz48mvjht.1, n≈1000) | UCI Cleveland + Hungary + Switzerland + VA Long Beach | Cleveland 13 features |
 | Liver | UCI ILPD, Andhra Pradesh (DOI 10.24432/C5D02C) | UCI HCV (Germany) + Mayo PBC (UCI 878) | ILPD panel |
-| Diabetes | No public Indian 8-lab table found | Pima (US, form match) + NHANES 2011–2023 overlapping labs; Sylhet Bangladesh (symptoms, not poolable) | Pima 8 labs |
-| Kidney | UCI CKD, Karaikudi, Tamil Nadu (DOI 10.24432/C5G020) | UCI 857 Bangladesh (pooled; BP left missing) | 4 labs ⊂ 24 UCI columns |
+| Diabetes | Pabna Bangladesh 8-lab (DOI 10.17632/vxnyysk9vc.3); no public Indian 8-lab table | Pima (US, form match) + NHANES 2011–2023 overlapping labs; Sylhet Bangladesh (symptoms, not poolable) | Pima 8 labs |
+| Kidney | UCI CKD, Karaikudi, Tamil Nadu (DOI 10.24432/C5G020) | UCI 857 Bangladesh (pooled; BP left missing) | **Served = 4 labs**, not the 24-col hospital table |
 
 ## Files
 
@@ -84,6 +84,10 @@ same-schema tables are stored for **pooled training** (not a single combined mul
   source: CDC/NCHS NHANES packaged at https://zenodo.org/records/21051814  
   license: NCHS public-use · DOI: 10.5281/zenodo.20299025  
   role: second diabetes source; DIQ010 0 vs 2; subsample negatives 1.8× in `ml/data_prep.py`
+- `diabetes/raw/mendeley_vxnyysk9vc_pabna_diabetes.csv` — Pabna Diabetes Hospital 8-lab (women ≥21)  
+  source: https://data.mendeley.com/datasets/vxnyysk9vc/3  
+  license: CC BY 4.0 · DOI: 10.17632/vxnyysk9vc.3  
+  role: third diabetes source, same 8 labs as the form; not a Pima clone
 
 ### kidney
 
@@ -101,9 +105,9 @@ same-schema tables are stored for **pooled training** (not a single combined mul
 Holdout accuracy target is **≥ 85%**, and it must beat the majority-class dummy:
 
 - Heart: India + UCI 4 sites (already ≥ 85% on the 13-field form).
-- Liver: ILPD + HCV + Mayo PBC. ILPD-only is harder — quote pooled **and** ILPD-by-source.
-- Diabetes: Pima cannot hit 85% on a proper holdout (~74%). NHANES adults are pooled on glucose/BMI/age/BP; negatives subsampled so dummy ≈ 65%.
-- Kidney: Tamil Nadu + Bangladesh. UCI CKD is nearly separable; near-1.0 is a property of the table.
+- Liver: ILPD + HCV + Mayo PBC. ILPD-only is harder (~70%) — quote pooled **and** ILPD-by-source. No extra public ILPD-like labelled table was found.
+- Diabetes: Pima cannot hit 85% on a proper holdout (~74%). Pabna (same 8 labs, South Asia) is pooled. NHANES adults are pooled on glucose/BMI/age/BP; negatives subsampled so dummy ≈ 65%. Frankfurt clone / Iraqi HbA1c / DiaBD were inspected and rejected.
+- Kidney: **quote the 4-lab served CatBoost**, not the 24-column TabPFN ~100%. Tamil Nadu + Bangladesh. UCI CKD’s 24-col near-1.0 is a property of that hospital table, which the chat never collects.
 
 Do not commit `nhanes_full.csv` (≈57MB). Rebuild the column subset with `python -m ml.persist_extra_sources`.
 

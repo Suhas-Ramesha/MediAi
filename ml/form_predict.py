@@ -4,8 +4,9 @@ The UI strings/slider names are not the same as the training columns.
 This module is the single translation layer used by eval scripts and the ML service.
 
 Serving uses CatBoost for all four diseases so a 4GB laptop can run locally
-(no PyTorch / TabPFN). Liver and kidney TabPFN won the bake-off on CV-AUC,
-but CatBoost already clears the 85% holdout gate and the joblib files are <1MB.
+(no PyTorch / TabPFN). Kidney TabPFN ~100% is the 24-column hospital table
+the chat never collects; the served file is the 4-lab CatBoost (sc, bu, hemo, bp).
+Liver CatBoost already clears the 85% pooled holdout; ILPD-only is harder.
 """
 from __future__ import annotations
 

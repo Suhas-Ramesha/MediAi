@@ -19,9 +19,9 @@ Incompatible schemas are stored but **not concatenated**. Quoted holdout accurac
 | Disease | Pooled training rows (plan) | Held out / extra |
 |---|---|---|
 | Heart | Indian hospital + UCI 4 sites, aligned encodings | 20% stratified; also report India-only and Cleveland-only AUC |
-| Liver | ILPD (India) + UCI HCV + Mayo PBC (UCI 878, all disease=1 on overlapping labs) | 20% stratified; report ILPD-only because HCV/Mayo are easier |
-| Diabetes | Pima 8-lab + NHANES 2011–2023 adults (glucose/BMI/age/diastolic BP); NHANES negatives subsampled 1.8× so dummy ≪ 85% | Sylhet early-stage as a separate symptom-schema check, not a pool |
-| Kidney | Tamil Nadu UCI 336 + Bangladesh UCI 857 on intersecting columns (Bangladesh BP left missing) | 20% stratified by source |
+| Liver | ILPD (India) + UCI HCV + Mayo PBC (UCI 878, all disease=1 on overlapping labs) | 20% stratified; report ILPD-only because HCV/Mayo are easier. No extra public ILPD-like labelled table. |
+| Diabetes | Pima 8-lab + Pabna 8-lab (Bangladesh, DOI 10.17632/vxnyysk9vc.3) + NHANES 2011–2023 adults (glucose/BMI/age/diastolic BP); NHANES negatives subsampled 1.8× so dummy ≪ 85% | Sylhet / Frankfurt clone / Iraqi HbA1c / DiaBD not pooled |
+| Kidney | **Served:** 4 labs (sc, bu, hemo, bp) on Tamil Nadu UCI 336 + Bangladesh UCI 857. 24-col hospital table is bake-off only — do not quote its ~100% as the chat score. | 20% stratified by source |
 
 ## Per-file audit
 
@@ -101,6 +101,17 @@ Incompatible schemas are stored but **not concatenated**. Quoted holdout accurac
 - columns (9): `['preg', 'plas', 'pres', 'skin', 'insu', 'mass', 'pedi', 'age', 'class']`
 - missing (non-zero only): `{}`
 - zeros that may be missing: `{'plas': 5, 'pres': 35, 'skin': 227, 'insu': 374, 'mass': 11, 'pedi': 0, 'age': 0}`
+
+### diabetes — `mendeley_vxnyysk9vc_pabna_diabetes.csv`
+
+- rows: **465**
+- geography: Pabna, Bangladesh · india=False · south_asia=True
+- target: Outcome (1=diabetic, 0=not)
+- class balance: `{'1': 372, '0': 93}`
+- columns (10): `['No. of Pregnancy', 'Age', 'BMI', 'BP(Systolic)', 'BP(Diastolic)', 'DiabetesPedigreeFunction', 'Insulin', 'Skin Thickness(mm)', 'Outcome', 'Glucose']`
+- DOI: 10.17632/vxnyysk9vc.3 · paper: 10.1016/j.heliyon.2024.e24536 · license: CC BY 4.0
+- overlap with Pima on (glucose, age, BMI): **0** (not a clone)
+- cleaning: skinfold ÷10; insulin 0 → NA (334 rows); pedigree 0–8 mapped onto the form’s 0–2.5 slider; BP = diastolic
 
 ### diabetes — `ucimlrepo_id529_early_stage_diabetes_sylhet.csv`
 
@@ -219,7 +230,23 @@ MediAI currently collects sc, bu, hemo, bp (+ sex/lifestyle). Other columns are 
 2. Indian heart has no `thal`; product form has `thal` — keep as optional/missing.
 3. Indian heart vs Cleveland: **0 overlapping rows** on age+BP+cholesterol+max HR (checked). Not a Cleveland clone.
 4. Pima is **not** an Indian dataset. NMB-2017 (7496 Indians, DOI 10.17632/twp8xw6p25.1) exists but uses HbA1c/waist/self-report, not the 8 form labs, and Mendeley did not yield a file without a browser session.
-5. Pabna Bangladesh (DOI 10.17632/vxnyysk9vc.2) is Pima-like and would be a valid extra pool if a raw file becomes available; it was not downloaded this run.
-6. UCI CKD missingness-as-label is **blocked in processed data** (class-blind impute, no missing flags). Do not reintroduce `_was_missing` columns in training.
+5. Pabna Bangladesh (DOI 10.17632/vxnyysk9vc.3) **is pooled**. Same 8 labs as Pima; 0 overlapping glucose+age+BMI keys.
+6. UCI CKD missingness-as-label is **blocked in processed data** (class-blind impute, no missing flags). Do not reintroduce `_was_missing` columns in training. The **served** kidney model is the 4 labs the form types, not the 24-column hospital table.
 7. These classifiers are not diagnoses.
+
+## Rejected extra sources (this accuracy pass)
+
+Looked for more form-native rows. These were downloaded or inspected and **not** concatenated:
+
+| Table | Why it is out |
+|---|---|
+| Frankfurt Hospital 2000-row diabetes.csv | 1981/2000 rows are exact 8-feature copies of Pima (clone). Internal dups too. |
+| Iraqi Mendeley diabetes (HbA1c, lipids, urea, creatinine) | Not the 8-lab OGTT form. Using HbA1c as a feature leaks the diagnosis. |
+| DiaBD, Mendeley 10.17632/m8cgwxs9s6.3 (5288 Bangladesh) | Glucose in mmol/L, overlap-only labs (no skin/insulin/pregnancies). CatBoost smoke test dropped Pima holdout vs Pima+Pabna+NHANES. |
+| Sylhet early-stage (UCI 529) | 16 symptom questions, not labs. Stored, not pooled. |
+| NHANES MCQ160L “ever liver condition” + LFT | Dropped ILPD-by-source from ~71% into the 60s. Questionnaire label is too noisy. |
+| ILPD concatenated ×3 | Fake 92% ILPD holdout from the same row in train and test. |
+| IEEE DataPort 51-row Indian CLD (10.21227/4pbz-9n94) | Login-walled; all 51 rows are confirmed disease. |
+| BUPA UCI liver disorders | Different 6-lab schema; selector is not the ILPD liver-patient label. |
+| NidaanKosha 100k Indian labs | No disease label, so it cannot supervise a classifier. |
 

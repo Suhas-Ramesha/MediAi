@@ -416,32 +416,43 @@ def acquire_diabetes() -> list[dict[str, Any]]:
         }
     )
 
-    # Optional Pabna hospital table (Pima-like schema, Bangladesh) if a public file appears later.
-    pabna_attempts = [
-        "https://raw.githubusercontent.com/ShariaArfinTanim/Type-2-Diabetes/main/diabetes.csv",
-        "https://raw.githubusercontent.com/alrafiaurnob/Type-2-Diabetes/main/dataset.csv",
-    ]
-    for url in pabna_attempts:
-        try:
-            b = fetch(url)
-            if b.startswith(b"404") or b.startswith(b"Not Found") or len(b) < 200:
-                continue
-            write_raw(
-                raw / "pabna_bangladesh_attempt.csv",
-                b,
-                {
-                    "title": "Attempted Pabna Diabetes Hospital table",
-                    "source_url": url,
-                    "doi": "10.17632/vxnyysk9vc.2",
-                    "geography": "Pabna, Bangladesh",
-                    "india": False,
-                    "south_asia": True,
-                    "role": "Same-schema extra source IF this is the genuine hospital file (verify vs Pima duplication).",
-                },
-            )
-            break
-        except Exception:
-            continue
+    pabna_url = (
+        "https://data.mendeley.com/public-files/datasets/vxnyysk9vc/files/"
+        "9eaad8bb-97bb-49ca-9301-886adf06af4e/file_downloaded"
+    )
+    try:
+        pb = fetch(pabna_url)
+        write_raw(
+            raw / "mendeley_vxnyysk9vc_pabna_diabetes.csv",
+            pb,
+            {
+                "title": "Type-2 Diabetes (Bangladeshi Patients) — Pabna Diabetes Hospital",
+                "source_url": "https://data.mendeley.com/datasets/vxnyysk9vc/3",
+                "doi": "10.17632/vxnyysk9vc.3",
+                "paper": "10.1016/j.heliyon.2024.e24536",
+                "license": "CC BY 4.0",
+                "geography": "Pabna, Bangladesh",
+                "india": False,
+                "south_asia": True,
+                "role": "Same 8-lab form as Pima. Not a Pima clone (0 overlapping glucose+age+BMI keys).",
+            },
+        )
+        pdf_p = load_csv_bytes(pb)
+        records.append(
+            {
+                "disease": "diabetes",
+                "file": "mendeley_vxnyysk9vc_pabna_diabetes.csv",
+                "n": int(len(pdf_p)),
+                "columns": list(map(str, pdf_p.columns)),
+                "target": "Outcome",
+                "class_balance_raw": balance(pdf_p["Outcome"]) if "Outcome" in pdf_p.columns else {},
+                "missing": missing_report(pdf_p),
+                "india": False,
+                "geography": "Pabna, Bangladesh",
+            }
+        )
+    except Exception as exc:
+        print(f"Pabna download skipped: {exc}", file=sys.stderr)
     return records
 
 
@@ -531,9 +542,9 @@ def render_readme(audits: list[dict[str, Any]]) -> str:
         "| Disease | India / South Asia | Extra same-schema sources | Product form |",
         "|---|---|---|---|",
         "| Heart | Mendeley Indian hospital (DOI 10.17632/dzz48mvjht.1, n≈1000) | UCI Cleveland + Hungary + Switzerland + VA Long Beach | Cleveland 13 features |",
-        "| Liver | UCI ILPD, Andhra Pradesh (DOI 10.24432/C5D02C) | UCI HCV (Germany) — overlapping labs | ILPD panel |",
-        "| Diabetes | No public Indian 8-lab table found | Pima (US, form match) + Sylhet Bangladesh (symptoms, not poolable) | Pima 8 labs |",
-        "| Kidney | UCI CKD, Karaikudi, Tamil Nadu (DOI 10.24432/C5G020) | UCI 857 Bangladesh | 4 labs ⊂ 24 UCI columns |",
+        "| Liver | UCI ILPD, Andhra Pradesh (DOI 10.24432/C5D02C) | UCI HCV (Germany) + Mayo PBC (UCI 878) | ILPD panel |",
+        "| Diabetes | No public Indian 8-lab table; Pabna Bangladesh is the extra 8-lab source | Pima (US) + Pabna (same 8 labs) + NHANES overlapping labs; Sylhet symptoms not poolable | Pima 8 labs |",
+        "| Kidney | UCI CKD, Karaikudi, Tamil Nadu (DOI 10.24432/C5G020) | UCI 857 Bangladesh (pooled; BP left missing) | Served model = 4 labs, not the 24-col hospital table |",
         "",
         "## Files",
         "",
@@ -659,9 +670,9 @@ def render_audit(audits: list[dict[str, Any]]) -> str:
         "| Disease | Pooled training rows (plan) | Held out / extra |",
         "|---|---|---|",
         "| Heart | Indian hospital + UCI 4 sites, aligned encodings | 20% stratified by source; also report India-only and Cleveland-only AUC |",
-        "| Liver | ILPD (India) as the full-schema core; HCV rows appended with ILPD-only labs set missing | HCV-only external score |",
-        "| Diabetes | Pima only for the product 8-lab model (no second India 8-lab table) | Sylhet early-stage as a separate symptom-schema check, not a pool |",
-        "| Kidney | Tamil Nadu UCI 336 + Bangladesh UCI 857 on intersecting columns | 20% stratified by source |",
+        "| Liver | ILPD (India) + UCI HCV + Mayo PBC. Quote pooled AND ILPD-by-source | No extra public ILPD-like labelled table found |",
+        "| Diabetes | Pima 8-lab + Pabna 8-lab + NHANES overlapping labs | Sylhet symptoms / Frankfurt clone / Iraqi HbA1c / DiaBD not pooled |",
+        "| Kidney | Served = 4 labs (sc, bu, hemo, bp). 24-col hospital table is bake-off only | 20% stratified by source |",
         "",
         "## Per-file audit",
         "",
@@ -692,7 +703,7 @@ def render_audit(audits: list[dict[str, Any]]) -> str:
     lines.append("2. Indian heart has no `thal`; product form has `thal` — keep as optional/missing.")
     lines.append("3. Check whether the Indian heart file duplicates UCI Cleveland rows (synthetic-clone risk).")
     lines.append("4. Pima is **not** an Indian dataset. NMB-2017 (7496 Indians, DOI 10.17632/twp8xw6p25.1) exists but uses HbA1c/waist/self-report, not the 8 form labs, and Mendeley did not yield a file without a browser session.")
-    lines.append("5. Pabna Bangladesh (DOI 10.17632/vxnyysk9vc.2) is Pima-like and would be a valid extra pool if a raw file becomes available; it was not downloaded this run.")
+    lines.append("5. Pabna Bangladesh (DOI 10.17632/vxnyysk9vc.3) is pooled: same 8 labs as Pima, 0 overlapping keys. Frankfurt 2000-row file is a Pima clone (rejected). Iraqi uses HbA1c not OGTT (rejected). DiaBD is mmol/L fasting overlap-only and dropped Pima holdout in a smoke test (rejected).")
     lines.append("6. UCI CKD missingness may itself leak the label — Phase 3 must report complete-case vs missing-indicator.")
     lines.append("7. These classifiers are not diagnoses.")
     lines.append("")
