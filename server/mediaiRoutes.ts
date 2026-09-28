@@ -250,17 +250,46 @@ export function registerMediaiRoutes(app: Express): void {
     if (!words.length || !draft) {
       return res.status(400).json({ error: "missing_source" });
     }
+
+    const applied = words.flatMap((w) => applyColloquialMap(w).mappings);
+    const mlUrl = process.env.ML_SERVICE_URL || "http://127.0.0.1:5050";
+
+    // 1. Primary: Local Python ML Service NLP Engine
+    try {
+      const nlpRes = await fetch(`${mlUrl}/synthesize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patient_words: words,
+          engine_draft: draft,
+          mappings,
+        }),
+      }).catch(() => null);
+
+      if (nlpRes && nlpRes.ok) {
+        const nlpData = (await nlpRes.json()) as { synthesis?: string };
+        const text = String(nlpData.synthesis || "").trim();
+        if (text) {
+          assertMappedSourcing(text, words, applied);
+          return res.json({ synthesis: text, source: "nlp" });
+        }
+      }
+    } catch (nlpErr: unknown) {
+      console.warn("[handoff/phrase] Local ML NLP attempt had warning:", nlpErr);
+    }
+
+    // 2. Secondary fallback: Gemini API
     try {
       const text = await generateBriefPhrase({
         patientWords: words,
         engineDraft: draft,
         mappings,
       });
-      const applied = words.flatMap((w) => applyColloquialMap(w).mappings);
       assertMappedSourcing(text, words, applied);
       res.json({ synthesis: text, source: "gemini" });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "phrase_failed";
+      console.warn("[handoff/phrase] phrase generation/sourcing issue:", message);
       res.status(422).json({ error: message, synthesis: draft, source: "engine" });
     }
   });

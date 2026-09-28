@@ -23,7 +23,7 @@ export default defineConfig(async ({ mode }) => {
           rewrite: () => "/predict",
         },
         "/api": {
-          target: "http://127.0.0.1:5000",
+          target: `http://127.0.0.1:${env.SERVER_PORT || env.PORT || "5001"}`,
           changeOrigin: true,
         },
       },
@@ -47,6 +47,7 @@ export default defineConfig(async ({ mode }) => {
         "@shared": path.resolve(__dirname, "shared"),
       },
     },
+    envDir: __dirname,
     root: path.resolve(__dirname, "client"),
     build: {
       outDir: path.resolve(__dirname, "dist/public"),

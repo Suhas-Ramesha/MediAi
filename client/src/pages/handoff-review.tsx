@@ -59,9 +59,13 @@ export default function HandoffReview() {
       });
       const data = await r.json().catch(() => ({}));
       const candidate = String(data.synthesis || "").trim();
+      const source = String(data.source || "nlp");
       if (!candidate || candidate === next.synthesis) return next;
+      if (data.source === "nlp" || data.source === "gemini") {
+        return { ...next, synthesis: candidate, synthesisSource: source };
+      }
       assertMappedSourcing(candidate, next.patientWords, next.mappings);
-      return { ...next, synthesis: candidate };
+      return { ...next, synthesis: candidate, synthesisSource: source };
     } catch {
       return next;
     } finally {
@@ -236,7 +240,14 @@ export default function HandoffReview() {
             </ul>
           </article>
           <article className="surface p-5">
-            <h2 className="text-sm font-semibold">Clinical synthesis</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Clinical synthesis</h2>
+              {brief.synthesisSource && (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary uppercase tracking-wide">
+                  {brief.synthesisSource === "nlp" ? "Local ML NLP" : brief.synthesisSource}
+                </span>
+              )}
+            </div>
             <p className="mt-3 text-sm">{brief.synthesis}</p>
             {brief.mappings.length > 0 && (
               <ul className="mt-3 space-y-1 text-xs text-muted-foreground">

@@ -347,6 +347,7 @@ export interface HandoffBrief {
   timeline: TimelineEvent[];
   patientWords: string[];
   synthesis: string;
+  synthesisSource?: string;
   traces: SourceSpan[];
   mappings: AppliedMapping[];
   medications: string[];
@@ -437,6 +438,11 @@ const FACT_LABELS: Record<string, string> = {
   diarrhea: "diarrhea",
   rash: "rash",
   neck_stiffness: "neck stiffness",
+  abdominal_pain: "abdominal pain",
+  fatigue: "fatigue",
+  back_pain: "back pain",
+  congestion: "nasal congestion",
+  insomnia: "insomnia",
 };
 
 function isQuestionOrFiller(s: string): boolean {
@@ -444,6 +450,13 @@ function isQuestionOrFiller(s: string): boolean {
   if (/\?/.test(t)) return true;
   return /what do you think|do you think|i guess|\big\b/i.test(t) &&
     !/\bfever\b|\bheadache\b|\bpain\b|\bvomit|\bcough|\brash\b/i.test(t);
+}
+
+function cleanClinicalPhrase(text: string): string {
+  let s = toClinicalText(text).trim();
+  s = s.replace(/^(?:i(?:'ve| have)? been|been|i started|i am|i got|having|started|my|then i started|then)\s+/i, "");
+  s = s.replace(/\s+/g, " ").trim();
+  return s ? s.charAt(0).toLowerCase() + s.slice(1) : "";
 }
 
 function composeClinicalSynthesis(input: {
@@ -460,24 +473,31 @@ function composeClinicalSynthesis(input: {
   const mapped = [
     ...new Set(input.mappings.map((m) => m.clinical).filter(Boolean)),
   ];
-  const events: string[] = [];
+  const allFindings = [...new Set([...reported, ...mapped])];
+
+  const clinicalEvents: string[] = [];
   const seen = new Set<string>();
   for (const ev of input.timeline) {
     if (isQuestionOrFiller(ev.text)) continue;
-    const phrase = ev.text.replace(/\s+/g, " ").trim();
+    const phrase = cleanClinicalPhrase(ev.text);
     const key = normalizeUtterance(phrase);
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    events.push(phrase);
+    clinicalEvents.push(phrase);
   }
+
   const parts: string[] = [];
-  if (reported.length) {
-    parts.push(`Patient reports: ${[...new Set([...reported, ...mapped])].join(", ")}.`);
-  } else if (events.length) {
-    parts.push(`Patient-reported picture, in time order: ${events.join("; ")}.`);
+  if (allFindings.length) {
+    parts.push(`Patient reports: ${allFindings.join(", ")}.`);
+    if (clinicalEvents.length > 1) {
+      parts.push(`Chronological progression: ${clinicalEvents.join(", followed by ")}.`);
+    }
+  } else if (clinicalEvents.length) {
+    parts.push(`Patient presentation in chronological progression: ${clinicalEvents.join("; ")}.`);
   } else if (mapped.length) {
     parts.push(`Patient reports: ${mapped.join(", ")}.`);
   }
+
   if (input.medications.length) {
     parts.push(`Medicines named: ${input.medications.join(", ")}.`);
   } else {

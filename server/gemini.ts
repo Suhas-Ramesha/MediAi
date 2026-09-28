@@ -1,4 +1,10 @@
-const GEMINI_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest"];
+const GEMINI_MODELS = [
+  "gemini-3.1-flash-lite",
+  "gemini-flash-latest",
+  "gemini-flash-lite-latest",
+  "gemini-3.8-flash",
+  "gemini-3.7-flash",
+];
 
 const HEALTH_CHAT_INSTRUCTIONS = `You are an AI Health Assistant in a healthcare app. Rules you must follow:
 - Offer possible explanations and practical self-care. You may name likely conditions as working impressions.
@@ -47,38 +53,42 @@ async function generateContent(
   systemInstruction?: string,
 ): Promise<string> {
   const key = apiKey();
+  const allParts = systemInstruction
+    ? [{ text: `${systemInstruction}\n\n` }, ...parts]
+    : parts;
   const body: Record<string, unknown> = {
-    contents: [{ role: "user", parts }],
+    contents: [{ role: "user", parts: allParts }],
     generationConfig: {
-      temperature: 0.4,
+      temperature: 0.3,
       maxOutputTokens: 2048,
     },
   };
-  if (systemInstruction) {
-    body.systemInstruction = { parts: [{ text: systemInstruction }] };
-  }
 
   let lastError = "Gemini request failed";
   for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": key,
-      },
-      body: JSON.stringify(body),
-    });
-    const json = await res.json().catch(() => ({}));
-    if (res.ok) {
-      const text = extractText(json);
-      if (text) return text;
-      lastError = "Empty response from AI";
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": key,
+        },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const text = extractText(json);
+        if (text) return text;
+        lastError = "Empty response from AI";
+        continue;
+      }
+      lastError = json?.error?.message || `Gemini ${res.status}`;
+      continue;
+    } catch (e: any) {
+      lastError = e?.message || "Gemini connection error";
       continue;
     }
-    lastError = json?.error?.message || `Gemini ${res.status}`;
-    if (res.status === 404) continue;
-    throw new Error(lastError);
   }
   throw new Error(lastError);
 }
@@ -144,13 +154,16 @@ Keep it concise but complete and easy to scan.`;
     .trim();
 }
 
-const BRIEF_PHRASE_INSTRUCTIONS = `You rewrite a patient visit brief. Rules:
-- Use ONLY facts present in the patient's words or the provided mapping list.
-- Do not add symptoms, medicines, or times that are not in the source.
-- Deduplicate repeated sentences. Do not paste the chat verbatim.
-- Write 3-6 short clinical sentences: timeline, named medicines, red-flag phrases if present.
-- Prefer the mapped clinical terms (fever, vomiting) over slang, but do not invent extra terms.
-- If something is unclear, omit it rather than guess.`;
+const BRIEF_PHRASE_INSTRUCTIONS = `You are an expert clinical documentation scribe preparing a physician-facing intake brief from a patient's colloquial description.
+Rules:
+- Transform the patient's informal words and colloquial descriptions into a cohesive, professional clinical narrative.
+- Summarize chief complaint, timeline (e.g., began yesterday, ongoing for 2 days), and clinical symptom progression.
+- Rephrase informal/slang terms into standard clinical terminology (e.g. "running a temp" -> fever, "throat is killing me" -> severe sore throat, "throwing up" -> vomiting, "belly hurts" -> abdominal pain).
+- Explicitly state any named medications or state that no medications were reported.
+- If red-flag symptoms are present in the patient words, mention them. If no red flags are mentioned, state "No red-flag symptoms were reported." Do NOT invent or enumerate unmentioned negative diseases or symptoms (do NOT say "no dyspnea or chest pain").
+- Do NOT repeat the patient's informal words verbatim. Rephrase them into 2 to 3 concise, high-yield clinical sentences.
+- Ground all facts strictly in the patient's statements without fabricating unmentioned conditions.
+- CRITICAL: Return ONLY the direct clinical brief narrative. Do NOT include greetings, intro phrases, bullet points, numbered options, or headings (no "Here is...", no "Option 1").`;
 
 export async function generateBriefPhrase(input: {
   patientWords: string[];
@@ -159,16 +172,16 @@ export async function generateBriefPhrase(input: {
 }): Promise<string> {
   const prompt = `${BRIEF_PHRASE_INSTRUCTIONS}
 
-Patient words:
+Patient words (informal statements):
 ${input.patientWords.map((w, i) => `${i + 1}. ${w}`).join("\n")}
 
-Engine draft (may be used as a scaffold, not copied blindly):
+Baseline engine draft:
 ${input.engineDraft}
 
-Allowed mapped terms:
+Mapped clinical terms:
 ${input.mappings.join(", ") || "(none)"}
 
-Write the synthesis now.`;
+Write the finalized clinical brief narrative now:`;
   return generateContent([{ text: prompt }], BRIEF_PHRASE_INSTRUCTIONS);
 }
 

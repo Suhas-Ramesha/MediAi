@@ -98,12 +98,10 @@ try {
   
   console.log("Firebase successfully initialized");
 } catch (error) {
-  console.error("Firebase initialization error details:", error);
+  console.warn("Firebase initialization warning:", error);
   if (error instanceof Error) {
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
+    console.warn("Error message:", error.message);
   }
-  throw new Error("Failed to initialize Firebase. Please check your configuration.");
 }
 
 export { app, db, storage, auth, googleProvider };

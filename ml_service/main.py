@@ -318,3 +318,21 @@ def predict(req: PredictRequest) -> dict[str, Any]:
         "modelSource": f"local_{scored.get('algorithm')}_treeshap",
         "probability": round(float(scored["probability"]), 4),
     }
+
+
+class SynthesizeRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+    patient_words: list[str] = Field(default_factory=list, alias="patientWords")
+    engine_draft: str | None = Field(None, alias="engineDraft")
+    mappings: list[str] | None = None
+
+
+@app.post("/synthesize")
+def synthesize(req: SynthesizeRequest) -> dict[str, Any]:
+    from ml_service.nlp_synthesis import synthesize_clinical_brief
+
+    words = req.patient_words
+    result = synthesize_clinical_brief(words)
+    return result
+
