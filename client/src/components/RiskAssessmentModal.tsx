@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,51 @@ export interface RiskAssessmentModalProps {
   onSubmit: (payload: Record<string, number | string>) => void;
   isSubmitting?: boolean;
 }
+
+const DEFAULT_DIABETES = {
+  pregnancies: 0,
+  glucose: 85,
+  bp: 70,
+  skin: 20,
+  insulin: 12,
+  bmi: 22.5,
+  pedigree: 0.18,
+  age: 30,
+};
+
+const DEFAULT_HEART = {
+  age: 35,
+  cp: "No chest pain or tightness",
+  trestbps: 118,
+  chol: 180,
+  fbs: "No (under 120 mg/dl)",
+  restecg: "Normal",
+  thalach: 165,
+  exang: "No",
+  oldpeak: 0.0,
+  slope: "Upsloping",
+  ca: "0",
+  thal: "Normal",
+};
+
+const DEFAULT_LIVER = {
+  Age: 35,
+  Total_Bilirubin: 0.8,
+  Direct_Bilirubin: 0.2,
+  Alkaline_Phosphotase: 75,
+  Alamine_Aminotransferase: 22,
+  Aspartate_Aminotransferase: 24,
+  Total_Protiens: 7.2,
+  Albumin: 4.5,
+  Albumin_and_Globulin_Ratio: 1.3,
+};
+
+const DEFAULT_KIDNEY = {
+  creatinine: 0.9,
+  urea: 35,
+  hemoglobin: 15.0,
+  bp: 75,
+};
 
 const CP_OPTIONS = [
   { value: "No chest pain or tightness", label: "No chest pain or tightness" },
@@ -89,6 +134,8 @@ const CA_OPTIONS = [
 function SliderField({
   label,
   hint,
+  badge,
+  badgeType = "neutral",
   min,
   max,
   step,
@@ -97,6 +144,8 @@ function SliderField({
 }: {
   label: string;
   hint?: string;
+  badge?: string;
+  badgeType?: "higher-is-healthy" | "lower-is-healthy" | "neutral";
   min: number;
   max: number;
   step: number;
@@ -104,15 +153,29 @@ function SliderField({
   onChange: (v: number) => void;
 }) {
   const shown = Number.isInteger(step) && step >= 1 ? value : Number(value.toFixed(2));
+  const badgeClasses =
+    badgeType === "higher-is-healthy"
+      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+      : badgeType === "lower-is-healthy"
+        ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/25"
+        : "bg-muted text-muted-foreground border-border/50";
+
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between gap-3 text-sm">
-        <div>
-          <Label>{label}</Label>
-          {hint ? <p className="mt-0.5 text-xs font-normal text-muted-foreground">{hint}</p> : null}
+    <div className="space-y-2 rounded-xl border border-border/50 bg-card/60 p-3 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Label className="font-semibold text-foreground">{label}</Label>
+          {badge ? (
+            <span className={`inline-flex items-center text-[10.5px] font-medium px-2 py-0.5 rounded-full border ${badgeClasses}`}>
+              {badge}
+            </span>
+          ) : null}
         </div>
-        <span className="shrink-0 tabular-nums text-muted-foreground">{shown}</span>
+        <span className="shrink-0 font-mono font-semibold text-foreground bg-muted/80 px-2 py-0.5 rounded text-xs self-start sm:self-auto">
+          {shown}
+        </span>
       </div>
+      {hint ? <p className="text-xs font-normal text-muted-foreground leading-relaxed">{hint}</p> : null}
       <Slider min={min} max={max} step={step} value={[value]} onValueChange={([v]) => onChange(v)} />
     </div>
   );
@@ -132,10 +195,10 @@ function Choice({
   options: readonly { value: string; label: string }[];
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 rounded-xl border border-border/50 bg-card/60 p-3 shadow-xs">
       <div>
-        <Label>{label}</Label>
-        {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
+        <Label className="font-semibold text-foreground">{label}</Label>
+        {hint ? <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{hint}</p> : null}
       </div>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger>
@@ -161,51 +224,21 @@ export function RiskAssessmentModal({
   isSubmitting,
 }: RiskAssessmentModalProps) {
   const [sex, setSex] = useState<"male" | "female">("male");
+  const [diabetes, setDiabetes] = useState(DEFAULT_DIABETES);
+  const [heart, setHeart] = useState(DEFAULT_HEART);
+  const [liver, setLiver] = useState(DEFAULT_LIVER);
+  const [kidney, setKidney] = useState(DEFAULT_KIDNEY);
 
-  const [diabetes, setDiabetes] = useState({
-    pregnancies: 0,
-    glucose: 100,
-    bp: 70,
-    skin: 20,
-    insulin: 80,
-    bmi: 25,
-    pedigree: 0.5,
-    age: 30,
-  });
-
-  const [heart, setHeart] = useState({
-    age: 54,
-    cp: "No chest pain or tightness",
-    trestbps: 130,
-    chol: 240,
-    fbs: "I don't have this number",
-    restecg: "I don't know",
-    thalach: 150,
-    exang: "No",
-    oldpeak: 1.0,
-    slope: "I don't know",
-    ca: "0",
-    thal: "I don't know",
-  });
-
-  const [liver, setLiver] = useState({
-    Age: 45,
-    Total_Bilirubin: 1.2,
-    Direct_Bilirubin: 0.4,
-    Alkaline_Phosphotase: 200,
-    Alamine_Aminotransferase: 40,
-    Aspartate_Aminotransferase: 35,
-    Total_Protiens: 6.5,
-    Albumin: 3.5,
-    Albumin_and_Globulin_Ratio: 1.2,
-  });
-
-  const [kidney, setKidney] = useState({
-    creatinine: 1,
-    urea: 30,
-    hemoglobin: 14,
-    bp: 80,
-  });
+  // Automatically start all slider values from normal reference values when opened
+  useEffect(() => {
+    if (open) {
+      setDiabetes(DEFAULT_DIABETES);
+      setHeart(DEFAULT_HEART);
+      setLiver(DEFAULT_LIVER);
+      setKidney(DEFAULT_KIDNEY);
+      setSex("male");
+    }
+  }, [open, disease]);
 
   const title = useMemo(() => {
     switch (disease) {
@@ -343,55 +376,67 @@ export function RiskAssessmentModal({
                 />
               )}
               <SliderField
-                label="Blood sugar (glucose)"
-                hint="From a lab slip, in mg/dL. Around 70–99 is often usual when fasting."
-                min={50}
-                max={200}
+                label="Fasting blood sugar (glucose)"
+                hint="Blood sugar after an overnight fast (mg/dL). Normal fasting range on lab reports is 70–99."
+                badge="Lower is healthier · Normal: 70–99"
+                badgeType="lower-is-healthy"
+                min={70}
+                max={240}
                 step={1}
                 value={diabetes.glucose}
                 onChange={(v) => setDiabetes((d) => ({ ...d, glucose: v }))}
               />
               <SliderField
                 label="Blood pressure"
-                hint="A cuff reading, in mm Hg."
-                min={40}
-                max={120}
+                hint="Resting diastolic cuff reading (mm Hg). Healthy range is 65–80."
+                badge="Healthy: 65–80 mm Hg"
+                badgeType="lower-is-healthy"
+                min={65}
+                max={110}
                 step={1}
                 value={diabetes.bp}
                 onChange={(v) => setDiabetes((d) => ({ ...d, bp: v }))}
               />
               <SliderField
                 label="Skin-fold thickness"
-                hint="A pinch of skin at the back of the upper arm, in mm. Leave near 20 if never measured."
-                min={7}
-                max={99}
+                hint="Triceps skin-fold measurement (mm). Leave near 20 if never measured."
+                badge="Typical: 15–25 mm"
+                badgeType="neutral"
+                min={15}
+                max={50}
                 step={1}
                 value={diabetes.skin}
                 onChange={(v) => setDiabetes((d) => ({ ...d, skin: v }))}
               />
               <SliderField
                 label="Insulin level"
-                hint="From a blood test, in μU/mL. Leave near 80 if you do not have this."
-                min={0}
-                max={300}
+                hint="Fasting serum insulin (μU/mL). Normal fasting range on lab reports is 5–25."
+                badge="Lower is healthier · Normal: 5–25"
+                badgeType="lower-is-healthy"
+                min={5}
+                max={150}
                 step={1}
                 value={diabetes.insulin}
                 onChange={(v) => setDiabetes((d) => ({ ...d, insulin: v }))}
               />
               <SliderField
                 label="Body mass index (BMI)"
-                hint="Weight in kg ÷ height in metres squared. 18.5–24.9 is often called a usual range."
-                min={15}
-                max={50}
+                hint="Weight in kg ÷ height in metres squared. 18.5–24.9 is considered healthy weight."
+                badge="Healthy: 18.5–24.9"
+                badgeType="lower-is-healthy"
+                min={18.5}
+                max={42.0}
                 step={0.5}
                 value={diabetes.bmi}
                 onChange={(v) => setDiabetes((d) => ({ ...d, bmi: v }))}
               />
               <SliderField
                 label="Diabetes in your close family"
-                hint="Low (left) if almost nobody has it. Higher if parents or siblings do."
-                min={0.08}
-                max={2.5}
+                hint="Diabetes pedigree score. Slide left if few or no biological relatives have diabetes."
+                badge="Lower is healthier · Typical: 0.10–0.25"
+                badgeType="lower-is-healthy"
+                min={0.10}
+                max={1.8}
                 step={0.01}
                 value={diabetes.pedigree}
                 onChange={(v) => setDiabetes((d) => ({ ...d, pedigree: v }))}
@@ -400,7 +445,7 @@ export function RiskAssessmentModal({
                 label="Your age"
                 hint="In years."
                 min={18}
-                max={90}
+                max={85}
                 step={1}
                 value={diabetes.age}
                 onChange={(v) => setDiabetes((d) => ({ ...d, age: v }))}
@@ -415,39 +460,43 @@ export function RiskAssessmentModal({
                 label="Your age"
                 hint="In years."
                 min={18}
-                max={90}
+                max={85}
                 step={1}
                 value={heart.age}
                 onChange={(v) => setHeart((h) => ({ ...h, age: v }))}
               />
               <Choice
                 label="When you get chest discomfort, what is it like?"
-                hint="Pick the closest match, or I’m not sure."
+                hint="Pick the closest match, or 'No chest pain or tightness'."
                 value={heart.cp}
                 onChange={(v) => setHeart((h) => ({ ...h, cp: v }))}
                 options={CP_OPTIONS}
               />
               <SliderField
                 label="Blood pressure while resting"
-                hint="The upper number from a cuff, in mm Hg, sitting quietly."
-                min={80}
-                max={200}
+                hint="Upper systolic reading from a cuff sitting quietly (mm Hg)."
+                badge="Lower is healthier · Normal: < 120"
+                badgeType="lower-is-healthy"
+                min={100}
+                max={190}
                 step={1}
                 value={heart.trestbps}
                 onChange={(v) => setHeart((h) => ({ ...h, trestbps: v }))}
               />
               <SliderField
                 label="Cholesterol in your blood"
-                hint="Total cholesterol from a lab slip, in mg/dL."
-                min={100}
-                max={600}
+                hint="Total serum cholesterol (mg/dL). Healthy is under 200."
+                badge="Lower is healthier · Normal: < 200"
+                badgeType="lower-is-healthy"
+                min={140}
+                max={350}
                 step={1}
                 value={heart.chol}
                 onChange={(v) => setHeart((h) => ({ ...h, chol: v }))}
               />
               <Choice
                 label="Fasting blood sugar"
-                hint="A sugar test after not eating overnight."
+                hint="A blood sugar test after not eating overnight."
                 value={heart.fbs}
                 onChange={(v) => setHeart((h) => ({ ...h, fbs: v }))}
                 options={FBS_OPTIONS}
@@ -460,9 +509,11 @@ export function RiskAssessmentModal({
               />
               <SliderField
                 label="Highest heart rate you have reached"
-                hint="Beats per minute during hard activity. About 150 if you do not know."
-                min={60}
-                max={220}
+                hint="Peak beats per minute during vigorous exertion."
+                badge="Healthy: 140–190 bpm"
+                badgeType="higher-is-healthy"
+                min={120}
+                max={205}
                 step={1}
                 value={heart.thalach}
                 onChange={(v) => setHeart((h) => ({ ...h, thalach: v }))}
@@ -478,10 +529,12 @@ export function RiskAssessmentModal({
                 ]}
               />
               <SliderField
-                label="How much the exercise-test line dipped"
-                hint="A hospital number called ST depression. Leave at 1.0 if you never had this test."
-                min={0}
-                max={6.5}
+                label="Exercise-test line dip (ST depression)"
+                hint="ST depression during hospital stress test in mm. 0.0 means normal heart tracing without stress dip."
+                badge="Lower is healthier · Normal: 0.0 mm"
+                badgeType="lower-is-healthy"
+                min={0.0}
+                max={4.0}
                 step={0.1}
                 value={heart.oldpeak}
                 onChange={(v) => setHeart((h) => ({ ...h, oldpeak: v }))}
@@ -494,14 +547,13 @@ export function RiskAssessmentModal({
               />
               <Choice
                 label="Have you had a dye test of the heart arteries?"
-                hint="Only use 1–3 if a cardiologist told you how many arteries were narrowed."
+                hint="Number of major vessels (0–3) narrowed. 0 means clear vessels."
                 value={heart.ca}
                 onChange={(v) => setHeart((h) => ({ ...h, ca: v }))}
                 options={CA_OPTIONS}
               />
               <Choice
-                label="Special heart blood-flow scan"
-                hint="Sometimes listed as thalassemia on old reports. Use I don’t know if you never had this."
+                label="Special heart blood-flow scan (thal)"
                 value={heart.thal}
                 onChange={(v) => setHeart((h) => ({ ...h, thal: v }))}
                 options={THAL_OPTIONS}
@@ -515,80 +567,96 @@ export function RiskAssessmentModal({
               <SliderField
                 label="Your age"
                 hint="In years."
-                min={1}
-                max={100}
+                min={18}
+                max={85}
                 step={1}
                 value={liver.Age}
                 onChange={(v) => setLiver((l) => ({ ...l, Age: v }))}
               />
               <SliderField
-                label="Yellow pigment in blood (total bilirubin)"
-                hint="On the report as total bilirubin, mg/dL. Often under 1.2 when usual."
-                min={0.1}
-                max={25}
+                label="Total bilirubin"
+                hint="Yellow pigment from red blood cell breakdown (mg/dL). Normal reference is 0.2–1.2."
+                badge="Lower is healthier · Normal: 0.2–1.2"
+                badgeType="lower-is-healthy"
+                min={0.2}
+                max={10.0}
                 step={0.1}
                 value={liver.Total_Bilirubin}
                 onChange={(v) => setLiver((l) => ({ ...l, Total_Bilirubin: v }))}
               />
               <SliderField
                 label="Direct bilirubin"
-                hint="The second bilirubin number, mg/dL."
-                min={0.1}
-                max={15}
+                hint="Conjugated bilirubin fraction (mg/dL). Normal is under 0.3."
+                badge="Normal: under 0.3"
+                badgeType="lower-is-healthy"
+                min={0.0}
+                max={5.0}
                 step={0.1}
                 value={liver.Direct_Bilirubin}
                 onChange={(v) => setLiver((l) => ({ ...l, Direct_Bilirubin: v }))}
               />
               <SliderField
-                label="ALP — a liver and bone enzyme"
-                hint="Alkaline phosphatase, U/L."
-                min={10}
-                max={500}
+                label="Alkaline phosphatase (ALP)"
+                hint="Bile duct enzyme (U/L). Normal range on reports is 44–120."
+                badge="Normal: 44–120 U/L"
+                badgeType="lower-is-healthy"
+                min={45}
+                max={350}
                 step={5}
                 value={liver.Alkaline_Phosphotase}
                 onChange={(v) => setLiver((l) => ({ ...l, Alkaline_Phosphotase: v }))}
               />
               <SliderField
-                label="ALT — a liver enzyme"
-                hint="Also written SGPT, U/L."
-                min={5}
-                max={500}
+                label="ALT (SGPT)"
+                hint="Primary liver cell enzyme (U/L). Normal is 10–40. Rises with liver cell injury."
+                badge="Lower is healthier · Normal: 10–40"
+                badgeType="lower-is-healthy"
+                min={10}
+                max={250}
                 step={1}
                 value={liver.Alamine_Aminotransferase}
                 onChange={(v) => setLiver((l) => ({ ...l, Alamine_Aminotransferase: v }))}
               />
               <SliderField
-                label="AST — a liver enzyme"
-                hint="Also written SGOT, U/L."
-                min={5}
-                max={500}
+                label="AST (SGOT)"
+                hint="Liver enzyme (U/L). Normal is 10–40. Rises with acute or chronic liver stress."
+                badge="Lower is healthier · Normal: 10–40"
+                badgeType="lower-is-healthy"
+                min={10}
+                max={250}
                 step={1}
                 value={liver.Aspartate_Aminotransferase}
                 onChange={(v) => setLiver((l) => ({ ...l, Aspartate_Aminotransferase: v }))}
               />
               <SliderField
-                label="Total protein in blood"
-                hint="g/dL. Often around 6–8."
-                min={2}
-                max={9}
+                label="Total protein"
+                hint="Total protein in blood (g/dL). Normal reference range is 6.0–8.3."
+                badge="Normal: 6.0–8.3 g/dL"
+                badgeType="neutral"
+                min={6.0}
+                max={8.8}
                 step={0.1}
                 value={liver.Total_Protiens}
                 onChange={(v) => setLiver((l) => ({ ...l, Total_Protiens: v }))}
               />
               <SliderField
-                label="Albumin — a helpful blood protein"
-                hint="g/dL. Higher is usually healthier."
-                min={1}
-                max={6}
+                label="Albumin"
+                hint="Vital protein synthesized exclusively by liver cells (g/dL). Crucial: unlike enzymes, LOWER albumin indicates liver failure; HIGHER is healthy."
+                badge="Higher is healthier · Normal: 3.5–5.0"
+                badgeType="higher-is-healthy"
+                min={3.5}
+                max={5.5}
                 step={0.1}
                 value={liver.Albumin}
                 onChange={(v) => setLiver((l) => ({ ...l, Albumin: v }))}
               />
               <SliderField
-                label="Albumin compared with globulin"
-                hint="A/G ratio on the report. Around 1–2 is common."
-                min={0.3}
-                max={4}
+                label="Albumin / globulin ratio (A/G)"
+                hint="Ratio of albumin to globulin on your report. Normal is 1.0–2.2."
+                badge="Normal: 1.0–2.2"
+                badgeType="neutral"
+                min={1.0}
+                max={2.5}
                 step={0.05}
                 value={liver.Albumin_and_Globulin_Ratio}
                 onChange={(v) => setLiver((l) => ({ ...l, Albumin_and_Globulin_Ratio: v }))}
@@ -600,36 +668,44 @@ export function RiskAssessmentModal({
             <div className="space-y-4">
               <SliderField
                 label="Creatinine"
-                hint="Kidney waste in blood, mg/dL. Often around 0.7–1.3."
-                min={0.4}
-                max={15}
+                hint="Kidney waste in blood (mg/dL). Normal reference on lab reports is 0.7–1.2. Lower indicates effective filtration."
+                badge="Lower is healthier · Normal: 0.7–1.2"
+                badgeType="lower-is-healthy"
+                min={0.7}
+                max={8.0}
                 step={0.1}
                 value={kidney.creatinine}
                 onChange={(v) => setKidney((k) => ({ ...k, creatinine: v }))}
               />
               <SliderField
                 label="Urea (or BUN / blood urea)"
-                hint="Another kidney waste number, mg/dL."
-                min={10}
-                max={400}
+                hint="Protein waste filtered by kidneys (mg/dL). Normal range on reports is 15–45. Lower indicates healthy waste clearance."
+                badge="Lower is healthier · Normal: 15–45"
+                badgeType="lower-is-healthy"
+                min={15}
+                max={150}
                 step={1}
                 value={kidney.urea}
                 onChange={(v) => setKidney((k) => ({ ...k, urea: v }))}
               />
               <SliderField
                 label="Hemoglobin"
-                hint="The oxygen-carrying part of blood, g/dL. Higher is usually healthier."
-                min={3}
-                max={18}
+                hint="Oxygen-carrying protein in red blood cells (g/dL). Crucial: unlike waste products, LOWER hemoglobin indicates severe anemia or kidney distress; HIGHER is healthy."
+                badge="Higher is healthier · Normal: 13.0–17.5"
+                badgeType="higher-is-healthy"
+                min={13.0}
+                max={18.0}
                 step={0.1}
                 value={kidney.hemoglobin}
                 onChange={(v) => setKidney((k) => ({ ...k, hemoglobin: v }))}
               />
               <SliderField
                 label="Lower blood-pressure number (diastolic)"
-                hint="The bottom number on a cuff, such as 80 in 120/80."
-                min={40}
-                max={180}
+                hint="Resting diastolic cuff reading (e.g. 75 in 118/75 mm Hg). Normal is 65–80."
+                badge="Healthy: 65–80 mm Hg"
+                badgeType="lower-is-healthy"
+                min={65}
+                max={120}
                 step={1}
                 value={kidney.bp}
                 onChange={(v) => setKidney((k) => ({ ...k, bp: v }))}
@@ -638,20 +714,37 @@ export function RiskAssessmentModal({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+        <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-xs text-muted-foreground hover:text-foreground self-start sm:self-auto px-2"
+            onClick={() => {
+              setDiabetes(DEFAULT_DIABETES);
+              setHeart(DEFAULT_HEART);
+              setLiver(DEFAULT_LIVER);
+              setKidney(DEFAULT_KIDNEY);
+              setSex("male");
+            }}
+          >
+            Reset to normal values
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={!disease || isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Estimating…
-              </>
-            ) : (
-              "See my estimate"
-            )}
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto justify-end">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSubmit} disabled={!disease || isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Estimating…
+                </>
+              ) : (
+                "See my estimate"
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

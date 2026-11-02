@@ -10,16 +10,20 @@ import {
 import {
   Activity,
   ArrowRight,
+  BrainCircuit,
   CalendarCheck,
-  ClipboardList,
-  FileImage,
-  Info,
-  LineChart,
+  CheckCircle2,
+  ChevronRight,
+  FileText,
+  HeartPulse,
   Lock,
   MessageSquareText,
   Mic,
+  Pill,
   ShieldCheck,
+  Sparkles,
   Stethoscope,
+  Users,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,622 +31,459 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Reveal, RevealGroup, RevealItem, ScrollProgress } from "@/components/ui/reveal";
 import { LoginForm, SignUpForm } from "@/components/AuthForms";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ReasoningCanvasDemo } from "@/components/landing/ReasoningCanvasDemo";
-import { RiskSimulatorDemo } from "@/components/landing/RiskSimulatorDemo";
-import { ConsiliumConvergence } from "@/components/landing/ConsiliumConvergence";
-import { PlanDiffDemo } from "@/components/landing/PlanDiffDemo";
-import { ConnectedSafetyDemo } from "@/components/landing/ConnectedSafetyDemo";
+import { BioSphereCanvas3D } from "@/components/landing/BioSphereCanvas3D";
+import { TiltCard } from "@/components/landing/TiltCard";
+import { InteractiveConsoleDemo } from "@/components/landing/InteractiveConsoleDemo";
 import { useAuth } from "@/hooks/use-auth";
-import { fadeUp, scaleIn, slideIn, transition } from "@/lib/motion";
-
-/* ------------------------------------------------------------------ */
-/* Content                                                             */
-/* ------------------------------------------------------------------ */
-
-/**
- * `span` drives an intentionally uneven grid. A row of three identical
- * feature cards is the most recognisable generated-layout signature, so the
- * rows alternate 4/2, 2/4, 3/3 instead.
- */
-const features = [
-  {
-    icon: MessageSquareText,
-    title: "Structured triage",
-    body: "Describe how you feel in your own words. You get back what it could mean, what to do now, and the signs that mean you should not wait. Each question it asks is chosen to narrow things down fastest, not read off a fixed script.",
-    span: "md:col-span-4",
-  },
-  {
-    icon: LineChart,
-    title: "Explained risk scores",
-    body: "Diabetes, heart, liver and kidney assessments return a percentage next to the inputs that moved it, so the number is never a black box.",
-    span: "md:col-span-2",
-  },
-  {
-    icon: Mic,
-    title: "Voice when typing is hard",
-    body: "Speak your symptoms instead of typing them. Useful when you are unwell, and when English is not the language you think in.",
-    span: "md:col-span-2",
-  },
-  {
-    icon: FileImage,
-    title: "Reports and images",
-    body: "You can attach a photo of a rash or a printed report as context for the chat. Medicine names are never guessed from pixels — type them, and they resolve to RxNorm or the check stays incomplete.",
-    span: "md:col-span-4",
-  },
-  {
-    icon: ClipboardList,
-    title: "A diary that spots trends",
-    body: "Log symptoms over days and weeks. Patterns across time are what a single consultation cannot see.",
-    span: "md:col-span-3",
-  },
-  {
-    icon: CalendarCheck,
-    title: "Straight through to a doctor",
-    body: "When the conversation suggests you should be seen, book a real appointment without starting again somewhere else. If something urgent turns up while you are waiting on an existing appointment, it tells you immediately instead of leaving you to sit on it. And if your symptoms do not match the specialist you booked, it says so before the visit, not during it.",
-    span: "md:col-span-3",
-  },
-  {
-    icon: ShieldCheck,
-    title: "One medicine list across doctors",
-    body: "A clinic EMR keeps the file inside that practice. Here the list is yours: tag who prescribed what, add an outside Rx by name, and see clashes (and RxCUIs) before the next visit. Unknown names stay incomplete.",
-    span: "md:col-span-3",
-  },
-  {
-    icon: ClipboardList,
-    title: "Walk in ready to talk",
-    body: "Not a shopping list of labs the doctor may never order. A short script of what to say, what to bring if you already have it, and a body map of the sites you named.",
-    span: "md:col-span-3",
-  },
-  {
-    icon: FileImage,
-    title: "A clear brief for your doctor",
-    body: "Struggling to put how you feel into words is normal, especially when you are unwell. MediAI turns your conversation into a clear summary for your doctor: your own words alongside the clinical picture, which you review and can correct before it is sent. Your doctor starts the visit already knowing what you have told MediAI, instead of asking you to explain it all again from scratch.",
-    span: "md:col-span-3",
-  },
-];
-
-const steps = [
-  {
-    title: "Tell it what is wrong",
-    body: "Type or speak. Follow-up questions narrow things down the way an intake conversation would.",
-  },
-  {
-    title: "See the reasoning",
-    body: "Guidance arrives structured, with claim checks and a skeptic pass on non-trivial cases: what it could mean, what to do, and when to seek urgent care.",
-  },
-  {
-    title: "Act on it",
-    body: "Track it in the diary, run a risk assessment, or book a consultation. Your history stays in one place.",
-  },
-];
-
-/* ------------------------------------------------------------------ */
-/* Hero product preview                                                */
-/* ------------------------------------------------------------------ */
-
-function ChatPreview() {
-  const reduceMotion = useReducedMotion();
-  const enter = reduceMotion
-    ? { opacity: 1, y: 0 }
-    : { opacity: 0, y: 8 };
-
-  return (
-    <div className="surface-raised overflow-hidden rounded-2xl">
-      <div className="border-b border-border bg-muted/40 px-5 py-3">
-        <p className="text-xs font-medium text-muted-foreground">
-          An actual reply, in the format the assistant always answers in
-        </p>
-      </div>
-
-      <div className="space-y-4 p-5 sm:p-6">
-        {/* Patient message */}
-        <motion.div
-          initial={enter}
-          animate={{ opacity: 1, y: 0 }}
-          transition={
-            reduceMotion ? { duration: 0 } : { ...transition.slow, delay: 0.25 }
-          }
-          className="flex justify-end"
-        >
-          <p className="max-w-[78%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground">
-            I&apos;ve had a fever and a sore throat since yesterday
-          </p>
-        </motion.div>
-
-        {/* Assistant reply */}
-        <motion.div
-          initial={enter}
-          animate={{ opacity: 1, y: 0 }}
-          transition={
-            reduceMotion ? { duration: 0 } : { ...transition.slow, delay: 0.45 }
-          }
-          className="flex justify-start"
-        >
-          <div className="max-w-[88%] space-y-3 rounded-2xl rounded-bl-md border border-border bg-muted/40 px-4 py-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                What this could mean
-              </p>
-              <p className="mt-1 text-sm text-foreground/90">
-                Most likely a <span className="font-semibold">viral upper respiratory infection</span>.
-                Two questions to narrow it down:
-              </p>
-            </div>
-            <ul className="space-y-1.5 text-sm text-foreground/80">
-              <li className="flex gap-2">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                Is the pain worse on one side when you swallow?
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                Any rash, or trouble breathing?
-              </li>
-            </ul>
-            <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2">
-              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
-              <p className="text-xs text-foreground/80">
-                Seek care today if your temperature stays above 39&nbsp;°C or you
-                cannot keep fluids down.
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Suggested action */}
-        <motion.div
-          initial={enter}
-          animate={{ opacity: 1, y: 0 }}
-          transition={
-            reduceMotion ? { duration: 0 } : { ...transition.slow, delay: 0.65 }
-          }
-          className="flex justify-start pl-1"
-        >
-          <span className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">
-            <CalendarCheck className="h-3.5 w-3.5" />
-            Book consultation
-          </span>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Risk card, used in the deep-dive row                                */
-/* ------------------------------------------------------------------ */
-
-const riskFactors = [
-  { label: "Fasting glucose", value: "142 mg/dL", weight: 82 },
-  { label: "BMI", value: "31.4", weight: 54 },
-  { label: "Family history", value: "Present", weight: 38 },
-  { label: "Age", value: "46", weight: 21 },
-];
-
-function RiskBar({
-  percent,
-  delay,
-  size,
-}: {
-  percent: number;
-  delay: number;
-  size: "lg" | "sm";
-}) {
-  const reduceMotion = useReducedMotion();
-  const scale = Math.max(0, Math.min(percent, 100)) / 100;
-
-  return (
-    <div
-      className={`overflow-hidden rounded-full bg-muted ${
-        size === "lg" ? "h-1.5" : "h-1"
-      }`}
-    >
-      <motion.div
-        initial={reduceMotion ? false : { scaleX: 0 }}
-        animate={{ scaleX: scale }}
-        transition={
-          reduceMotion
-            ? { duration: 0 }
-            : { duration: 0.6, ease: [0.22, 1, 0.36, 1], delay }
-        }
-        className={`h-full origin-left rounded-full ${
-          size === "lg" ? "bg-primary" : "bg-primary/45"
-        }`}
-      />
-    </div>
-  );
-}
-
-function RiskPreview() {
-  return (
-    <div className="surface-raised rounded-2xl p-5 sm:p-6">
-      <div className="flex items-baseline justify-between">
-        <p className="text-sm font-semibold">Diabetes risk</p>
-        <p className="text-xs text-muted-foreground">Moderate</p>
-      </div>
-
-      <div className="mt-3 flex items-end gap-3">
-        <span className="text-4xl font-semibold tracking-tight" data-numeric>
-          38<span className="text-2xl text-muted-foreground">%</span>
-        </span>
-      </div>
-
-      <div className="mt-3">
-        <RiskBar percent={38} delay={0.15} size="lg" />
-      </div>
-
-      <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        What moved the number
-      </p>
-
-      <ul className="mt-2.5 space-y-2.5">
-        {riskFactors.map((f, i) => (
-          <li key={f.label} className="space-y-1">
-            <div className="flex items-baseline justify-between text-sm">
-              <span className="text-foreground/85">{f.label}</span>
-              <span className="text-xs text-muted-foreground" data-numeric>
-                {f.value}
-              </span>
-            </div>
-            <RiskBar percent={f.weight} delay={0.25 + i * 0.08} size="sm" />
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Page                                                                */
-/* ------------------------------------------------------------------ */
+import { fadeUp, scaleIn, transition } from "@/lib/motion";
 
 export default function Landing() {
   const { currentUser, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [authMode, setAuthMode] = useState("login");
   const [navSolid, setNavSolid] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
-  // useScroll reads scroll outside the React render cycle. A raw scroll
-  // listener would set state on every frame and re-render the whole page.
+  // Scroll position tracking for nav blur & floating style
   const { scrollY } = useScroll();
-  useMotionValueEvent(scrollY, "change", (y) => setNavSolid(y > 16));
+  useMotionValueEvent(scrollY, "change", (y) => setNavSolid(y > 20));
 
   const handleLoginSuccess = () => setLocation("/dashboard");
 
-  const goToAuth = () =>
-    document
-      .getElementById("get-started")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background text-foreground antialiased selection:bg-primary/20">
       <ScrollProgress />
 
-      {/* ---------------- Nav ---------------- */}
-      <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-base ${
-          navSolid
-            ? "border-b border-border bg-background/85 backdrop-blur-md"
-            : "border-b border-transparent"
-        }`}
-      >
-        <nav className="container-page flex h-16 items-center justify-between">
-          <a href="#top" className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+      {/* ---------------- 1. Floating Island Navigation ---------------- */}
+      <header className="fixed inset-x-0 top-3 z-50 px-4 sm:px-6">
+        <nav
+          className={`mx-auto flex h-14 max-w-5xl items-center justify-between rounded-full border px-4 transition-all duration-300 sm:px-6 ${
+            navSolid
+              ? "border-border/80 bg-background/85 shadow-lg backdrop-blur-xl"
+              : "border-border/40 bg-background/60 shadow-sm backdrop-blur-md"
+          }`}
+        >
+          {/* Brand Logo with Live Pulse */}
+          <button
+            type="button"
+            onClick={() => {
+              setLocation("/");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="group flex cursor-pointer items-center gap-2.5 text-left transition-opacity hover:opacity-90"
+          >
+            <span className="relative grid h-8 w-8 place-items-center rounded-full bg-gradient-to-tr from-emerald-600 to-cyan-500 text-white shadow-md">
               <Stethoscope className="h-4 w-4" />
+              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-400" />
             </span>
-            <span className="text-base font-semibold tracking-tight">MediAI</span>
-          </a>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold tracking-tight">MediAI</span>
+              <span className="hidden text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:inline">
+                Clinical Intelligence
+              </span>
+            </div>
+          </button>
 
+          {/* Quick Nav Anchors */}
           <div className="hidden items-center gap-1 md:flex">
             {[
-              ["Features", "#features"],
-              ["How it works", "#how"],
-              ["Trust", "#trust"],
-              ["Risk & simulation", "#risk"],
-              ["Dashboard", "/dashboard"],
-            ].map(([label, href]) => (
-              <a
-                key={href}
-                href={href}
-                className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground"
+              ["Capabilities", "capabilities"],
+              ["Interactive Console", "console"],
+              ["Care Pathway", "how"],
+              ["Access", "get-started"],
+            ].map(([label, id]) => (
+              <button
+                key={id}
+                onClick={() => scrollToSection(id)}
+                className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
               >
                 {label}
-              </a>
+              </button>
             ))}
           </div>
 
+          {/* Action CTAs */}
           <div className="flex items-center gap-2">
             <ThemeToggle />
             {currentUser ? (
-              <Button size="sm" onClick={() => setLocation("/dashboard")}>
+              <Button
+                size="sm"
+                onClick={() => setLocation("/dashboard")}
+                className="h-8 rounded-full px-4 text-xs font-semibold"
+              >
                 Dashboard
+                <ChevronRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             ) : (
-              <Button size="sm" onClick={goToAuth}>
-                Get started
+              <Button
+                size="sm"
+                onClick={() => scrollToSection("get-started")}
+                className="h-8 rounded-full px-4 text-xs font-semibold"
+              >
+                Sign In
               </Button>
             )}
           </div>
         </nav>
       </header>
 
-      {/* ---------------- Hero ---------------- */}
-      <section id="top" className="relative overflow-hidden pt-16">
-        {/* One soft, static wash. A hairline grid overlay here would only be
-            decoration, and a looping drift animation communicates nothing. */}
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-40 left-1/2 h-[460px] w-[760px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      {/* ---------------- 2. Hero Section (3D + High-Impact Copy) ---------------- */}
+      <section id="top" className="relative overflow-hidden pt-28 pb-16 lg:pt-36 lg:pb-24">
+        {/* Soft atmospheric gradient glows */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute top-12 left-1/2 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-[130px] dark:bg-emerald-500/15" />
+          <div className="absolute top-48 right-1/4 h-[300px] w-[500px] rounded-full bg-cyan-500/10 blur-[110px] dark:bg-cyan-500/15" />
         </div>
 
-        <div className="container-page relative grid gap-14 pb-20 pt-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-16 lg:pb-28 lg:pt-24">
-          <div>
+        <div className="container-page grid items-center gap-10 lg:grid-cols-12 lg:gap-8">
+          {/* Hero Left Content */}
+          <div className="lg:col-span-7 space-y-6">
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={transition.slow}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs"
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
             >
-              <Stethoscope className="h-3.5 w-3.5 text-primary" />
-              Guidance in minutes, not appointments
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              Clinical AI Triage & Multi-Agent Consilium
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 12 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ ...transition.slow, delay: 0.05 }}
-              className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
+              transition={{ duration: 0.55, delay: 0.08 }}
+              className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-balance"
             >
-              It doesn&apos;t just answer. It shows you why.
+              Next-Gen Medical Intelligence.{" "}
+              <span className="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 bg-clip-text text-transparent">
+                Backed by Clinical Evidence.
+              </span>
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 12 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ ...transition.slow, delay: 0.1 }}
-              className="mt-5 max-w-xl text-lg text-muted-foreground"
+              transition={{ duration: 0.55, delay: 0.14 }}
+              className="max-w-xl text-base text-muted-foreground sm:text-lg text-pretty leading-relaxed"
             >
-              MediAI turns a description of how you feel into structured
-              guidance, and then lets you check every part of it: which claims
-              are backed by evidence, where its reasoning disagreed with itself
-              before it settled, and what would actually change your risk.
+              Instant AI triage, multi-agent reasoning, and validated risk scoring—before you step into the clinic.
             </motion.p>
 
+            {/* CTAs with nested button-in-button design */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ ...transition.slow, delay: 0.15 }}
-              className="mt-8 flex flex-wrap items-center gap-3"
+              transition={{ duration: 0.55, delay: 0.2 }}
+              className="flex flex-wrap items-center gap-3 pt-2"
             >
               {currentUser ? (
-                <>
-                  <Button size="lg" onClick={() => setLocation("/dashboard")}>
-                    Open dashboard
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  <Link href="/appointments">
-                    <Button size="lg" variant="outline">
-                      <CalendarCheck className="mr-2 h-4 w-4" />
-                      Book consultation
-                    </Button>
-                  </Link>
-                </>
+                <Button
+                  size="lg"
+                  onClick={() => setLocation("/dashboard")}
+                  className="group relative h-12 rounded-full pl-6 pr-2 font-medium shadow-md transition-all hover:shadow-emerald-500/20"
+                >
+                  <span className="mr-3">Open Medical Console</span>
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-white/20 transition-transform group-hover:translate-x-0.5">
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </Button>
               ) : (
-                <>
-                  <Button size="lg" onClick={goToAuth}>
-                    Start a consultation
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  <Button size="lg" variant="outline" asChild>
-                    <a href="#how">See how it works</a>
-                  </Button>
-                </>
+                <Button
+                  size="lg"
+                  onClick={() => scrollToSection("get-started")}
+                  className="group relative h-12 rounded-full pl-6 pr-2 font-medium shadow-md transition-all hover:shadow-emerald-500/20"
+                >
+                  <span className="mr-3">Start Free AI Triage</span>
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-white/20 transition-transform group-hover:translate-x-0.5">
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </Button>
               )}
+
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => scrollToSection("console")}
+                className="h-12 rounded-full border-border/80 px-6 font-medium backdrop-blur-xs transition-colors hover:bg-muted"
+              >
+                <Sparkles className="mr-2 h-4 w-4 text-emerald-500" />
+                Explore 3D Console
+              </Button>
             </motion.div>
 
-            <motion.ul
-              initial={{ opacity: 0 }}
+            {/* Trust Validation Strip */}
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ ...transition.slow, delay: 0.22 }}
-              className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground"
+              transition={{ duration: 0.6, delay: 0.28 }}
+              className="grid grid-cols-2 gap-3 pt-4 sm:grid-cols-4 text-xs text-muted-foreground"
             >
-              <li className="flex items-center gap-2">
-                <Lock className="h-3.5 w-3.5 text-primary" />
-                Your records stay yours
-              </li>
-              <li className="flex items-center gap-2">
-                <Activity className="h-3.5 w-3.5 text-primary" />
-                Four risk models
-              </li>
-              <li className="flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                Escalates, never diagnoses
-              </li>
-              <li className="flex items-center gap-2">
-                <Activity className="h-3.5 w-3.5 text-primary" />
-                Shows its work
-              </li>
-            </motion.ul>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                <span>RxNorm Verified</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <BrainCircuit className="h-4 w-4 text-cyan-500 shrink-0" />
+                <span>Consilium Agents</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-emerald-500 shrink-0" />
+                <span>4-Model Organ ML</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-cyan-500 shrink-0" />
+                <span>End-to-End Private</span>
+              </div>
+            </motion.div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...transition.slow, delay: 0.12 }}
-            className="lg:pl-4"
-          >
-            <ChatPreview />
-          </motion.div>
+          {/* Hero Right: 3D WebGL BioSphere Hologram */}
+          <div className="lg:col-span-5 flex items-center justify-center">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.15 }}
+              className="w-full max-w-[28rem] aspect-square"
+            >
+              <BioSphereCanvas3D className="h-full w-full" />
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* ---------------- Live reasoning canvas ---------------- */}
-      <section id="canvas" className="container-page scroll-mt-20 py-16 lg:py-24">
-        <Reveal className="max-w-2xl">
-          <p className="eyebrow">Watch it think</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Watch it think, not just answer.
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Most health apps give you a confident paragraph and nothing to check
-            it against. MediAI narrows its ranking by asking the single most
-            useful next question, checks every claim against the evidence it
-            actually retrieved, and for anything non-trivial runs four
-            independent reasoning passes that have to survive a dedicated skeptic
-            before they are shown to you.
-          </p>
-        </Reveal>
-        <Reveal className="mt-10" delay={0.08}>
-          <ReasoningCanvasDemo />
-        </Reveal>
-      </section>
-
-      {/* ---------------- Features ---------------- */}
-      <section id="features" className="container-page scroll-mt-20 py-20 lg:py-28">
-        <Reveal className="max-w-2xl">
-          <p className="eyebrow">Understand your symptoms</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Structured help from the first sentence.
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Every feature ends somewhere useful: a decision, a logged data
-            point, or a booked appointment. None of them stop at a wall of text.
-          </p>
-        </Reveal>
-
-        <RevealGroup className="mt-12 grid items-start gap-4 md:grid-cols-6">
-          {features.map((f) => (
-            <RevealItem key={f.title} className={f.span}>
-              <article className="surface lift group p-6">
-                <span className="grid h-10 w-10 place-items-center rounded-lg border border-primary/20 bg-primary/8 text-primary transition-colors duration-base group-hover:bg-primary/15">
-                  <f.icon className="h-5 w-5" />
-                </span>
-                <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {f.body}
-                </p>
-              </article>
-            </RevealItem>
-          ))}
-        </RevealGroup>
-      </section>
-
-      {/* ---------------- Trust ---------------- */}
-      <section id="trust" className="scroll-mt-20 border-y border-border bg-muted/25">
-        <div className="container-page py-20 lg:py-28">
+      {/* ---------------- 3. Interactive 4-Pillar Clinical Bento Grid ---------------- */}
+      <section id="capabilities" className="scroll-mt-20 py-20 lg:py-28 border-y border-border/40 bg-muted/20">
+        <div className="container-page space-y-12">
           <Reveal className="max-w-2xl">
-            <p className="eyebrow">Trust what it tells you</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Disagreement is not a bug here.
+            <p className="eyebrow">Clinical Capabilities</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Engineered for diagnostic accuracy.
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Most systems hide uncertainty because it looks like weakness.
-              MediAI shows it, because it is the opposite: four independent
-              reasoning passes on your case, one of them built specifically to
-              argue against the others, so what you see has survived a real
-              check, not just a plausible first draft.
+            <p className="mt-3 text-base text-muted-foreground leading-relaxed">
+              Every tool converges on actionable clinical outcomes: narrow differentials, catch medication clashes, and walk into appointments fully prepared.
             </p>
           </Reveal>
-          <RevealGroup className="mt-10 grid gap-4 md:grid-cols-2">
-            <RevealItem>
-              <article className="surface h-full p-6">
-                <h3 className="text-base font-semibold">Claims you can check</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Every factual statement in a reply is checked against the
-                  evidence retrieved for your specific case. If something is not
-                  backed, you will see it flagged, not buried.
-                </p>
-              </article>
-            </RevealItem>
-            <RevealItem>
-              <article className="surface h-full p-6">
-                <h3 className="text-base font-semibold">
-                  A second opinion, automatically compared
+
+          {/* Bento Grid Architecture */}
+          <div className="grid gap-5 md:grid-cols-3">
+            {/* Bento Card 1: Differential Triage & Voice (Spans 2 cols) */}
+            <div className="md:col-span-2">
+              <TiltCard className="h-full rounded-2xl border border-border/70 bg-card p-6 sm:p-8 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div className="grid h-12 w-12 place-items-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <MessageSquareText className="h-6 w-6" />
+                  </div>
+                  <span className="rounded-full border border-border/60 bg-muted/50 px-3 py-1 text-xs font-mono text-muted-foreground">
+                    Speech & Text Intake
+                  </span>
+                </div>
+
+                <h3 className="mt-6 text-xl font-semibold tracking-tight">
+                  Adaptive Differential Triage
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Seen two doctors for the same issue? MediAI lists both plans
-                  (drug, dose, duration, tests ordered) side by side, without
-                  taking a side.
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-xl">
+                  Describe symptoms in your own colloquial words or voice. MediAI maps them to clinical SNOMED CT terminology and asks targeted follow-ups to rule out urgent red flags.
                 </p>
-                <PlanDiffDemo />
-              </article>
-            </RevealItem>
-          </RevealGroup>
-          <Reveal className="mt-4" delay={0.06}>
-            <ConsiliumConvergence />
+
+                {/* Micro-preview pill inside card */}
+                <div className="mt-6 rounded-xl border border-border/50 bg-muted/40 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <Mic className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
+                      Patient Voice Sample: "Persistent throbbing headache with stiff neck"
+                    </span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-medium">Mapped</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-[11px]">
+                    <span className="rounded-md bg-background px-2.5 py-1 border border-border/60 font-mono">
+                      [R51.9] Cephalea
+                    </span>
+                    <span className="rounded-md bg-background px-2.5 py-1 border border-border/60 font-mono">
+                      [M54.2] Cervicalgia / Nuchal Rigidity
+                    </span>
+                    <span className="rounded-md bg-rose-500/10 text-rose-500 px-2.5 py-1 font-medium border border-rose-500/20">
+                      Flag: Check Meningeal Signs
+                    </span>
+                  </div>
+                </div>
+              </TiltCard>
+            </div>
+
+            {/* Bento Card 2: 4-Organ Risk Scores (Spans 1 col) */}
+            <div className="md:col-span-1">
+              <TiltCard className="h-full rounded-2xl border border-border/70 bg-card p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="grid h-12 w-12 place-items-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+                    <Activity className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-6 text-xl font-semibold tracking-tight">
+                    Multi-Organ ML Risk
+                  </h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                    Four validated machine-learning models assess diabetes, heart, renal, and liver projection curves.
+                  </p>
+                </div>
+
+                <div className="mt-6 space-y-2.5 rounded-xl border border-border/50 bg-muted/30 p-3">
+                  {[
+                    { label: "Diabetes Risk", val: 38, col: "bg-emerald-500" },
+                    { label: "Cardiometabolic", val: 24, col: "bg-teal-500" },
+                    { label: "Renal Markers", val: 12, col: "bg-cyan-500" },
+                  ].map((item) => (
+                    <div key={item.label} className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-medium text-foreground">{item.label}</span>
+                        <span className="font-mono text-muted-foreground">{item.val}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted">
+                        <div className={`h-full rounded-full ${item.col}`} style={{ width: `${item.val}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TiltCard>
+            </div>
+
+            {/* Bento Card 3: Prescription Guard (Spans 1 col) */}
+            <div className="md:col-span-1">
+              <TiltCard className="h-full rounded-2xl border border-border/70 bg-card p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="grid h-12 w-12 place-items-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <Pill className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-6 text-xl font-semibold tracking-tight">
+                    Prescription Guard
+                  </h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                    Reconciles medications across independent doctors into a single RxNorm ledger, flagging harmful interactions.
+                  </p>
+                </div>
+
+                <div className="mt-6 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 space-y-2 text-xs">
+                  <div className="flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                    <ShieldCheck className="h-4 w-4" />
+                    RxNorm Reconciled
+                  </div>
+                  <p className="text-muted-foreground text-[11px] leading-relaxed">
+                    3 active prescriptions audited against patient allergies. No dangerous CYP3A4 inhibitors detected.
+                  </p>
+                </div>
+              </TiltCard>
+            </div>
+
+            {/* Bento Card 4: Doctor-Ready Brief & Body Map (Spans 2 cols) */}
+            <div className="md:col-span-2">
+              <TiltCard className="h-full rounded-2xl border border-border/70 bg-card p-6 sm:p-8 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div className="grid h-12 w-12 place-items-center rounded-xl border border-teal-500/20 bg-teal-500/10 text-teal-600 dark:text-teal-400">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <span className="rounded-full border border-border/60 bg-muted/50 px-3 py-1 text-xs font-mono text-muted-foreground">
+                    Clinical SOAP Export
+                  </span>
+                </div>
+
+                <h3 className="mt-6 text-xl font-semibold tracking-tight">
+                  Physician-Ready Handoff Brief
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-xl">
+                  Never repeat your story from scratch. MediAI compiles your symptom timeline, flagged body-map coordinates, and vital readings into a clean clinical brief you can share directly with your doctor.
+                </p>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-3 text-xs">
+                  <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1">
+                    <span className="font-semibold text-foreground">Structured SOAP</span>
+                    <p className="text-[11px] text-muted-foreground">Subjective, Objective, Assessment, Plan formatted.</p>
+                  </div>
+                  <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1">
+                    <span className="font-semibold text-foreground">Interactive Body Map</span>
+                    <p className="text-[11px] text-muted-foreground">Pinpoint pain location, radiation, and onset.</p>
+                  </div>
+                  <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1">
+                    <span className="font-semibold text-foreground">One-Click Share</span>
+                    <p className="text-[11px] text-muted-foreground">Export as verified PDF or encrypted link.</p>
+                  </div>
+                </div>
+              </TiltCard>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------- 4. Unified Interactive Clinical Console ---------------- */}
+      <section id="console" className="scroll-mt-20 py-20 lg:py-28">
+        <div className="container-page space-y-10">
+          <Reveal className="max-w-2xl">
+            <p className="eyebrow">Interactive Verification</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Watch it reason, verify, and simulate.
+            </h2>
+            <p className="mt-3 text-base text-muted-foreground leading-relaxed">
+              Experience the core engines live: test the triage workflow, inspect the multi-agent consensus checks, or adjust biometric sliders to see real-time risk recalculations.
+            </p>
+          </Reveal>
+
+          {/* Unified console demo */}
+          <Reveal delay={0.08}>
+            <InteractiveConsoleDemo />
           </Reveal>
         </div>
       </section>
 
-      {/* ---------------- Connected ---------------- */}
-      <section id="connected" className="container-page scroll-mt-20 py-20 lg:py-28">
-        <Reveal className="max-w-2xl">
-          <p className="eyebrow">Everything connected</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Your medication history, actually complete.
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Tell MediAI the medicines from each doctor, by name. It reconciles
-            brand and generic onto one RxNorm ID, then checks the full list
-            against allergies and known interactions. Unknown names return
-            incomplete, not a silent all-clear. When a new symptom shows up, it
-            checks whether something you started recently could be the cause.
-          </p>
-        </Reveal>
-        <RevealGroup className="mt-10 grid gap-4 md:grid-cols-2">
-          <RevealItem>
-            <article className="surface h-full p-6">
-              <h3 className="text-base font-semibold">
-                Outcomes that come back to your doctor
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Doctors rarely learn what happened after a patient leaves.
-                MediAI tracks reported outcomes and shows aggregate results:
-                how many patients felt better within a week, under which
-                treatment, only when the sample is large enough to say so.
-              </p>
-            </article>
-          </RevealItem>
-          <RevealItem>
-            <article className="surface h-full p-6">
-              <h3 className="text-base font-semibold">Where you live matters</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                MediAI can check your symptom diary against local air quality
-                and weather. If your symptoms consistently follow a pollution
-                spike by a day or two, you will see that pattern, not just the
-                individual entries.
-              </p>
-            </article>
-          </RevealItem>
-        </RevealGroup>
-        <Reveal className="mt-2" delay={0.05}>
-          <ConnectedSafetyDemo />
-        </Reveal>
-      </section>
-
-      {/* ---------------- How it works ---------------- */}
-      <section id="how" className="scroll-mt-20 border-y border-border bg-muted/25">
-        <div className="container-page py-20 lg:py-28">
-          <Reveal className="mx-auto max-w-2xl">
-            <p className="eyebrow">How it works</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Three steps, about two minutes.
+      {/* ---------------- 5. Streamlined 3-Step Care Pathway ---------------- */}
+      <section id="how" className="scroll-mt-20 py-20 lg:py-28 border-y border-border/40 bg-muted/20">
+        <div className="container-page space-y-12">
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <p className="eyebrow">Care Pathway</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              From symptom to solution in minutes.
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              No forms to fill in before you get anything back.
+            <p className="mt-3 text-base text-muted-foreground">
+              No endless questionnaires or unverified medical searches.
             </p>
           </Reveal>
 
-          <RevealGroup className="mx-auto mt-10 max-w-2xl" stagger={0.09}>
-            {steps.map((s, i) => (
-              <RevealItem key={s.title}>
-                <div
-                  className={
-                    i === 0 ? "pb-7" : "border-t border-border py-7 last:pb-0"
-                  }
-                >
-                  <h3 className="text-lg font-semibold">{s.title}</h3>
-                  <p className="mt-2 leading-relaxed text-muted-foreground">
-                    {s.body}
+          <RevealGroup className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                step: "01",
+                title: "Describe Your Symptoms",
+                desc: "Type or use voice in natural language. MediAI asks smart clarifying questions to isolate clinical indicators.",
+                icon: Mic,
+              },
+              {
+                step: "02",
+                title: "Multi-Agent Consensus",
+                desc: "Four specialized agents check differential databases, pharmacy interactions, and red flags before presenting results.",
+                icon: BrainCircuit,
+              },
+              {
+                step: "03",
+                title: "Take Informed Action",
+                desc: "Review your summary brief, track ongoing trends in your diary, or book directly with a verified clinic specialist.",
+                icon: CalendarCheck,
+              },
+            ].map((item) => (
+              <RevealItem key={item.step}>
+                <div className="relative h-full rounded-2xl border border-border/70 bg-card p-6 sm:p-7 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-2xl font-extrabold text-primary/40">
+                      {item.step}
+                    </span>
+                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
+                      <item.icon className="h-5 w-5" />
+                    </span>
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {item.desc}
                   </p>
                 </div>
               </RevealItem>
@@ -651,96 +492,60 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------- Risk deep dive ---------------- */}
-      <section id="risk" className="container-page scroll-mt-20 py-20 lg:py-28">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
-          <Reveal variants={slideIn("left")}>
-            <p className="eyebrow">Risk assessment</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              See what changing it would do.
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Drag any factor and watch your projected risk curve move: the same
-              local model, re-run on the new numbers, not a guess. Or ask for
-              the smallest realistic change that helps most.
-            </p>
-            <ul className="mt-6 space-y-3">
-              {[
-                "Diabetes, heart, liver and kidney assessments",
-                "Contributing factors ranked by weight",
-                "Plain-language explanation for every factor",
-                "Results saved to your history for comparison",
-              ].map((item) => (
-                <li key={item} className="flex gap-3 text-sm">
-                  <span className="mt-1.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-primary/12">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  </span>
-                  <span className="text-foreground/85">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-
-          <Reveal variants={scaleIn} className="space-y-4 lg:pl-6">
-            <RiskPreview />
-            <RiskSimulatorDemo />
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ---------------- Auth ---------------- */}
-      <section
-        id="get-started"
-        className="relative overflow-hidden border-t border-border bg-muted/25"
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-primary/5 to-transparent"
-        />
-        <div className="container-page relative py-20 lg:py-28">
+      {/* ---------------- 6. Fast Access & Auth Section ---------------- */}
+      <section id="get-started" className="relative scroll-mt-20 py-20 lg:py-28">
+        <div className="container-page">
           <Reveal className="mx-auto max-w-md">
-            <div className="mb-8 text-center">
-              <h2 className="text-3xl font-semibold tracking-tight">
-                {currentUser ? "Welcome back" : "Create your account"}
+            <div className="mb-8 text-center space-y-2">
+              <h2 className="text-3xl font-bold tracking-tight">
+                {currentUser ? "Welcome Back to MediAI" : "Launch Your Consultation"}
               </h2>
-              <p className="mt-3 text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {currentUser
-                  ? "Your session is active. Pick up where you left off."
-                  : "Free to start. Your consultation history stays private to you."}
+                  ? "Your session is authenticated. Seamlessly access your medical dashboard."
+                  : "Private and secure triage. Your medical history stays strictly under your control."}
               </p>
             </div>
 
-            <div className="surface-raised p-6 sm:p-8">
+            <div className="rounded-2xl border border-border/80 bg-card/80 p-6 sm:p-8 shadow-xl backdrop-blur-md">
               {!isLoading && currentUser ? (
                 <div className="space-y-3">
                   <Button
                     size="lg"
-                    className="w-full"
+                    className="w-full rounded-xl font-medium"
                     onClick={() => setLocation("/dashboard")}
                   >
-                    Open dashboard
+                    Open Medical Dashboard
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                   <Link href="/appointments">
-                    <Button size="lg" variant="outline" className="w-full">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full rounded-xl font-medium"
+                    >
                       <CalendarCheck className="mr-2 h-4 w-4" />
-                      Book consultation
+                      Book Clinic Consultation
                     </Button>
                   </Link>
                 </div>
               ) : (
                 <Tabs value={authMode} onValueChange={setAuthMode}>
-                  <TabsList className="mb-6 grid w-full grid-cols-2">
-                    <TabsTrigger value="login">Sign in</TabsTrigger>
-                    <TabsTrigger value="signup">Create account</TabsTrigger>
+                  <TabsList className="mb-6 grid w-full grid-cols-2 rounded-xl">
+                    <TabsTrigger value="login" className="rounded-lg text-xs font-semibold">
+                      Sign In
+                    </TabsTrigger>
+                    <TabsTrigger value="signup" className="rounded-lg text-xs font-semibold">
+                      Create Account
+                    </TabsTrigger>
                   </TabsList>
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.div
                       key={authMode}
-                      initial={{ opacity: 0, y: 6 }}
+                      initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={transition.fast}
+                      exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
                     >
                       <TabsContent value="login" className="mt-0">
                         <LoginForm onSuccess={handleLoginSuccess} />
@@ -757,45 +562,58 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------- Footer ---------------- */}
-      <footer className="border-t border-border">
-        <div className="container-page py-12">
-          <Reveal
-            variants={fadeUp}
-            className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4"
-          >
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">MediAI</span>{" "}
-              includes claim checks, consilium, risk curves, medication audits,
-              and escalation flags. Colloquial wording is translated through a
-              sourced phrase map. In an emergency, contact your local emergency
-              number immediately.
+      {/* ---------------- 7. Clean Refined Footer ---------------- */}
+      <footer className="border-t border-border/60 bg-muted/30">
+        <div className="container-page py-12 space-y-8">
+          {/* Medical disclaimer alert banner */}
+          <div className="flex items-start gap-3 rounded-xl border border-border/70 bg-card/60 p-4 text-xs text-muted-foreground shadow-xs">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500 mt-0.5" />
+            <p className="leading-relaxed">
+              <strong className="text-foreground">Clinical Notice:</strong> MediAI is an intelligent triage and decision-support instrument incorporating RxNorm validation, multi-agent consilium verification, and calibrated organ risk models. It is designed to assist and inform, never to replace professional emergency medical diagnosis. In life-threatening emergencies, dial your local emergency services immediately.
             </p>
-          </Reveal>
+          </div>
 
-          <div className="mt-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setLocation("/");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="flex cursor-pointer items-center gap-2.5 transition-opacity hover:opacity-90 text-left"
+            >
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-tr from-emerald-600 to-cyan-500 text-white">
                 <Stethoscope className="h-3.5 w-3.5" />
               </span>
-              <span className="text-sm font-semibold">MediAI</span>
-            </div>
+              <span className="text-sm font-bold tracking-tight">MediAI</span>
+            </button>
 
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} MediAI. Built as a final-year project.
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} MediAI Healthcare Systems. All clinical data encrypted.
             </p>
 
-            <div className="flex gap-5 text-sm text-muted-foreground">
-              <a href="#features" className="transition-colors duration-fast hover:text-foreground">
-                Features
-              </a>
-              <a href="#how" className="transition-colors duration-fast hover:text-foreground">
-                How it works
-              </a>
-              <a href="#get-started" className="transition-colors duration-fast hover:text-foreground">
-                Get started
-              </a>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <button
+                onClick={() => scrollToSection("capabilities")}
+                className="transition-colors hover:text-foreground"
+              >
+                Capabilities
+              </button>
+              <button
+                onClick={() => scrollToSection("console")}
+                className="transition-colors hover:text-foreground"
+              >
+                Console
+              </button>
+              <button
+                onClick={() => scrollToSection("how")}
+                className="transition-colors hover:text-foreground"
+              >
+                Pathway
+              </button>
+              <Link href="/dashboard" className="transition-colors hover:text-foreground">
+                Dashboard
+              </Link>
             </div>
           </div>
         </div>

@@ -1734,18 +1734,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
               stashHandoffFromChat(lines, meds);
               setLocation("/handoff-review");
             }}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1.5 bg-primary text-primary-foreground font-semibold shadow-xs"
           >
             <FileText className="h-4 w-4" />
-            Send to doctor brief
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLocation("/body-map")}
-            className="flex items-center gap-2"
-          >
-            Where it sits
+            Build Doctor Brief
           </Button>
           <Button
             variant="outline"
@@ -1984,6 +1976,36 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
             </div>
           )}
         </ScrollArea>
+
+        {/* Floating Quick Action when Visit Brief is ready - No scrolling required */}
+        {isBookingFlowActive && bookingStep === 15 && (
+          <div className="mx-auto mb-2 flex w-[94%] max-w-2xl items-center justify-between gap-3 rounded-xl border border-primary/30 bg-card p-3 shadow-lg backdrop-blur-md">
+            <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+              <FileText className="h-4 w-4 text-primary shrink-0" />
+              <span>Create a visit brief before booking slot with <strong>{selectedDoctor?.name || 'doctor'}</strong>?</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                onClick={acceptBriefThenBook}
+                disabled={isLoading}
+                className="h-8 gap-1 rounded-lg text-xs font-semibold bg-primary text-primary-foreground"
+              >
+                Build brief
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={skipBriefThenBook}
+                disabled={isLoading}
+                className="h-8 rounded-lg text-xs"
+              >
+                Skip
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Cancel Booking Button */} 
         {isBookingFlowActive && (

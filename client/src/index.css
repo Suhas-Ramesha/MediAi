@@ -111,6 +111,7 @@
   }
 
   html {
+    font-size: 17.6px; /* 110% root typography and spacing scale */
     scroll-behavior: smooth;
     /* Stops content jumping sideways when a scrollbar appears */
     scrollbar-gutter: stable;
