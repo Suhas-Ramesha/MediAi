@@ -169,7 +169,7 @@ export async function analyzeChatTurnLive(
   if (isRxnavLive()) {
     const tokens = extractDrugCandidateTokens(
       `${input.userText}\n${input.assistantText}`,
-    );
+    ).slice(0, 6);
     for (const raw of tokens) {
       if (extraHits[raw.toLowerCase()]) continue;
       const live = await resolveDrug(raw, { fetchImpl, liveNetwork: true });

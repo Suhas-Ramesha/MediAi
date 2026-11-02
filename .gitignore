@@ -44,6 +44,7 @@ notebooks/catboost_info/
 .breakpoints
 data/shared/raw/nhanes_full.csv
 data/**/nhanes_full.csv
+data/mediai-store.json
 
 # ---- Agent design skills ----
 # The skill content is committed so the whole team gets it, but the detector

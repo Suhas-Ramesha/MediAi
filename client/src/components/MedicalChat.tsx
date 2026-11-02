@@ -180,9 +180,12 @@ async function runChatEngines(
     evidence: [userText],
   });
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
     const r = await fetch("/api/mediai/chat/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({
         userText,
         assistantText,
@@ -191,9 +194,10 @@ async function runChatEngines(
         evidence: [userText],
       }),
     });
+    clearTimeout(timeoutId);
     if (r.ok) return (await r.json()) as ChatEngineResult;
   } catch {
-    /* Express / NLM RxNav down: in-browser engines skip the name lexicon */
+    /* Express / NLM RxNav down or timed out: in-browser engine handles instantly */
   }
   return local;
 }
@@ -441,11 +445,17 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     try {
       const consultationRef = doc(db, 'consultations', consultationId);
       
-      // Store message with ISO string timestamp
-      const messageToStore = {
-        ...message,
-        timestamp: message.timestamp instanceof Date ? message.timestamp.toISOString() : message.timestamp
+      // Clean and sanitize message to avoid undefined values which Firestore rejects
+      const messageToStore: Record<string, any> = {
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        timestamp: message.timestamp instanceof Date ? message.timestamp.toISOString() : String(message.timestamp || new Date().toISOString()),
+        suggestsBooking: Boolean(message.suggestsBooking),
       };
+      if (message.image) messageToStore.image = message.image;
+      if (message.imagePrompt) messageToStore.imagePrompt = message.imagePrompt;
+      if (message.appointmentId) messageToStore.appointmentId = message.appointmentId;
 
       console.log('Adding message to consultation:', consultationId, messageToStore);
       
@@ -582,43 +592,50 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         
         console.log("AI Response:", analysis, "Suggests Booking:", false);
 
-        const engine = await runChatEngines(
-          text || "Please analyze this medical image.",
-          analysis,
-          safetyGraph,
-          currentUser?.uid ?? "anon",
-        );
-        setSafetyGraph(engine.graph);
-        void saveGraph(currentUser?.uid ?? null, engine.graph);
-        void appendAudit(currentUser?.uid ?? null, {
-          consultationId,
-          userText: text || "Please analyze this medical image.",
-          assistantText: analysis,
-          result: engine,
-          at: new Date().toISOString(),
-        });
-        
         // Create analysis message
         const aiMessage: Message = {
           id: (Date.now() + 2).toString(),
           role: 'assistant',
           content: analysis,
           timestamp: new Date(),
+          isLoading: false,
           suggestsBooking: false,
-          engine,
         };
         
-        // Replace loading message with analysis result
+        // Immediately replace loading message with analysis result and clear loading
         setMessages(prev => prev.map(msg => 
           msg.id === loadingMessage.id ? aiMessage : msg
         ));
-        
-        // Add AI message to consultation
-        await addMessageToConsultation(consultationId, aiMessage);
-        
         setFile(null);
         setFileType(null);
         setIsLoading(false);
+
+        // Run background engine analysis and persistence
+        void (async () => {
+          try {
+            const engine = await runChatEngines(
+              text || "Please analyze this medical image.",
+              analysis,
+              safetyGraph,
+              currentUser?.uid ?? "anon",
+            );
+            setSafetyGraph(engine.graph);
+            void saveGraph(currentUser?.uid ?? null, engine.graph);
+            void appendAudit(currentUser?.uid ?? null, {
+              consultationId,
+              userText: text || "Please analyze this medical image.",
+              assistantText: analysis,
+              result: engine,
+              at: new Date().toISOString(),
+            });
+            setMessages(prev => prev.map(msg => msg.id === aiMessage.id ? { ...msg, engine } : msg));
+            if (consultationId) {
+              await addMessageToConsultation(consultationId, { ...aiMessage, engine });
+            }
+          } catch (bgError) {
+            console.warn("Background image safety or persistence warning:", bgError);
+          }
+        })();
         return;
       } catch (error: any) {
         toast({
@@ -747,12 +764,21 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         'urgent care',
         'emergency room',
         'er visit',
+        'consult a doctor',
+        'consult with a doctor',
+        'consultation',
+        'medical attention',
+        'healthcare provider',
+        'clinic',
+        'hospital',
       ];
       const lowerCaseContent = cleanContent.toLowerCase();
       const hasStructuredTriage =
-        /\*\*what this could mean\*\*/i.test(cleanContent) ||
-        /\*\*when to seek urgent care\*\*/i.test(cleanContent) ||
-        /\*\*what you can do now\*\*/i.test(cleanContent);
+        /(?:\*\*)?what this could mean(?:\*\*)?/i.test(cleanContent) ||
+        /(?:\*\*)?when to seek urgent care(?:\*\*)?/i.test(cleanContent) ||
+        /(?:\*\*)?what you can do now(?:\*\*)?/i.test(cleanContent) ||
+        /(?:\*\*)?questions to answer next(?:\*\*)?/i.test(cleanContent) ||
+        /(?:\*\*)?seek urgent care(?:\*\*)?/i.test(cleanContent);
       const suggestsBooking =
         hasStructuredTriage ||
         suggestsBookingKeywords.some((keyword) =>
@@ -760,22 +786,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         );
       
       console.log("[Text Response] AI Content:", cleanContent, "| Suggests Booking:", suggestsBooking);
-
-      const engine = await runChatEngines(
-        text,
-        cleanContent,
-        safetyGraph,
-        currentUser?.uid ?? "anon",
-      );
-      setSafetyGraph(engine.graph);
-      void saveGraph(currentUser?.uid ?? null, engine.graph);
-      void appendAudit(currentUser?.uid ?? null, {
-        consultationId: consultationId,
-        userText: text,
-        assistantText: cleanContent,
-        result: engine,
-        at: new Date().toISOString(),
-      });
 
       const aiMessage: Message = {
         ...responseMeta,
@@ -785,21 +795,50 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         timestamp: new Date(),
         isLoading: false,
         suggestsBooking: suggestsBooking,
-        engine,
       };
 
-      // Add AI message to consultation
-      await addMessageToConsultation(consultationId, aiMessage);
+      // IMMEDIATELY render the completed response and Book Consultation button without waiting on background tasks!
       setMessages(prev => prev.map(msg => msg.id === aiMessageId ? aiMessage : msg));
+      setIsLoading(false);
 
-      if (!consultationId.startsWith("local_")) {
-        await updateDoc(doc(db, 'consultations', consultationId), {
-          status: 'active',
-          lastUpdated: serverTimestamp(),
-          diagnosis: extractDiagnosis(aiMessage.content),
-          recommendations: extractRecommendations(aiMessage.content),
-        });
-      }
+      // Run safety graph analysis and Firestore persistence asynchronously in background
+      void (async () => {
+        try {
+          const engine = await runChatEngines(
+            text,
+            cleanContent,
+            safetyGraph,
+            currentUser?.uid ?? "anon",
+          );
+          setSafetyGraph(engine.graph);
+          void saveGraph(currentUser?.uid ?? null, engine.graph);
+          void appendAudit(currentUser?.uid ?? null, {
+            consultationId: consultationId,
+            userText: text,
+            assistantText: cleanContent,
+            result: engine,
+            at: new Date().toISOString(),
+          });
+
+          // Attach engine details to message state
+          setMessages(prev => prev.map(msg => msg.id === aiMessageId ? { ...msg, engine } : msg));
+
+          // Save to Firestore in background
+          if (consultationId) {
+            await addMessageToConsultation(consultationId, { ...aiMessage, engine });
+            if (!consultationId.startsWith("local_")) {
+              await updateDoc(doc(db, 'consultations', consultationId), {
+                status: 'active',
+                lastUpdated: serverTimestamp(),
+                diagnosis: extractDiagnosis(aiMessage.content),
+                recommendations: extractRecommendations(aiMessage.content),
+              });
+            }
+          }
+        } catch (bgError) {
+          console.warn("Background chat safety or persistence warning:", bgError);
+        }
+      })();
 
     } catch (error: any) {
       toast({
