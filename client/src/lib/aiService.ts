@@ -7,7 +7,9 @@ export interface Message {
   timestamp: Date | string;
   isLoading?: boolean;
   image?: string;
+  imageRemote?: string;
   imagePrompt?: string;
+  imageName?: string;
   suggestsBooking?: boolean;
   appointmentId?: string;
   isAppointmentUpdate?: boolean;
@@ -62,17 +64,40 @@ export const medicalChatService = {
 export const medicalAnalysisService = {
   async analyzeImage(file: File, userPrompt: string): Promise<string> {
     try {
-      const dataUrl = await new Promise<string>((resolve) => {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Could not read the image file"));
         reader.readAsDataURL(file);
       });
       const data = dataUrl.split(",")[1] || "";
-      const payload = await postJson<{ text: string }>("/api/vision", {
-        prompt: userPrompt,
-        mimeType: file.type || "image/jpeg",
-        data,
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 100_000);
+      let payload: { text: string };
+      try {
+        const res = await fetch("/api/vision", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            prompt: userPrompt,
+            mimeType: file.type || "image/jpeg",
+            data,
+          }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(body?.message || `Image analysis failed (${res.status})`);
+        }
+        payload = body as { text: string };
+      } catch (err: any) {
+        if (err?.name === "AbortError") {
+          throw new Error("The image service took too long. Please try again.");
+        }
+        throw err;
+      } finally {
+        clearTimeout(timeout);
+      }
       const text = stripDiagnosisDisclaimer(payload.text || "");
       if (!text) {
         throw new Error("Empty response from AI");

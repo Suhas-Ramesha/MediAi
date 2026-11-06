@@ -48,6 +48,66 @@ export function saveGraphLocal(graph: SafetyGraph): void {
   writeLs(LS_GRAPH, graph);
 }
 
+/**
+ * Firestore can be unavailable for reasons the app cannot fix: deployed rules
+ * that deny writes, offline mode, or a browser extension blocking
+ * firestore.googleapis.com (net::ERR_BLOCKED_BY_CLIENT). Local storage is the
+ * source of truth in this demo, so after the first cloud failure we stop
+ * retrying and keep the console clean.
+ */
+const LS_CLOUD_BLOCKED_UNTIL = "mediai.cloudBlockedUntil";
+
+function cloudRecentlyBlocked(): boolean {
+  try {
+    const until = Number(localStorage.getItem(LS_CLOUD_BLOCKED_UNTIL) || 0);
+    return Number.isFinite(until) && Date.now() < until;
+  } catch {
+    return false;
+  }
+}
+
+let cloudSyncBlocked = cloudRecentlyBlocked();
+
+function markCloudBlocked(): void {
+  try {
+    localStorage.setItem(LS_CLOUD_BLOCKED_UNTIL, String(Date.now() + 60 * 60 * 1000));
+  } catch {
+    /* private mode */
+  }
+}
+
+function shouldStopRetrying(err: unknown): boolean {
+  const code = String((err as { code?: string })?.code || "");
+  const message = String((err as { message?: string })?.message || "");
+  return (
+    code === "permission-denied" ||
+    code === "unavailable" ||
+    code === "failed-precondition" ||
+    /insufficient permissions|blocked_by_client|network|offline/i.test(message)
+  );
+}
+
+async function tryCloudWrite(label: string, run: () => Promise<unknown>): Promise<void> {
+  if (cloudSyncBlocked) return;
+  try {
+    await run();
+  } catch (err) {
+    if (shouldStopRetrying(err)) {
+      cloudSyncBlocked = true;
+      markCloudBlocked();
+      console.info(
+        `[MediAI] Cloud sync unavailable (${label}). Continuing with local storage only.`,
+      );
+      return;
+    }
+    console.warn(`Firestore ${label} failed`, err);
+  }
+}
+
+export function isCloudSyncBlocked(): boolean {
+  return cloudSyncBlocked;
+}
+
 export async function loadGraph(
   uid: string | null,
   patientId: string,
@@ -58,7 +118,12 @@ export async function loadGraph(
       const snap = await getDoc(doc(db, "users", uid, "mediai", "graph"));
       if (snap.exists()) return snap.data() as SafetyGraph;
     } catch (err) {
-      console.warn("Firestore graph read failed, using local copy", err);
+      if (shouldStopRetrying(err)) {
+        cloudSyncBlocked = true;
+        console.info("[MediAI] Cloud sync unavailable (graph read). Using local storage only.");
+      } else {
+        console.warn("Firestore graph read failed, using local copy", err);
+      }
     }
   }
   return loadGraphLocal(patientId, allergies);
@@ -67,11 +132,9 @@ export async function loadGraph(
 export async function saveGraph(uid: string | null, graph: SafetyGraph): Promise<void> {
   saveGraphLocal(graph);
   if (!uid) return;
-  try {
-    await setDoc(doc(db, "users", uid, "mediai", "graph"), graph);
-  } catch (err) {
-    console.warn("Firestore graph write failed", err);
-  }
+  await tryCloudWrite("graph write", () =>
+    setDoc(doc(db, "users", uid, "mediai", "graph"), graph),
+  );
 }
 
 export async function appendAudit(
@@ -87,22 +150,18 @@ export async function appendAudit(
   const prev = readLs<unknown[]>(LS_AUDITS, []);
   writeLs(LS_AUDITS, [...prev, payload].slice(-80));
   if (!uid) return;
-  try {
-    await addDoc(collection(db, "users", uid, "mediaiAudits"), payload);
-  } catch (err) {
-    console.warn("Firestore audit write failed", err);
-  }
+  await tryCloudWrite("audit write", () =>
+    addDoc(collection(db, "users", uid, "mediaiAudits"), payload),
+  );
 }
 
 export async function saveBrief(uid: string | null, brief: HandoffBrief): Promise<void> {
   const prev = readLs<HandoffBrief[]>(LS_BRIEFS, []);
   writeLs(LS_BRIEFS, [...prev.filter((b) => b.id !== brief.id), brief].slice(-20));
   if (!uid) return;
-  try {
-    await setDoc(doc(db, "users", uid, "mediaiBriefs", brief.id), brief);
-  } catch (err) {
-    console.warn("Firestore brief write failed", err);
-  }
+  await tryCloudWrite("brief write", () =>
+    setDoc(doc(db, "users", uid, "mediaiBriefs", brief.id), brief),
+  );
 }
 
 export function stashHandoffFromChat(userLines: string[], medications: string[]): void {

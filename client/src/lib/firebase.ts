@@ -22,15 +22,6 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-console.log("Firebase Config:", {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ? "Set" : "Missing",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ? "Set" : "Missing",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ? "Set" : "Missing",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ? "Set" : "Missing",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ? "Set" : "Missing",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID ? "Set" : "Missing"
-});
-
 // Initialize Firebase
 // Check if Firebase is properly configured
 export function isFirebaseConfigured() {
@@ -67,23 +58,14 @@ let googleProvider: GoogleAuthProvider;
 // Initialize Firebase
 try {
   if (!validConfig) {
-    console.error("Firebase config validation failed:", firebaseConfig);
     throw new Error("Firebase configuration is invalid");
   }
   
-  console.log("Initializing Firebase with config:", {
-    ...firebaseConfig,
-    apiKey: firebaseConfig.apiKey ? "Present" : "Missing"
-  });
-  
   app = initializeApp(firebaseConfig);
-  console.log("Firebase app initialized");
   
   auth = getAuth(app);
-  console.log("Firebase auth initialized");
   
   db = getFirestore(app);
-  console.log("Firebase Firestore initialized");
   
   storage = getStorage(app);
   // Configure storage to use the correct bucket
@@ -91,12 +73,8 @@ try {
   if (storageBucket) {
     storage = getStorage(app, `gs://${storageBucket}`);
   }
-  console.log("Firebase storage initialized");
   
   googleProvider = new GoogleAuthProvider();
-  console.log("Google provider initialized");
-  
-  console.log("Firebase successfully initialized");
 } catch (error) {
   console.warn("Firebase initialization warning:", error);
   if (error instanceof Error) {

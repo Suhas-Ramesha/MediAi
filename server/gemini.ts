@@ -1,9 +1,8 @@
 const GEMINI_MODELS = [
-  "gemini-3.1-flash-lite",
-  "gemini-flash-latest",
+  // gemini-flash-lite-latest is the only model with available free-tier quota.
+  // gemini-flash-latest (resolves to gemini-3.8-flash) has exhausted its daily
+  // quota (~20 req/day, retry in ~15h) and is intentionally omitted.
   "gemini-flash-lite-latest",
-  "gemini-3.8-flash",
-  "gemini-3.7-flash",
 ];
 
 const HEALTH_CHAT_INSTRUCTIONS = `You are an AI Health Assistant in a healthcare app. Rules you must follow:
@@ -15,21 +14,21 @@ const HEALTH_CHAT_INSTRUCTIONS = `You are an AI Health Assistant in a healthcare
 Length & format rules (IMPORTANT):
 - For casual questions, small talk, thanks, or simple factual asks: reply in 1-3 short sentences. No sections, no bullets, no headings.
 - For active symptoms (fever, pain, cough, vomiting, dizziness, injury, etc.) OR explicit requests for guidance: use the structured triage format below.
-- Never pad a simple answer into a long structured one.
-- Keep sentences short and scannable.
+- Never pad a simple answer into a long structured one. Total reply should stay under ~180 words.
+- Keep sentences short and scannable (one line per bullet).
 
 Structured triage format (use ONLY for symptom or guidance replies):
 **What this could mean**
-- 2-4 short bullets
+- 2-3 short bullets
 
 **What you can do now**
-- 3-6 practical bullets
+- 3-4 practical bullets
 
 **Questions to answer next**
 - 1-2 focused triage questions
 
 **When to seek urgent care**
-- 2-4 red-flag bullets`;
+- 2-3 red-flag bullets`;
 
 function apiKey(): string {
   const key = process.env.GEMINI_API_KEY || "";
@@ -61,11 +60,19 @@ async function generateContent(
     generationConfig: {
       temperature: 0.3,
       maxOutputTokens: 2048,
+      // thinkingConfig is omitted because gemini-flash-lite-latest does not
+      // support it and returns HTTP 400 INVALID_ARGUMENT when present.
     },
   };
 
   let lastError = "Gemini request failed";
+  const deadline = Date.now() + 45_000;
   for (const model of GEMINI_MODELS) {
+    const remaining = deadline - Date.now();
+    if (remaining < 2_000) {
+      lastError = "The AI service is busy right now. Please try again in a moment.";
+      break;
+    }
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       const res = await fetch(url, {
@@ -75,6 +82,8 @@ async function generateContent(
           "x-goog-api-key": key,
         },
         body: JSON.stringify(body),
+        // Cap each model call so one slow model doesn't burn the whole budget.
+        signal: AbortSignal.timeout(Math.min(20_000, remaining)),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
@@ -83,14 +92,20 @@ async function generateContent(
         lastError = "Empty response from AI";
         continue;
       }
-      lastError = json?.error?.message || `Gemini ${res.status}`;
+      const geminiErr = json?.error?.message || `Gemini ${res.status}`;
+      console.error(`[Gemini ${model}] Error ${res.status}:`, geminiErr);
+      lastError = geminiErr;
       continue;
     } catch (e: any) {
       lastError = e?.message || "Gemini connection error";
       continue;
     }
   }
-  throw new Error(lastError);
+  const friendly =
+    /abort|timeout|high demand|unavailable|503/i.test(lastError)
+      ? "The AI service is busy right now. Please try again in a moment."
+      : lastError;
+  throw new Error(friendly);
 }
 
 const SYMPTOM_HINT_RE =
@@ -98,7 +113,7 @@ const SYMPTOM_HINT_RE =
 
 function looksTooShortForTriage(text: string): boolean {
   const lineCount = text.split("\n").filter((l) => l.trim()).length;
-  return text.trim().length < 260 || lineCount < 5;
+  return text.trim().length < 160 || lineCount < 4;
 }
 
 export async function generateHealthChat(message: string): Promise<string> {
@@ -112,7 +127,7 @@ Formatting requirements:
 - Use bullet points for actions and warning signs.
 - Keep lines short and easy to scan on mobile.
 
-Respond in a clear, friendly, professional tone. Avoid heavy jargon and do not be overly brief.`;
+Respond in a clear, friendly, professional tone. Prefer the shortest answer that is still safe and useful.`;
 
   let text = await generateContent([{ text: prompt }]);
 
@@ -129,18 +144,18 @@ ${text}
 
 Rewrite it with this exact structure:
 **What this could mean**
-- 2-4 concise bullet points
+- 2-3 concise bullet points
 
 **What you can do now**
-- 4-6 practical bullet points
+- 3-4 practical bullet points
 
 **Questions to answer next**
 - Ask exactly 2 focused triage questions
 
 **When to seek urgent care**
-- 3-5 red-flag bullet points
+- 2-3 red-flag bullet points
 
-Keep it concise but complete and easy to scan.`;
+Keep every bullet to one line. Do not add an intro or closing paragraph.`;
     text = (await generateContent([{ text: expandPrompt }])) || text;
   }
 
@@ -190,35 +205,28 @@ export async function generateImageAnalysis(
   mimeType: string,
   base64Data: string,
 ): Promise<string> {
-  const prompt = `You are a medical professional analyzing this medical image. The patient asks: "${userPrompt}"
+  const prompt = `You are an AI assistant helping a patient understand a medical image. The patient asks: "${userPrompt}"
 
-Please provide a comprehensive analysis in the following format:
+Return ONLY the Markdown below, with no greeting, preamble, or closing disclaimer:
 
-Image Type: [Specify the exact type of medical image - X-ray, MRI, CT scan, etc.]
+**Image**
+- One line: likely type (X-ray, CT, MRI, photo), body area, and whether the image is clear enough to read
 
-Anatomical Region: [Specify the body part or organ system being examined]
+**What I can see**
+- 2-3 short bullets, each starting with a bold label, for example: "- **Lungs:** clear, no obvious fluid"
 
-Key Findings:
-1. [List primary observations with specific details]
-2. [Note any abnormalities, masses, or concerning features]
-3. [Describe tissue characteristics, density variations, or structural changes]
+**What it may mean**
+- 1-2 short bullets using hedging words ("may", "possibly", "can suggest"). Never state a diagnosis as fact.
 
-Clinical Interpretation:
-- [Provide detailed explanation of findings]
-- [Discuss potential medical implications]
-- [Compare with normal expectations]
+**What to do next**
+- 2 short, practical bullets, including that a radiologist or doctor should review the actual scan
 
-Recommendations:
-1. [Specific medical follow-up needed]
-2. [Additional tests if required]
-3. [Lifestyle or preventive measures]
-
-Important Notes:
-- [Critical information for patient awareness]
-- [Limitations of the analysis]
-- [Reminder about professional medical consultation]
-
-Please be thorough and precise while explaining in patient-friendly terms.`;
+Strict rules:
+- Every bullet must be under 20 words. No paragraph longer than one line.
+- Use plain, patient-friendly language. Explain any clinical term in the same line.
+- Do not prescribe medicines, doses, or treatment changes.
+- Do not invent findings that are not visible.
+- If this is not a medical image, or is too blurry/blank to read, say so in the first "What I can see" bullet and keep the rest cautious.`;
 
   return generateContent([
     { text: prompt },

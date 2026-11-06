@@ -13,8 +13,10 @@ export interface Message {
   content: string; // This will hold the currently displayed language
   timestamp: Date | string; // Can be Date object or ISO string
   isLoading?: boolean;
-  image?: string; // URL to the image stored in Cloudinary
+  image?: string; // Local preview or URL shown in chat
+  imageRemote?: string; // Cloudinary URL, used after reload
   imagePrompt?: string; // The prompt used for image analysis
+  imageName?: string; // Original file name, shown in the image frame
   suggestsBooking?: boolean;
   appointmentId?: string; // ID of the appointment if this message is related to an appointment
   isAppointmentUpdate?: boolean; // Flag to indicate if this message is an appointment status update

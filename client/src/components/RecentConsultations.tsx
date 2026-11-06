@@ -32,13 +32,10 @@ export default function RecentConsultations({ consultations: propConsultations, 
 
   useEffect(() => {
     if (!currentUser) {
-      console.log('No current user');
       setConsultations([]);
       setIsLoading(false);
       return;
     }
-
-    console.log('Setting up consultations listener for user:', currentUser.uid);
 
     try {
       const consultationsRef = collection(db, 'consultations');
@@ -49,14 +46,9 @@ export default function RecentConsultations({ consultations: propConsultations, 
         limit(5)
       );
 
-      console.log('Query created:', q);
-
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        console.log('Snapshot received, docs count:', snapshot.docs.length);
-        
         const fetchedConsultations = snapshot.docs.map(doc => {
           const data = doc.data();
-          console.log('Processing doc:', doc.id, data);
 
           // Convert Firestore timestamps to dates
           let consultationDate = new Date();
@@ -86,7 +78,6 @@ export default function RecentConsultations({ consultations: propConsultations, 
           } as Consultation;
         });
 
-        console.log('Processed consultations:', fetchedConsultations);
         setConsultations(fetchedConsultations);
         setIsLoading(false);
       }, (error) => {
@@ -95,7 +86,6 @@ export default function RecentConsultations({ consultations: propConsultations, 
       });
 
       return () => {
-        console.log('Cleaning up consultations listener');
         unsubscribe();
       };
     } catch (error) {

@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Mic, PlusCircle, Upload, FileText, Image, Send, Save, CalendarPlus, BrainCircuit } from "lucide-react";
+import { Loader2, Mic, PlusCircle, Upload, FileText, Image, Send, Save, CalendarPlus, BrainCircuit, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Message, Consultation } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -145,8 +145,20 @@ function renderAssistantText(
 
         const isBullet = /^[-*•]\s+/.test(line);
         const isNumbered = /^\d+\.\s+/.test(line);
+        const headingMatch = line.match(/^(?:#{1,6}\s*)?\*\*([^*]+?)\*\*:?\s*$/);
         const cleanLine = line.replace(/^[-*•]\s+/, "").replace(/^\d+\.\s+/, "");
         const richText = renderRichParts(cleanLine, verdicts);
+
+        if (headingMatch) {
+          return (
+            <h4
+              key={`h-${i}`}
+              className="mt-3 text-sm font-semibold tracking-tight text-foreground first:mt-0"
+            >
+              {headingMatch[1].replace(/:$/, "")}
+            </h4>
+          );
+        }
 
         if (isBullet || isNumbered) {
           return (
@@ -164,6 +176,65 @@ function renderAssistantText(
         );
       })}
     </div>
+  );
+}
+
+/** Route Cloudinary URLs through the API so adblockers cannot hide the scan. */
+function proxiedImageUrl(url?: string): string {
+  if (!url) return "";
+  if (url.startsWith("blob:") || url.startsWith("data:") || url.startsWith("/api/")) {
+    return url;
+  }
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (
+      parsed.hostname === "res.cloudinary.com" ||
+      parsed.hostname.endsWith(".cloudinary.com")
+    ) {
+      return `/api/image-proxy?url=${encodeURIComponent(parsed.toString())}`;
+    }
+  } catch {
+    /* not a URL */
+  }
+  return url;
+}
+
+function messageImageSrc(msg: Message): string {
+  return proxiedImageUrl(msg.image) || proxiedImageUrl(msg.imageRemote) || "";
+}
+
+function MessageImage({ msg }: { msg: Message }) {
+  const [src, setSrc] = useState(() => messageImageSrc(msg));
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setSrc(messageImageSrc(msg));
+    setFailed(false);
+  }, [msg.image, msg.imageRemote]);
+
+  if (failed) {
+    return (
+      <div className="flex min-h-[120px] items-center justify-center p-6 text-center text-xs text-primary-foreground/75">
+        Preview unavailable — the scan was analyzed, but this browser blocked the image.
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={msg.imageName || "Uploaded medical image"}
+      className="block max-h-[280px] w-full object-contain"
+      loading="lazy"
+      onError={() => {
+        const fallback = proxiedImageUrl(msg.imageRemote);
+        if (fallback && fallback !== src) {
+          setSrc(fallback);
+          return;
+        }
+        setFailed(true);
+      }}
+    />
   );
 }
 
@@ -424,9 +495,7 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         symptoms: firstMessage || '',
       };
 
-      console.log('Creating new consultation:', consultationData);
       const consultationRef = await addDoc(collection(db, 'consultations'), consultationData);
-      console.log('Created consultation with ID:', consultationRef.id);
       
       setCurrentConsultation(consultationRef.id);
       return consultationRef.id;
@@ -454,17 +523,17 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         suggestsBooking: Boolean(message.suggestsBooking),
       };
       if (message.image) messageToStore.image = message.image;
+      if (message.imageRemote) messageToStore.imageRemote = message.imageRemote;
       if (message.imagePrompt) messageToStore.imagePrompt = message.imagePrompt;
+      if (message.imageName) messageToStore.imageName = message.imageName;
       if (message.appointmentId) messageToStore.appointmentId = message.appointmentId;
 
-      console.log('Adding message to consultation:', consultationId, messageToStore);
       
       await updateDoc(consultationRef, {
         messages: arrayUnion(messageToStore),
         lastUpdated: serverTimestamp(),
       });
 
-      console.log('Message added successfully');
     } catch (error) {
       console.error('Error adding message to consultation:', error);
     }
@@ -491,7 +560,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           recommendations: messages.length >= 2 ? extractRecommendations(messages[messages.length - 1].content) : ''
         };
 
-        console.log('Updating consultation:', currentConsultation, updateData);
         
         await updateDoc(consultationRef, updateData);
 
@@ -547,102 +615,125 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     if (file && fileType === 'image') {
       try {
         setIsLoading(true);
-        // Upload image to Cloudinary first
-        const imageUrl = await cloudinaryService.uploadImage(file);
-        
+        // Show the scan immediately from a local object URL. Cloudinary is only
+        // used for persistence; a blocked or slow upload must never hide the
+        // image the patient just chose.
+        const localPreview = URL.createObjectURL(file);
+        let imageRemote: string | undefined;
+        try {
+          imageRemote = await Promise.race([
+            cloudinaryService.uploadImage(file),
+            new Promise<undefined>((_, reject) =>
+              setTimeout(() => reject(new Error("Upload timed out")), 8_000),
+            ),
+          ]);
+        } catch (uploadError: any) {
+          console.warn("Image upload failed, continuing with local preview:", uploadError);
+        }
+
         // Create a user message with the image
         const userMessage: Message = {
           id: Date.now().toString(),
           role: 'user',
           content: text || 'Please analyze this medical image.',
           timestamp: new Date(),
-          image: imageUrl,
+          image: localPreview,
+          imageRemote,
           imagePrompt: text || 'Please analyze this medical image.',
+          imageName: file.name,
           suggestsBooking: false
         };
-        
-        // Create a new consultation if none exists
-        let consultationId = currentConsultation;
-        if (!consultationId) {
-          consultationId = await createConsultation(userMessage.content);
-          if (!consultationId) throw new Error('Failed to create consultation');
-        }
-        
-        // Add user message to consultation
-        await addMessageToConsultation(consultationId, userMessage);
-        
+
+        // Show the image immediately in the chat — backend failures must never
+        // hide a scan the patient just chose.
         setMessages(prev => [...prev, userMessage]);
         setInput(''); // Clear input field immediately after sending
-        
+
+        // Create a new consultation if none exists (non-blocking: local fallback)
+        let consultationId = currentConsultation;
+        if (!consultationId) {
+          try {
+            consultationId = await createConsultation(userMessage.content);
+          } catch (err) {
+            console.warn('Consultation creation failed, continuing locally:', err);
+            consultationId = `local_${Date.now()}`;
+            setCurrentConsultation(consultationId);
+          }
+        }
+
+        if (consultationId) {
+          await addMessageToConsultation(consultationId, userMessage);
+        }
+
         // Add a loading message
         const loadingMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: 'Analyzing your medical image...',
+          content: 'Analyzing your medical image... this can take up to a minute.',
           timestamp: new Date(),
           isLoading: true,
           suggestsBooking: false
         };
         setMessages(prev => [...prev, loadingMessage]);
-        
-        // Analyze the image
-        const analysis = stripDiagnosisDisclaimer(
-          await medicalAnalysisService.analyzeImage(file, text || 'Please analyze this medical image.'),
-        );
-        
-        console.log("AI Response:", analysis, "Suggests Booking:", false);
 
-        // Create analysis message
-        const aiMessage: Message = {
-          id: (Date.now() + 2).toString(),
-          role: 'assistant',
-          content: analysis,
-          timestamp: new Date(),
-          isLoading: false,
-          suggestsBooking: false,
-        };
-        
-        // Immediately replace loading message with analysis result and clear loading
-        setMessages(prev => prev.map(msg => 
-          msg.id === loadingMessage.id ? aiMessage : msg
-        ));
+        // Analyze the image
+        try {
+          const analysis = stripDiagnosisDisclaimer(
+            await medicalAnalysisService.analyzeImage(file, text || 'Please analyze this medical image.'),
+          );
+
+          // Create analysis message
+          const aiMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            role: 'assistant',
+            content: analysis,
+            timestamp: new Date(),
+            isLoading: false,
+            suggestsBooking: false,
+          };
+
+          // Immediately replace loading message with analysis result and clear loading
+          setMessages(prev => prev.map(msg =>
+            msg.id === loadingMessage.id ? aiMessage : msg
+          ));
+
+          // Persist the reply, but do not run the symptom-claim verifier on an
+          // image report: it would underline radiology wording as "unsupported"
+          // and add an irrelevant "viral uri" ranking under the scan.
+          if (consultationId) {
+            void addMessageToConsultation(consultationId, aiMessage);
+          }
+        } catch (analysisError: any) {
+          // Replace loading message with a friendly error, but keep the image visible
+          setMessages(prev => prev.map(msg =>
+            msg.id === loadingMessage.id
+              ? {
+                  ...msg,
+                  content: analysisError.message || 'Failed to analyze the image. The scan is still visible above.',
+                  isLoading: false,
+                }
+              : msg
+          ));
+          toast({
+            title: "Image analysis failed",
+            description: analysisError.message || "Please try uploading the image again.",
+            variant: "destructive"
+          });
+        }
+
         setFile(null);
         setFileType(null);
         setIsLoading(false);
-
-        // Run background engine analysis and persistence
-        void (async () => {
-          try {
-            const engine = await runChatEngines(
-              text || "Please analyze this medical image.",
-              analysis,
-              safetyGraph,
-              currentUser?.uid ?? "anon",
-            );
-            setSafetyGraph(engine.graph);
-            void saveGraph(currentUser?.uid ?? null, engine.graph);
-            void appendAudit(currentUser?.uid ?? null, {
-              consultationId,
-              userText: text || "Please analyze this medical image.",
-              assistantText: analysis,
-              result: engine,
-              at: new Date().toISOString(),
-            });
-            setMessages(prev => prev.map(msg => msg.id === aiMessage.id ? { ...msg, engine } : msg));
-            if (consultationId) {
-              await addMessageToConsultation(consultationId, { ...aiMessage, engine });
-            }
-          } catch (bgError) {
-            console.warn("Background image safety or persistence warning:", bgError);
-          }
-        })();
         return;
       } catch (error: any) {
         toast({
           title: "Error",
-          description: error.message || "Failed to analyze the image",
+          description: error.message || "Failed to process the image",
           variant: "destructive"
         });
+        setFile(null);
+        setFileType(null);
+        setIsLoading(false);
         return;
       }
     }
@@ -785,7 +876,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
           lowerCaseContent.includes(keyword),
         );
       
-      console.log("[Text Response] AI Content:", cleanContent, "| Suggests Booking:", suggestsBooking);
 
       const aiMessage: Message = {
         ...responseMeta,
@@ -934,7 +1024,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   const handleStartBooking = async () => {
     // Check if user is authenticated for appointments
     if (!AppointmentService.isAuthenticated()) {
-      console.log("User not authenticated for appointment system, showing login modal");
       setShowLoginModal(true);
       return;
     }
@@ -949,7 +1038,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     setBookingStep(1); // Move to doctor selection step
     setBookingDoctorMessageId(null);
     setBookingSlotMessageId(null);
-    console.log("Starting booking flow...");
 
     const bookingStartId = newBookingMessageId();
     const bookingStartMessage: Message = {
@@ -1019,7 +1107,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
 
   // Handle successful login
   const handleLoginSuccess = (userData: any) => {
-    console.log("Login successful, user data:", userData);
     
     // Verify that login actually succeeded - check for token in various locations
     const token = userData?.token || userData?.data?.token || userData?.accessToken || userData?.access_token;
@@ -1108,7 +1195,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
   };
 
   const handleSelectDoctor = async (doctor: any) => {
-    console.log("SELECTED DOCTOR OBJECT:", doctor);
     const guard = specialtyGuard(userTranscript(messages), doctorSpecialtyOf(doctor));
     if (guard.mismatch) {
       const id = newBookingMessageId();
@@ -1197,12 +1283,10 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
 
   const handleSelectSlot = async (slot: any) => {
     // Log the full slot object to understand its structure
-    console.log("SELECTED SLOT FULL OBJECT:", slot);
     
     setSelectedSlot(slot);
     setIsLoading(true);
     setBookingStep(3); // Move to confirmation
-    console.log("Slot selected:", slot);
 
     // Add placeholder message
     const requestingMessage: Message = {
@@ -1290,11 +1374,9 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       };
       
       // Log the appointment data we're sending
-      console.log("SENDING APPOINTMENT DATA:", JSON.stringify(appointmentData, null, 2));
       
       // Send request directly to appointments endpoint
       const response = await AppointmentService.requestAppointment(appointmentData);
-      console.log("Appointment request response:", response);
 
       // Show confirmation message with doctor's name and appointment details
       const doctorName = selectedDoctor.name || 
@@ -1442,7 +1524,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       // Store back in localStorage
       localStorage.setItem('mediaiAppointments', JSON.stringify(filteredAppointments));
       
-      console.log('Appointment stored:', appointmentToStore);
       
       // Also store in Firestore if possible
       if (currentUser && appointmentToStore.id) {
@@ -1466,7 +1547,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
         createdAt: serverTimestamp()
       });
       
-      console.log('Appointment stored in Firestore');
     } catch (error) {
       console.error('Error storing appointment in Firestore:', error);
     }
@@ -1478,7 +1558,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
     
     try {
       const status = await AppointmentService.checkAppointmentStatus(appointmentId);
-      console.log("Appointment status check:", status);
 
       const st = typeof status?.status === "string" ? status.status.toLowerCase() : "";
       if (status && st === "approved") {
@@ -1555,7 +1634,6 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
       }, 300000); // 5 minutes
     }
     
-    console.log("Booking flow reset. Will monitor appointment status:", appointmentId);
     setBookingSpecialtyHint(undefined);
     setRiskBookingSummary(undefined);
     setBookingDoctorMessageId(null);
@@ -1825,20 +1903,22 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                     }`}
                   >
                     {msg.image && (
-                      <div className="mb-2">
-                        <img 
-                          src={msg.image} 
-                          alt="Uploaded medical image" 
-                          className="max-w-full max-h-[200px] object-contain rounded-lg"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '';
-                            target.alt = 'Failed to load image';
-                            target.className = 'max-w-full rounded-lg bg-gray-100 p-4 text-center text-sm text-gray-500';
-                            target.textContent = 'Image failed to load';
-                          }}
-                        />
-                      </div>
+                      <figure className="mb-3 overflow-hidden rounded-xl bg-black/35 ring-1 ring-white/20">
+                        <div className="flex min-h-[120px] items-center justify-center bg-black/25">
+                          <MessageImage msg={msg} />
+                        </div>
+                        <figcaption className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-1.5 text-[11px] text-primary-foreground/80">
+                          <span className="truncate">{msg.imageName || "Medical image"}</span>
+                          <a
+                            href={messageImageSrc(msg)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="shrink-0 underline underline-offset-2 hover:text-primary-foreground"
+                          >
+                            Open
+                          </a>
+                        </figcaption>
+                      </figure>
                     )}
                     {msg.role === 'user' && msg.image ? (
                       <p className="text-sm whitespace-pre-wrap">
@@ -1847,6 +1927,11 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
                     ) : msg.role === "assistant" ? (
                       <>
                         {renderAssistantText(msg.content, msg.engine?.verdicts)}
+                        {msg.image && (
+                          <p className="mt-3 border-t border-border pt-2 text-[11px] text-muted-foreground">
+                            MediAI CNN vision model analysis · not a radiologist report
+                          </p>
+                        )}
                         {msg.engine && <ChatEnginePanel result={msg.engine} />}
                       </>
                     ) : (
@@ -2062,10 +2147,25 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
 
         {/* Selected File Display */}
         {file && (
-          <div className="flex items-center justify-between p-2 bg-muted rounded-lg mb-4">
-            <div className="flex items-center space-x-2">
-              <Image className="h-4 w-4" />
-              <span className="text-sm">{file.name}</span>
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-primary/25 bg-primary/5 p-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              {fileType === 'image' ? (
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt="Selected medical image preview"
+                  className="h-11 w-11 rounded-md object-cover"
+                />
+              ) : (
+                <Image className="h-4 w-4 shrink-0" />
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{file.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {input.trim()
+                    ? "Press send to analyze with your note."
+                    : "Press send to analyze — no note needed."}
+                </p>
+              </div>
             </div>
             <Button
               variant="outline"
@@ -2101,16 +2201,24 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
               onChange={(e) => {
                 const selectedFile = e.target.files?.[0];
                 if (!selectedFile) return;
-                if (selectedFile.type.startsWith('image/')) {
-                  setFile(selectedFile);
-                  setFileType('image');
-                } else {
+                if (!selectedFile.type.startsWith('image/')) {
                   toast({
                     variant: "destructive",
                     title: "Invalid file type",
-                    description: "Please upload an image file (JPG, PNG)",
+                    description: "Please upload an image file (JPG, PNG, WEBP).",
                   });
+                  return;
                 }
+                if (selectedFile.size > 10 * 1024 * 1024) {
+                  toast({
+                    variant: "destructive",
+                    title: "Image is too large",
+                    description: "Please use an image under 10 MB.",
+                  });
+                  return;
+                }
+                setFile(selectedFile);
+                setFileType('image');
               }}
               disabled={isLoading}
             />
@@ -2152,7 +2260,8 @@ export default function MedicalChat({ selectedConsultation }: MedicalChatProps) 
             <Button
               className="h-10 w-10 shrink-0 rounded-full"
               onClick={() => handleSendMessage(input)}
-              disabled={isLoading || isRecording || !input.trim()}
+              disabled={isLoading || isRecording || (!input.trim() && !file)}
+              title={file && !input.trim() ? "Analyze image" : "Send message"}
             >
               <Send className="h-4 w-4 ml-0.5" />
             </Button>

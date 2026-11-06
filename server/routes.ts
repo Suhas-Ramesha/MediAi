@@ -215,6 +215,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Proxy Cloudinary images through the server. Browser extensions that block
+  // res.cloudinary.com (net::ERR_BLOCKED_BY_CLIENT) would otherwise leave
+  // uploaded X-rays blank in the chat. Only the Cloudinary host is allowed.
+  app.get(apiRouter("/image-proxy"), async (req: Request, res: Response) => {
+    const raw = String(req.query.url || "");
+    let target: URL;
+    try {
+      target = new URL(raw);
+    } catch {
+      return res.status(400).json({ message: "Invalid image URL" });
+    }
+    const allowed =
+      target.protocol === "https:" &&
+      (target.hostname === "res.cloudinary.com" ||
+        target.hostname.endsWith(".cloudinary.com"));
+    if (!allowed) {
+      return res.status(400).json({ message: "Image host not allowed" });
+    }
+    try {
+      const upstream = await fetch(target, { signal: AbortSignal.timeout(15_000) });
+      if (!upstream.ok) {
+        return res.status(502).json({ message: `Image fetch failed (${upstream.status})` });
+      }
+      const contentType = upstream.headers.get("content-type") || "image/jpeg";
+      if (!contentType.startsWith("image/")) {
+        return res.status(415).json({ message: "URL did not return an image" });
+      }
+      const buffer = Buffer.from(await upstream.arrayBuffer());
+      res.set("Content-Type", contentType);
+      res.set("Cache-Control", "public, max-age=86400");
+      return res.send(buffer);
+    } catch (error: any) {
+      console.error("Image proxy error:", error);
+      return res.status(502).json({ message: "Image fetch failed" });
+    }
+  });
+
   app.post(apiRouter("/risk/predict"), async (req: Request, res: Response) => {
     try {
       const r = await fetch(`${ML_SERVICE_URL}/predict`, {
